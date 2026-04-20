@@ -1,22 +1,24 @@
 import { useGetTeam, useGetTeamStats, useListPlayers, useListGames } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
-import { Trophy, ChevronLeft, ArrowRight, User } from "lucide-react";
-import { format } from "date-fns";
+import { Trophy, ChevronLeft, ArrowRight } from "lucide-react";
 
 export function TeamDetailPage() {
   const params = useParams();
   const teamId = parseInt(params.id || "0", 10);
 
-  const { data: team, isLoading: loadingTeam } = useGetTeam(teamId, { query: { enabled: !!teamId, queryKey: ['/api/teams', teamId] } });
-  const { data: stats, isLoading: loadingStats } = useGetTeamStats(teamId, { query: { enabled: !!teamId, queryKey: ['/api/teams', teamId, 'stats'] } });
-  const { data: roster, isLoading: loadingRoster } = useListPlayers({ teamId }, { query: { enabled: !!teamId, queryKey: ['/api/players', { teamId }] } });
-  const { data: games, isLoading: loadingGames } = useListGames({ teamId }, { query: { enabled: !!teamId, queryKey: ['/api/games', { teamId }] } });
+  const { data: team, isLoading: loadingTeam } = useGetTeam(teamId, { query: { enabled: !!teamId } });
+  const { data: stats } = useGetTeamStats(teamId, { query: { enabled: !!teamId } });
+  const { data: roster, isLoading: loadingRoster } = useListPlayers({ teamId }, { query: { enabled: !!teamId } });
+  const { data: games } = useListGames({ teamId }, { query: { enabled: !!teamId } });
 
-  if (loadingTeam || loadingStats || loadingRoster || loadingGames) {
+  if (loadingTeam) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin text-primary">
-          <Trophy className="h-12 w-12" />
+      <div className="space-y-8 animate-pulse">
+        <div className="h-4 w-24 bg-muted rounded" />
+        <div className="h-40 bg-muted rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 h-64 bg-muted rounded-xl" />
+          <div className="h-64 bg-muted rounded-xl" />
         </div>
       </div>
     );
@@ -24,156 +26,178 @@ export function TeamDetailPage() {
 
   if (!team) {
     return (
-      <div className="text-center p-12 font-display text-2xl uppercase">Team not found</div>
+      <div className="card-base p-16 text-center">
+        <Trophy className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+        <p className="font-bold text-secondary text-lg">Team not found</p>
+      </div>
     );
   }
 
+  const winPct = team.wins + team.losses > 0
+    ? (team.wins / (team.wins + team.losses)).toFixed(3).replace(/^0/, "")
+    : ".000";
+
   return (
-    <div className="space-y-8">
-      <Link href="/teams" className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors">
-        <ChevronLeft className="h-4 w-4" /> Back to League
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <Link href="/teams" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors">
+        <ChevronLeft className="h-4 w-4" /> Back to Teams
       </Link>
 
-      {/* Team Header */}
-      <div className="bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] relative overflow-hidden">
-        <div 
-          className="absolute top-0 left-0 w-full h-4"
-          style={{ backgroundColor: team.primaryColor || '#FF5722' }}
-        ></div>
-        <div className="p-8 md:p-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-12">
-          <div className="flex items-center gap-6">
-             <div 
-                className="w-24 h-24 flex items-center justify-center font-display text-4xl text-white border-4 border-black -rotate-3 shadow-[4px_4px_0_0_rgba(0,0,0,1)]"
-                style={{ backgroundColor: team.primaryColor || '#FF5722' }}
-              >
-                {team.abbreviation}
-              </div>
-            <div>
-              <h1 className="text-5xl md:text-7xl font-display uppercase leading-none">{team.name}</h1>
-              <p className="text-xl text-muted-foreground font-bold uppercase tracking-widest mt-2">{team.city}</p>
-            </div>
+      {/* Team Banner */}
+      <div className="rounded-2xl overflow-hidden bg-secondary text-white relative">
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            background: `radial-gradient(ellipse at top right, ${team.primaryColor ?? "#C85A1B"}, transparent 60%)`,
+          }}
+        />
+        <div className="relative p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center font-display text-3xl text-white flex-shrink-0 shadow-lg"
+            style={{ backgroundColor: team.primaryColor ?? "#C85A1B" }}
+          >
+            {team.abbreviation}
           </div>
-          <div className="flex gap-4">
-            <div className="bg-black text-white p-4 min-w-[100px] text-center border-2 border-black">
-              <p className="text-sm font-bold uppercase text-gray-400">Record</p>
-              <p className="text-4xl font-display">{team.wins}-{team.losses}</p>
+          <div className="flex-1">
+            <p className="text-white/60 text-sm font-semibold uppercase tracking-widest mb-1">{team.city}</p>
+            <h1 className="font-display text-4xl md:text-6xl text-white leading-tight">{team.name.toUpperCase()}</h1>
+          </div>
+          <div className="flex gap-4 flex-shrink-0">
+            <div className="text-center">
+              <p className="label-upper text-white/50 mb-1">Record</p>
+              <p className="font-display text-4xl text-white">{team.wins}–{team.losses}</p>
             </div>
-            <div className="bg-white text-black p-4 min-w-[100px] text-center border-2 border-black">
-              <p className="text-sm font-bold uppercase text-muted-foreground">Games</p>
-              <p className="text-4xl font-display">{stats?.totalGames || 0}</p>
+            <div className="w-px bg-white/20" />
+            <div className="text-center">
+              <p className="label-upper text-white/50 mb-1">PCT</p>
+              <p className="font-display text-4xl text-white">{winPct}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Roster & Stats */}
-        <div className="lg:col-span-2 space-y-8">
-          <section>
-             <h2 className="text-3xl font-display uppercase border-b-4 border-black pb-2 mb-6">Team Roster</h2>
-             <div className="bg-white border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] overflow-x-auto">
-               <table className="w-full text-left border-collapse min-w-[600px]">
-                 <thead>
-                   <tr className="bg-gray-100 font-display uppercase text-sm border-b-4 border-black">
-                     <th className="p-4">No.</th>
-                     <th className="p-4">Player</th>
-                     <th className="p-4">Pos</th>
-                     <th className="p-4">Ht / Wt</th>
-                     <th className="p-4 text-right">Profile</th>
-                   </tr>
-                 </thead>
-                 <tbody className="divide-y-2 divide-gray-100">
-                   {roster?.map((player) => (
-                     <tr key={player.id} className="hover:bg-gray-50 transition-colors group">
-                       <td className="p-4 font-display text-xl text-gray-400 group-hover:text-primary">
-                         {player.number || '-'}
-                       </td>
-                       <td className="p-4 font-bold uppercase whitespace-nowrap">
-                         <Link href={`/players/${player.id}`} className="hover:underline">
-                           {player.firstName} {player.lastName}
-                         </Link>
-                       </td>
-                       <td className="p-4 text-muted-foreground font-bold">{player.position || '-'}</td>
-                       <td className="p-4 text-sm font-mono">
-                         {player.heightFt ? `${player.heightFt}'${player.heightIn}"` : '-'} / {player.weightLbs ? `${player.weightLbs}lbs` : '-'}
-                       </td>
-                       <td className="p-4 text-right">
-                          <Link href={`/players/${player.id}`} className="inline-flex bg-black text-white p-2 hover:bg-primary transition-colors">
-                            <ArrowRight className="h-4 w-4" />
-                          </Link>
-                       </td>
-                     </tr>
-                   ))}
-                   {(!roster || roster.length === 0) && (
-                     <tr>
-                       <td colSpan={5} className="p-8 text-center text-muted-foreground font-bold uppercase">No players on roster</td>
-                     </tr>
-                   )}
-                 </tbody>
-               </table>
-             </div>
-          </section>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
+        {/* Roster */}
+        <div className="lg:col-span-2 space-y-5">
+          <h2 className="font-bold text-lg text-secondary">Roster</h2>
+          {loadingRoster ? (
+            <div className="card-base divide-y divide-border">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 animate-pulse">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                    <div className="h-3 bg-muted rounded w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : roster?.length ? (
+            <div className="card-base divide-y divide-border overflow-hidden">
+              {roster.map((player) => (
+                <Link
+                  key={player.id}
+                  href={`/players/${player.id}`}
+                  className="flex items-center gap-4 p-4 hover:bg-muted/40 transition-colors group"
+                >
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center font-display text-sm text-white flex-shrink-0"
+                    style={{ backgroundColor: team.primaryColor ?? "#C85A1B" }}
+                  >
+                    {player.number ?? "#"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-secondary text-sm">{player.firstName} {player.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{player.position ?? "—"}</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground hidden sm:block">
+                    {player.heightFt != null ? `${player.heightFt}'${player.heightIn ?? 0}"` : ""}
+                    {player.weightLbs != null ? ` / ${player.weightLbs} lbs` : ""}
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="card-base p-10 text-center text-sm text-muted-foreground">
+              No players on roster
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-8">
-           <section>
-             <h2 className="text-3xl font-display uppercase border-b-4 border-black pb-2 mb-6">Team Averages</h2>
-             <div className="bg-white border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-6 space-y-4">
-                <div className="flex justify-between items-center border-b-2 border-gray-100 pb-2">
-                  <span className="font-bold uppercase text-muted-foreground">Points For</span>
-                  <span className="font-display text-2xl">{stats?.avgPoints?.toFixed(1) || '0.0'}</span>
+        <div className="space-y-5">
+          {/* Team Averages */}
+          <div className="card-base overflow-hidden">
+            <div className="bg-secondary px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/70">Team Averages</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {[
+                { label: "Points For", value: stats?.avgPoints?.toFixed(1) ?? "—" },
+                { label: "Points Against", value: stats?.avgPointsAllowed?.toFixed(1) ?? "—" },
+                {
+                  label: "Differential",
+                  value: stats
+                    ? `${((stats.avgPoints ?? 0) - (stats.avgPointsAllowed ?? 0)) > 0 ? "+" : ""}${((stats.avgPoints ?? 0) - (stats.avgPointsAllowed ?? 0)).toFixed(1)}`
+                    : "—",
+                  highlight: stats && (stats.avgPoints ?? 0) > (stats.avgPointsAllowed ?? 0),
+                },
+              ].map(({ label, value, highlight }) => (
+                <div key={label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <span className="text-sm text-muted-foreground font-medium">{label}</span>
+                  <span className={`font-display text-xl ${highlight ? "text-primary" : "text-secondary"}`}>{value}</span>
                 </div>
-                <div className="flex justify-between items-center border-b-2 border-gray-100 pb-2">
-                  <span className="font-bold uppercase text-muted-foreground">Points Against</span>
-                  <span className="font-display text-2xl">{stats?.avgPointsAllowed?.toFixed(1) || '0.0'}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2">
-                  <span className="font-bold uppercase text-muted-foreground">Differential</span>
-                  <span className={`font-display text-2xl ${((stats?.avgPoints || 0) - (stats?.avgPointsAllowed || 0)) > 0 ? 'text-primary' : ''}`}>
-                    {((stats?.avgPoints || 0) - (stats?.avgPointsAllowed || 0)) > 0 ? '+' : ''}{((stats?.avgPoints || 0) - (stats?.avgPointsAllowed || 0)).toFixed(1)}
-                  </span>
-                </div>
-             </div>
-           </section>
+              ))}
+            </div>
+          </div>
 
-           <section>
-             <h2 className="text-3xl font-display uppercase border-b-4 border-black pb-2 mb-6">Game Log</h2>
-             <div className="space-y-3">
-               {games?.slice(0, 5).map((game) => {
-                 const isHome = game.homeTeamId === teamId;
-                 const opponentId = isHome ? game.awayTeamId : game.homeTeamId;
-                 const teamScore = isHome ? game.homeScore : game.awayScore;
-                 const oppScore = isHome ? game.awayScore : game.homeScore;
-                 const isWin = teamScore! > oppScore!;
-                 
-                 return (
-                   <Link key={game.id} href={`/games/${game.id}`} className="block bg-white border-2 border-black p-3 hover:-translate-y-1 transition-transform group">
-                     <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase mb-2">
-                       <span>{format(new Date(game.gameDate), 'MM/dd')}</span>
-                       <span>{game.status}</span>
-                     </div>
-                     <div className="flex justify-between items-center">
-                       <span className="font-bold uppercase">{isHome ? 'vs' : '@'} Team {opponentId}</span>
-                       {game.status === 'final' && (
-                         <div className="flex items-center gap-2">
-                           <span className={`w-6 h-6 flex items-center justify-center text-white font-bold text-xs ${isWin ? 'bg-primary' : 'bg-black'}`}>
-                             {isWin ? 'W' : 'L'}
-                           </span>
-                           <span className="font-display text-lg">{teamScore}-{oppScore}</span>
-                         </div>
-                       )}
-                     </div>
-                   </Link>
-                 );
-               })}
-               {(!games || games.length === 0) && (
-                 <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-6 text-center text-muted-foreground font-bold uppercase text-sm">
-                   No games played
-                 </div>
-               )}
-             </div>
-           </section>
+          {/* Recent Games */}
+          <div className="card-base overflow-hidden">
+            <div className="bg-secondary px-4 py-3 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/70">Recent Games</p>
+              <Link href="/games" className="text-xs text-primary font-semibold hover:underline">All →</Link>
+            </div>
+            <div className="divide-y divide-border">
+              {games?.slice(0, 5).map((game) => {
+                const isHome = game.homeTeamId === teamId;
+                const teamScore = isHome ? game.homeScore : game.awayScore;
+                const oppScore = isHome ? game.awayScore : game.homeScore;
+                const isFinal = game.status === "final";
+                const isWin = isFinal && teamScore != null && oppScore != null && teamScore > oppScore;
+
+                return (
+                  <Link
+                    key={game.id}
+                    href={`/games/${game.id}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors"
+                  >
+                    <div>
+                      <p className="label-upper text-[10px]">{game.gameDate}</p>
+                      <p className="text-sm font-semibold text-secondary mt-0.5">
+                        {isHome ? "vs" : "@"} #{isHome ? game.awayTeamId : game.homeTeamId}
+                      </p>
+                    </div>
+                    {isFinal ? (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-bold w-6 h-6 rounded-md flex items-center justify-center text-white ${isWin ? "bg-primary" : "bg-muted-foreground"}`}
+                        >
+                          {isWin ? "W" : "L"}
+                        </span>
+                        <span className="font-display text-base text-secondary">{teamScore}–{oppScore}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-semibold text-primary uppercase">{game.status}</span>
+                    )}
+                  </Link>
+                );
+              })}
+              {(!games || games.length === 0) && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No games yet</div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

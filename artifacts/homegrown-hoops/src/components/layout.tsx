@@ -1,8 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useUser, UserButton, Show } from "@clerk/react";
+import { Show, UserButton } from "@clerk/react";
 import { Menu, X, Trophy, Users, CalendarDays, Home } from "lucide-react";
-import { useState } from "react";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,69 +16,85 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
-      <header className="border-b-4 border-black bg-primary text-primary-foreground sticky top-0 z-50">
+      <header className="bg-secondary text-secondary-foreground sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="font-display text-2xl uppercase tracking-wider flex items-center gap-2">
-            <Trophy className="h-6 w-6" />
-            Homegrown Hoops
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <Trophy className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-display text-xl tracking-wide text-white">HOMEGROWN HOOPS</span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6 font-display uppercase tracking-wide">
+          <nav className="hidden md:flex items-center gap-1">
             {links.map((link) => (
-              <Link 
-                key={link.href} 
+              <Link
+                key={link.href}
                 href={link.href}
-                className={`hover:text-black transition-colors ${location === link.href ? "text-black" : ""}`}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  location === link.href
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                }`}
               >
                 {link.label}
               </Link>
             ))}
-            <Show when="signed-out">
-              <Link href="/sign-in" className="bg-black text-white px-4 py-2 border-2 border-transparent hover:bg-white hover:text-black hover:border-black transition-all">
-                Sign In
-              </Link>
-            </Show>
-            <Show when="signed-in">
-              <UserButton />
-            </Show>
+            <div className="ml-4 flex items-center gap-3">
+              <Show when="signed-out">
+                <Link
+                  href="/sign-in"
+                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
+                >
+                  Sign In
+                </Link>
+              </Show>
+              <Show when="signed-in">
+                <UserButton />
+              </Show>
+            </div>
           </nav>
 
-          {/* Mobile Menu Toggle */}
-          <button 
-            className="md:hidden p-2 text-white"
+          <button
+            className="md:hidden p-2 text-white/80 hover:text-white transition-colors"
             onClick={() => setIsOpen(!isOpen)}
           >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </header>
 
-      {/* Mobile Nav */}
       {isOpen && (
-        <div className="md:hidden border-b-4 border-black bg-white text-black font-display uppercase tracking-wide text-xl absolute top-16 left-0 right-0 z-40 shadow-[0_8px_0_0_rgba(0,0,0,1)]">
-          <div className="flex flex-col p-4 gap-4">
+        <div className="md:hidden bg-secondary text-white absolute top-16 left-0 right-0 z-40 shadow-xl border-t border-white/10">
+          <div className="container mx-auto px-4 py-3 flex flex-col gap-1">
             {links.map((link) => (
-              <Link 
-                key={link.href} 
+              <Link
+                key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 p-2 border-b-2 border-gray-100 ${location === link.href ? "text-primary" : ""}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                  location === link.href ? "bg-white/10 text-white" : "text-white/70 hover:text-white"
+                }`}
               >
-                <link.icon className="h-5 w-5" />
+                <link.icon className="h-4 w-4" />
                 {link.label}
               </Link>
             ))}
-            <Show when="signed-out">
-              <Link href="/sign-in" onClick={() => setIsOpen(false)} className="bg-primary text-white p-3 text-center border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] mt-2">
-                Sign In
-              </Link>
-            </Show>
-            <Show when="signed-in">
-              <div className="p-2">
-                <UserButton />
-              </div>
-            </Show>
+            <div className="pt-2 pb-1 px-4">
+              <Show when="signed-out">
+                <Link
+                  href="/sign-in"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full bg-primary text-white px-4 py-3 rounded-lg text-sm font-bold text-center hover:opacity-90"
+                >
+                  Sign In
+                </Link>
+              </Show>
+              <Show when="signed-in">
+                <div className="py-2">
+                  <UserButton />
+                </div>
+              </Show>
+            </div>
           </div>
         </div>
       )}
@@ -88,9 +103,9 @@ export function Layout({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <footer className="border-t-4 border-black bg-white py-8 mt-auto">
-        <div className="container mx-auto px-4 text-center font-display uppercase tracking-wider text-muted-foreground">
-          <p>© {new Date().getFullYear()} Homegrown Hoops. All rights reserved.</p>
+      <footer className="bg-secondary text-white/50 py-6 mt-auto">
+        <div className="container mx-auto px-4 text-center text-sm font-medium">
+          © {new Date().getFullYear()} Homegrown Hoops
         </div>
       </footer>
     </div>

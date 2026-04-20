@@ -1,202 +1,183 @@
 import { useGetStatsSummary, useGetStatLeaders } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
-import { Trophy, Users, CalendarDays, ArrowRight, Medal, Flame, Target } from "lucide-react";
-import { format } from "date-fns";
+import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap } from "lucide-react";
 
 export function Home() {
   const { data: summary, isLoading: loadingSummary } = useGetStatsSummary();
   const { data: leaders, isLoading: loadingLeaders } = useGetStatLeaders();
   const { user } = useUser();
 
-  if (loadingSummary || loadingLeaders) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin text-primary">
-          <Trophy className="h-12 w-12" />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <section className="bg-primary text-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] p-8 md:p-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 opacity-10 translate-x-1/4 -translate-y-1/4 pointer-events-none">
-          <Trophy className="h-96 w-96" />
+    <div className="space-y-10">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-2xl bg-secondary text-white px-8 py-12 md:px-14 md:py-16">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -right-16 -top-16 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
+          <div className="absolute -left-10 bottom-0 w-48 h-48 bg-primary/10 rounded-full blur-2xl" />
         </div>
-        <div className="relative z-10">
-          <h1 className="text-5xl md:text-7xl font-display uppercase leading-none mb-4">
+        <div className="relative z-10 max-w-2xl">
+          <div className="inline-flex items-center gap-2 bg-primary/20 text-primary-foreground/90 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest mb-5">
+            <Zap className="h-3 w-3 text-primary" />
+            Community League Tracker
+          </div>
+          <h1 className="font-display text-5xl md:text-7xl leading-[0.9] mb-5 text-white">
             <Show when="signed-in">
-              Welcome back, <br/> {user?.firstName || 'Baller'}
+              WELCOME BACK,{" "}
+              <span className="text-primary">{(user?.firstName || "BALLER").toUpperCase()}</span>
             </Show>
             <Show when="signed-out">
-              The Courts Are <br/> Calling
+              EVERY BUCKET. <br />
+              <span className="text-primary">EVERY GAME.</span>
             </Show>
           </h1>
-          <p className="text-xl md:text-2xl max-w-2xl font-medium mb-8">
-            The definitive stats hub for neighborhood leagues and pickup legends. Every bucket, every board, every game.
+          <p className="text-white/70 text-lg max-w-md mb-8">
+            The definitive stats hub for neighborhood leagues and pickup legends.
           </p>
-          
-          <Show when="signed-out">
-            <div className="flex flex-wrap gap-4">
-              <Link href="/games" className="bg-black text-white px-6 py-3 font-display uppercase tracking-wider text-xl hover:-translate-y-1 transition-transform inline-flex items-center gap-2">
-                Recent Games <ArrowRight className="h-5 w-5" />
-              </Link>
-            </div>
-          </Show>
-          
-          <Show when="signed-in">
-             <div className="flex flex-wrap gap-4">
-              <Link href="/teams" className="bg-white text-black px-6 py-3 font-display uppercase tracking-wider text-xl hover:-translate-y-1 transition-transform inline-flex items-center gap-2 border-2 border-transparent hover:border-black">
-                Browse Teams <ArrowRight className="h-5 w-5" />
-              </Link>
-            </div>
-          </Show>
-        </div>
-      </section>
-
-      {/* Quick Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-6 flex items-center gap-4">
-          <div className="bg-primary/10 p-4 rounded-full">
-            <Users className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <p className="font-display text-muted-foreground uppercase">Registered Players</p>
-            <p className="text-4xl font-display">{summary?.totalPlayers || 0}</p>
-          </div>
-        </div>
-        <div className="bg-white border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-6 flex items-center gap-4">
-          <div className="bg-primary/10 p-4 rounded-full">
-            <Trophy className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <p className="font-display text-muted-foreground uppercase">Active Teams</p>
-            <p className="text-4xl font-display">{summary?.totalTeams || 0}</p>
-          </div>
-        </div>
-        <div className="bg-white border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] p-6 flex items-center gap-4">
-          <div className="bg-primary/10 p-4 rounded-full">
-            <CalendarDays className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <p className="font-display text-muted-foreground uppercase">Games Played</p>
-            <p className="text-4xl font-display">{summary?.totalGamesCompleted || 0}</p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/games" className="btn-primary text-base px-6 py-3">
+              View Games <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/teams" className="bg-white/10 hover:bg-white/20 text-white rounded-lg px-6 py-3 font-bold text-base transition-colors inline-flex items-center gap-2">
+              Browse Teams
+            </Link>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* League Stats */}
+      <section>
+        <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">League Overview</h2>
+        <div className="grid grid-cols-3 gap-3 md:gap-5">
+          {[
+            { icon: Users, label: "Players", value: summary?.totalPlayers ?? 0, loading: loadingSummary },
+            { icon: Trophy, label: "Teams", value: summary?.totalTeams ?? 0, loading: loadingSummary },
+            { icon: CalendarDays, label: "Games Played", value: summary?.totalGamesCompleted ?? 0, loading: loadingSummary },
+          ].map(({ icon: Icon, label, value, loading }) => (
+            <div key={label} className="card-base p-5 md:p-6">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                <Icon className="h-4 w-4 text-primary" />
+              </div>
+              <p className="label-upper mb-1">{label}</p>
+              {loading ? (
+                <div className="h-10 w-12 rounded-md bg-muted animate-pulse" />
+              ) : (
+                <p className="stat-number text-secondary">{value}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* League Leaders */}
-        <section className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between border-b-4 border-black pb-2">
-            <h2 className="text-3xl font-display uppercase flex items-center gap-2">
-              <Medal className="h-8 w-8 text-primary" />
-              League Leaders
-            </h2>
-            <Link href="/players" className="font-display text-primary hover:underline uppercase text-sm">
-              All Players &rarr;
+        <section className="lg:col-span-3 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <h2 className="font-bold text-lg text-secondary">League Leaders</h2>
+            </div>
+            <Link href="/players" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              All Players <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Points Leaders */}
-            <div className="bg-white border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
-              <div className="bg-black text-white p-3 font-display uppercase flex items-center gap-2">
-                <Flame className="h-5 w-5 text-primary" /> Points Per Game
-              </div>
-              <div className="divide-y-2 divide-gray-100">
-                {leaders?.points?.slice(0, 5).map((player, i) => (
-                  <Link key={player.playerId} href={`/players/${player.playerId}`} className="flex items-center justify-between p-3 hover:bg-gray-50 group">
-                    <div className="flex items-center gap-3">
-                      <span className="font-display text-xl text-gray-400 group-hover:text-primary w-6 text-center">{i + 1}</span>
-                      <div>
-                        <p className="font-bold uppercase tracking-tight">{player.firstName} {player.lastName}</p>
-                        <p className="text-xs text-muted-foreground uppercase">{player.teamName || 'Free Agent'}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { key: "points" as const, label: "Points Per Game" },
+              { key: "rebounds" as const, label: "Rebounds Per Game" },
+            ].map(({ key, label }) => (
+              <div key={key} className="card-base overflow-hidden">
+                <div className="bg-secondary px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/70">{label}</p>
+                </div>
+                <div className="divide-y divide-border">
+                  {loadingLeaders ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3">
+                        <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                        <div className="flex-1 h-4 rounded bg-muted animate-pulse" />
+                        <div className="h-4 w-8 rounded bg-muted animate-pulse" />
                       </div>
-                    </div>
-                    <span className="font-display text-2xl">{player.value.toFixed(1)}</span>
-                  </Link>
-                ))}
-                {(!leaders?.points || leaders.points.length === 0) && (
-                  <div className="p-4 text-center text-muted-foreground font-medium text-sm uppercase">No data yet</div>
-                )}
+                    ))
+                  ) : leaders?.[key]?.length ? (
+                    leaders[key].slice(0, 5).map((player, i) => (
+                      <Link
+                        key={player.playerId}
+                        href={`/players/${player.playerId}`}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-5 text-center text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">{i + 1}</span>
+                          <div>
+                            <p className="text-sm font-bold text-secondary">{player.firstName} {player.lastName}</p>
+                            <p className="text-xs text-muted-foreground">{player.teamName || "Free Agent"}</p>
+                          </div>
+                        </div>
+                        <span className="font-display text-xl text-primary">{player.value.toFixed(1)}</span>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">No stats yet</div>
+                  )}
+                </div>
               </div>
-            </div>
-
-            {/* Rebounds Leaders */}
-            <div className="bg-white border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
-              <div className="bg-black text-white p-3 font-display uppercase flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" /> Rebounds Per Game
-              </div>
-              <div className="divide-y-2 divide-gray-100">
-                {leaders?.rebounds?.slice(0, 5).map((player, i) => (
-                  <Link key={player.playerId} href={`/players/${player.playerId}`} className="flex items-center justify-between p-3 hover:bg-gray-50 group">
-                    <div className="flex items-center gap-3">
-                      <span className="font-display text-xl text-gray-400 group-hover:text-primary w-6 text-center">{i + 1}</span>
-                      <div>
-                        <p className="font-bold uppercase tracking-tight">{player.firstName} {player.lastName}</p>
-                        <p className="text-xs text-muted-foreground uppercase">{player.teamName || 'Free Agent'}</p>
-                      </div>
-                    </div>
-                    <span className="font-display text-2xl">{player.value.toFixed(1)}</span>
-                  </Link>
-                ))}
-                {(!leaders?.rebounds || leaders.rebounds.length === 0) && (
-                  <div className="p-4 text-center text-muted-foreground font-medium text-sm uppercase">No data yet</div>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
         {/* Recent Games */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between border-b-4 border-black pb-2">
-            <h2 className="text-3xl font-display uppercase flex items-center gap-2">
-              <CalendarDays className="h-8 w-8 text-primary" />
-              Recent Games
-            </h2>
-            <Link href="/games" className="font-display text-primary hover:underline uppercase text-sm">
-              All Games &rarr;
+        <section className="lg:col-span-2 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              <h2 className="font-bold text-lg text-secondary">Recent Games</h2>
+            </div>
+            <Link href="/games" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+              All Games <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-4">
-            {summary?.recentGames?.map((game) => (
-              <Link key={game.id} href={`/games/${game.id}`} className="block bg-white border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:-translate-y-1 transition-transform group relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-2 h-full bg-primary group-hover:w-full transition-all duration-300 -z-0 opacity-10"></div>
-                <div className="p-4 relative z-10">
-                  <div className="flex justify-between items-center mb-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    <span>{format(new Date(game.gameDate), 'MMM d, yyyy')}</span>
-                    <span className={`px-2 py-1 ${game.status === 'final' ? 'bg-black text-white' : 'bg-primary text-white'}`}>
-                      {game.status}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center font-display text-xl uppercase">
-                      <span>Team #{game.awayTeamId}</span>
-                      <span className={game.awayScore! > game.homeScore! ? 'text-primary' : ''}>
-                        {game.awayScore ?? '-'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center font-display text-xl uppercase">
-                      <span>Team #{game.homeTeamId}</span>
-                      <span className={game.homeScore! > game.awayScore! ? 'text-primary' : ''}>
-                        {game.homeScore ?? '-'}
-                      </span>
-                    </div>
-                  </div>
+          <div className="space-y-3">
+            {loadingSummary ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card-base p-4 space-y-2">
+                  <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+                  <div className="h-5 w-full rounded bg-muted animate-pulse" />
+                  <div className="h-5 w-full rounded bg-muted animate-pulse" />
                 </div>
-              </Link>
-            ))}
-            
-            {(!summary?.recentGames || summary.recentGames.length === 0) && (
-              <div className="bg-gray-50 border-2 border-dashed border-gray-300 p-8 text-center text-muted-foreground font-medium uppercase">
-                No recent games to display
+              ))
+            ) : summary?.recentGames?.length ? (
+              summary.recentGames.map((game) => (
+                <Link
+                  key={game.id}
+                  href={`/games/${game.id}`}
+                  className="card-base p-4 flex items-center gap-4 hover:border-primary/30 hover:shadow-md transition-all group"
+                >
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="label-upper">{game.gameDate}</p>
+                      <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full ${game.status === "final" ? "bg-secondary text-white" : "bg-primary/10 text-primary"}`}>
+                        {game.status}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Team #{game.awayTeamId}</span>
+                        <span className="font-display text-base">{game.awayScore ?? "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Team #{game.homeTeamId}</span>
+                        <span className="font-display text-base">{game.homeScore ?? "—"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                </Link>
+              ))
+            ) : (
+              <div className="card-base p-10 text-center text-muted-foreground text-sm">
+                No games yet
               </div>
             )}
           </div>

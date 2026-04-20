@@ -1,12 +1,12 @@
 import { useRoute, Link } from "wouter";
 import { useGetPlayer, useGetPlayerStats, useListTeams } from "@workspace/api-client-react";
-import { ArrowLeft, User, Trophy } from "lucide-react";
+import { ChevronLeft, User } from "lucide-react";
 
-function StatBox({ label, value }: { label: string; value: string | number }) {
+function StatBox({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) {
   return (
-    <div className="bg-gray-50 border-2 border-black p-4 text-center">
-      <p className="text-xs font-bold uppercase text-muted-foreground tracking-widest">{label}</p>
-      <p className="text-2xl font-display text-foreground mt-1">{value}</p>
+    <div className="card-base p-4 text-center">
+      <p className="label-upper text-[10px] mb-2">{label}</p>
+      <p className={`font-display text-3xl ${highlight ? "text-primary" : "text-secondary"}`}>{value}</p>
     </div>
   );
 }
@@ -14,17 +14,19 @@ function StatBox({ label, value }: { label: string; value: string | number }) {
 export function PlayerDetailPage() {
   const [, params] = useRoute("/players/:id");
   const id = Number(params?.id);
-  const { data: player, isLoading: loadingPlayer } = useGetPlayer(id, { query: { enabled: !!id } });
-  const { data: stats, isLoading: loadingStats } = useGetPlayerStats(id, { query: { enabled: !!id } });
+  const { data: player, isLoading } = useGetPlayer(id, { query: { enabled: !!id } });
+  const { data: stats } = useGetPlayerStats(id, { query: { enabled: !!id } });
   const { data: teams } = useListTeams();
 
   const team = teams?.find((t) => t.id === player?.teamId);
 
-  if (loadingPlayer || loadingStats) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin text-primary">
-          <Trophy className="h-12 w-12" />
+      <div className="space-y-8 animate-pulse max-w-4xl mx-auto">
+        <div className="h-4 w-24 bg-muted rounded" />
+        <div className="h-52 bg-muted rounded-2xl" />
+        <div className="grid grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-20 bg-muted rounded-xl" />)}
         </div>
       </div>
     );
@@ -32,96 +34,119 @@ export function PlayerDetailPage() {
 
   if (!player) {
     return (
-      <div className="text-center py-24 font-display text-2xl uppercase text-muted-foreground">
-        Player not found
+      <div className="card-base p-16 text-center max-w-4xl mx-auto">
+        <User className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+        <p className="font-bold text-secondary text-lg">Player not found</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <Link href="/players" className="inline-flex items-center gap-2 font-display uppercase text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="h-4 w-4" />
-        Back to Players
+      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors">
+        <ChevronLeft className="h-4 w-4" /> Back to Players
       </Link>
 
-      {/* Player Header */}
-      <div className="bg-white border-4 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] overflow-hidden">
+      {/* Player Banner */}
+      <div className="rounded-2xl overflow-hidden bg-secondary text-white relative">
         <div
-          className="p-8 text-white flex items-center gap-6"
-          style={{ backgroundColor: team?.primaryColor ?? "#FF5722" }}
-        >
-          <div className="w-24 h-24 flex-shrink-0 flex items-center justify-center border-4 border-white bg-black/20 font-display text-4xl text-white">
+          className="absolute inset-0 opacity-25"
+          style={{
+            background: `radial-gradient(ellipse at top right, ${team?.primaryColor ?? "#C85A1B"}, transparent 60%)`,
+          }}
+        />
+        <div className="relative p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center font-display text-4xl text-white flex-shrink-0 shadow-lg"
+            style={{ backgroundColor: team?.primaryColor ?? "#C85A1B" }}
+          >
             {player.number ?? "#"}
           </div>
-          <div>
-            <h1 className="text-4xl md:text-5xl font-display uppercase leading-none">
-              {player.firstName} {player.lastName}
+          <div className="flex-1">
+            <h1 className="font-display text-4xl md:text-6xl text-white leading-tight">
+              {player.firstName.toUpperCase()} {player.lastName.toUpperCase()}
             </h1>
-            <div className="flex flex-wrap gap-3 mt-3 text-sm font-bold uppercase tracking-widest opacity-90">
-              {player.position && <span>{player.position}</span>}
-              {team && (
-                <Link href={`/teams/${team.id}`} className="underline hover:no-underline">
+            <div className="flex flex-wrap gap-3 mt-3">
+              {player.position && (
+                <span className="bg-white/10 text-white/80 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                  {player.position}
+                </span>
+              )}
+              {team ? (
+                <Link
+                  href={`/teams/${team.id}`}
+                  className="bg-white/10 text-white/80 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full hover:bg-white/20 transition-colors"
+                >
                   {team.name}
                 </Link>
+              ) : (
+                <span className="bg-white/10 text-white/80 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                  Free Agent
+                </span>
               )}
-              {!team && <span>Free Agent</span>}
             </div>
           </div>
+          <div className="flex gap-5 flex-shrink-0">
+            {player.heightFt != null && (
+              <div className="text-center">
+                <p className="label-upper text-white/50 mb-1">Height</p>
+                <p className="font-display text-2xl">{player.heightFt}'{player.heightIn ?? 0}"</p>
+              </div>
+            )}
+            {player.weightLbs != null && (
+              <div className="text-center">
+                <p className="label-upper text-white/50 mb-1">Weight</p>
+                <p className="font-display text-2xl">{player.weightLbs}<span className="text-sm font-sans text-white/50 ml-1">lbs</span></p>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Physical info */}
-        <div className="p-6 flex flex-wrap gap-6 border-t-4 border-black">
-          {player.heightFt != null && player.heightIn != null && (
-            <div>
-              <p className="text-xs font-bold uppercase text-muted-foreground">Height</p>
-              <p className="text-xl font-display">{player.heightFt}'{player.heightIn}"</p>
-            </div>
-          )}
-          {player.weightLbs != null && (
-            <div>
-              <p className="text-xs font-bold uppercase text-muted-foreground">Weight</p>
-              <p className="text-xl font-display">{player.weightLbs} lbs</p>
-            </div>
-          )}
-          {player.bio && (
-            <div className="w-full">
-              <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Bio</p>
-              <p className="text-base text-foreground">{player.bio}</p>
-            </div>
-          )}
-        </div>
+        {player.bio && (
+          <div className="relative px-8 md:px-10 pb-6 text-white/60 text-sm">{player.bio}</div>
+        )}
       </div>
 
-      {/* Career Stats */}
-      <div>
-        <h2 className="text-3xl font-display uppercase border-b-4 border-black pb-3 mb-6">Career Averages</h2>
-        {stats && stats.gamesPlayed > 0 ? (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
-              <StatBox label="PPG" value={stats.avgPoints} />
+      {/* Stats */}
+      {stats && stats.gamesPlayed > 0 ? (
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg text-secondary">Career Averages</h2>
+              <span className="label-upper">{stats.gamesPlayed} GP</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatBox label="PPG" value={stats.avgPoints} highlight />
               <StatBox label="RPG" value={stats.avgRebounds} />
               <StatBox label="APG" value={stats.avgAssists} />
               <StatBox label="SPG" value={stats.avgSteals} />
               <StatBox label="BPG" value={stats.avgBlocks} />
               <StatBox label="TPG" value={stats.avgTurnovers} />
               <StatBox label="MPG" value={stats.avgMinutes} />
-              <StatBox label="Games" value={stats.gamesPlayed} />
             </div>
-
-            <h3 className="text-xl font-display uppercase border-b-2 border-black pb-2 mb-4">Shooting</h3>
-            <div className="grid grid-cols-3 gap-3">
-              <StatBox label="FG%" value={`${stats.fieldGoalPct}%`} />
-              <StatBox label="3P%" value={`${stats.threePointPct}%`} />
-              <StatBox label="FT%" value={`${stats.freeThrowPct}%`} />
-            </div>
-          </>
-        ) : (
-          <div className="bg-gray-50 border-4 border-dashed border-gray-300 p-12 text-center text-muted-foreground font-display uppercase text-xl">
-            No stats yet
           </div>
-        )}
-      </div>
+
+          <div>
+            <h3 className="font-bold text-secondary mb-4">Shooting</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "FG%", value: `${stats.fieldGoalPct}%` },
+                { label: "3PT%", value: `${stats.threePointPct}%` },
+                { label: "FT%", value: `${stats.freeThrowPct}%` },
+              ].map(({ label, value }) => (
+                <div key={label} className="card-base p-5 text-center">
+                  <p className="label-upper text-[10px] mb-2">{label}</p>
+                  <p className="font-display text-4xl text-secondary">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="card-base p-16 text-center">
+          <p className="font-bold text-secondary text-lg mb-1">No Stats Yet</p>
+          <p className="text-muted-foreground text-sm">This player hasn't appeared in any games.</p>
+        </div>
+      )}
     </div>
   );
 }
