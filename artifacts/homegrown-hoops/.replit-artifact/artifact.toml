@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Homegrown Hoops"
+version = "1.0.0"
+id = "artifacts/homegrown-hoops"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21260
+
+[services.development]
+run = "pnpm --filter @workspace/homegrown-hoops run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/homegrown-hoops", "run", "build" ]
+publicDir = "artifacts/homegrown-hoops/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21260"
+BASE_PATH = "/"
