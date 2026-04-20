@@ -20,11 +20,13 @@ Mobile-friendly basketball stats tracking website for community/neighborhood lea
 - Players list (search + filter by team) + player detail (career averages, shooting %)
 - Games log (filter by team/season) + game detail with full box score
 - Clerk authentication (sign in / sign up)
+- User profile system: signed-in users can create/edit their profile (name, school, position, graduation year, bio); profiles are publicly viewable at `/profiles/:clerkUserId`; only the owner or an admin can edit
 
 ## Database Schema
 
-Tables: `teams`, `players`, `games`, `game_player_stats`
-Seed data: 4 teams, 12 players, 6 games (4 final, 2 scheduled), per-game box scores
+Tables: `teams`, `players`, `games`, `game_player_stats`, `user_profiles`
+- `user_profiles`: clerkUserId (unique), firstName, lastName, school, position, graduationYear, bio, isAdmin (default false)
+- Admin access granted by setting `is_admin = true` directly in DB for a given `clerk_user_id`
 
 ## Stack
 

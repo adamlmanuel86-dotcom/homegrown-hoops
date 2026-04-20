@@ -1,11 +1,12 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Show, UserButton } from "@clerk/react";
-import { Menu, X, Trophy, Users, CalendarDays, Home } from "lucide-react";
+import { Show, UserButton, useUser } from "@clerk/react";
+import { Menu, X, Trophy, Users, CalendarDays, Home, User } from "lucide-react";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
+  const { user } = useUser();
 
   const links = [
     { href: "/", label: "Home", icon: Home },
@@ -49,6 +50,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               </Show>
               <Show when="signed-in">
+                <Link
+                  href="/my-profile"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${location === "/my-profile" ? "bg-white/10 text-white" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+                >
+                  <User className="h-4 w-4" />
+                  {user?.firstName ?? "Profile"}
+                </Link>
                 <UserButton />
               </Show>
             </div>
@@ -79,7 +87,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-2 pb-1 px-4">
+            <div className="pt-2 pb-1 px-4 space-y-2">
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
@@ -90,7 +98,15 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               </Show>
               <Show when="signed-in">
-                <div className="py-2">
+                <Link
+                  href="/my-profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                >
+                  <User className="h-4 w-4" />
+                  My Profile
+                </Link>
+                <div className="py-2 px-4">
                   <UserButton />
                 </div>
               </Show>

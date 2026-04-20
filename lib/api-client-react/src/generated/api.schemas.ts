@@ -267,6 +267,50 @@ export interface StatsSummary {
   recentGames: Game[];
 }
 
+export interface UserProfile {
+  id: number;
+  clerkUserId: string;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  school?: string | null;
+  /** @nullable */
+  position?: string | null;
+  /** @nullable */
+  graduationYear?: number | null;
+  /** @nullable */
+  bio?: string | null;
+  isAdmin: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserProfileBody {
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  school?: string | null;
+  /** @nullable */
+  position?: string | null;
+  /** @nullable */
+  graduationYear?: number | null;
+  /** @nullable */
+  bio?: string | null;
+}
+
+export interface UpdateUserProfileBody {
+  firstName?: string;
+  lastName?: string;
+  /** @nullable */
+  school?: string | null;
+  /** @nullable */
+  position?: string | null;
+  /** @nullable */
+  graduationYear?: number | null;
+  /** @nullable */
+  bio?: string | null;
+}
+
 export type ListPlayersParams = {
   teamId?: number;
 };

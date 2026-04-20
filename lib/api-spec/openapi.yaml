@@ -18,6 +18,8 @@ tags:
     description: Game operations
   - name: stats
     description: Stats operations
+  - name: profiles
+    description: User profile operations
 paths:
   /healthz:
     get:
@@ -389,6 +391,101 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StatsSummary"
+
+  /profiles/me:
+    get:
+      operationId: getMyProfile
+      tags: [profiles]
+      summary: Get the signed-in user's profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: Profile not found
+    post:
+      operationId: createMyProfile
+      tags: [profiles]
+      summary: Create a profile for the signed-in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserProfileBody"
+      responses:
+        "201":
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    put:
+      operationId: updateMyProfile
+      tags: [profiles]
+      summary: Update the signed-in user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserProfileBody"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /profiles/{clerkUserId}:
+    get:
+      operationId: getProfile
+      tags: [profiles]
+      summary: Get a user profile by Clerk user ID (public)
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: Profile not found
+    put:
+      operationId: updateProfile
+      tags: [profiles]
+      summary: Update a user profile (admin only)
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserProfileBody"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "403":
+          description: Forbidden
 
 components:
   schemas:
@@ -870,3 +967,72 @@ components:
         - totalGames
         - totalGamesCompleted
         - recentGames
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        school:
+          type: ["string", "null"]
+        position:
+          type: ["string", "null"]
+        graduationYear:
+          type: ["integer", "null"]
+        bio:
+          type: ["string", "null"]
+        isAdmin:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - clerkUserId
+        - firstName
+        - lastName
+        - isAdmin
+        - createdAt
+        - updatedAt
+
+    CreateUserProfileBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        school:
+          type: ["string", "null"]
+        position:
+          type: ["string", "null"]
+        graduationYear:
+          type: ["integer", "null"]
+        bio:
+          type: ["string", "null"]
+      required:
+        - firstName
+        - lastName
+
+    UpdateUserProfileBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        school:
+          type: ["string", "null"]
+        position:
+          type: ["string", "null"]
+        graduationYear:
+          type: ["integer", "null"]
+        bio:
+          type: ["string", "null"]

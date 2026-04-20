@@ -471,3 +471,109 @@ export const GetStatsSummaryResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary Get the signed-in user's profile
+ */
+export const GetMyProfileResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Create a profile for the signed-in user
+ */
+export const CreateMyProfileBody = zod.object({
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+});
+
+/**
+ * @summary Update the signed-in user's profile
+ */
+export const UpdateMyProfileBody = zod.object({
+  firstName: zod.string().optional(),
+  lastName: zod.string().optional(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+});
+
+export const UpdateMyProfileResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Get a user profile by Clerk user ID (public)
+ */
+export const GetProfileParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const GetProfileResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update a user profile (admin only)
+ */
+export const UpdateProfileParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const UpdateProfileBody = zod.object({
+  firstName: zod.string().optional(),
+  lastName: zod.string().optional(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
