@@ -70,7 +70,7 @@ router.post("/games", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
-  if (!profile?.isAdmin) {
+  if (profile?.role !== "admin") {
     res.status(403).json({ error: "Admin access required" });
     return;
   }
@@ -99,6 +99,22 @@ router.get("/games/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/games/:id", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (profile?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
   const params = UpdateGameParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

@@ -23,16 +23,12 @@ type GameForm = {
   gameDate: string;
   homeTeamId: string;
   awayTeamId: string;
-  homeScore: string;
-  awayScore: string;
 };
 
 const emptyForm: GameForm = {
   gameDate: "",
   homeTeamId: "",
   awayTeamId: "",
-  homeScore: "",
-  awayScore: "",
 };
 
 export function GamesPage() {
@@ -55,7 +51,7 @@ export function GamesPage() {
     query: { enabled: isSignedIn === true, retry: false },
   });
 
-  const isAdmin = myProfile?.isAdmin === true;
+  const isAdmin = myProfile?.role === "admin";
   const createGame = useCreateGame();
 
   const seasons = [...new Set(games?.map((g) => g.season) ?? [])].sort().reverse();
@@ -82,21 +78,15 @@ export function GamesPage() {
       return;
     }
 
-    const homeScore =
-      form.homeScore !== "" ? parseInt(form.homeScore) : null;
-    const awayScore =
-      form.awayScore !== "" ? parseInt(form.awayScore) : null;
-    const hasScores = homeScore !== null && awayScore !== null;
-
     await createGame.mutateAsync({
       data: {
         homeTeamId: parseInt(form.homeTeamId),
         awayTeamId: parseInt(form.awayTeamId),
         gameDate: form.gameDate,
         season: deriveSeason(form.gameDate),
-        homeScore,
-        awayScore,
-        status: hasScores ? "final" : "scheduled",
+        homeScore: null,
+        awayScore: null,
+        status: "scheduled",
         location: null,
         notes: null,
       },
@@ -144,13 +134,18 @@ export function GamesPage() {
         )}
       </div>
 
-      {/* Add Game Form */}
+      {/* Add Game Form — admin only, no scores at creation time */}
       {isAdmin && showForm && (
         <form
           onSubmit={handleSubmit}
           className="card-base p-6 space-y-5 border-primary/30"
         >
-          <h2 className="font-display text-xl text-secondary">NEW GAME</h2>
+          <div>
+            <h2 className="font-display text-xl text-secondary">NEW GAME</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Scores can be entered from the game page after it has been played.
+            </p>
+          </div>
 
           <div>
             <label className="label-upper block mb-1.5">Date *</label>
@@ -202,48 +197,6 @@ export function GamesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label-upper block mb-1.5">
-                Home Score{" "}
-                <span className="normal-case text-muted-foreground font-normal">
-                  (optional)
-                </span>
-              </label>
-              <input
-                type="number"
-                name="homeScore"
-                value={form.homeScore}
-                onChange={handleChange}
-                min={0}
-                placeholder="—"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              />
-            </div>
-            <div>
-              <label className="label-upper block mb-1.5">
-                Away Score{" "}
-                <span className="normal-case text-muted-foreground font-normal">
-                  (optional)
-                </span>
-              </label>
-              <input
-                type="number"
-                name="awayScore"
-                value={form.awayScore}
-                onChange={handleChange}
-                min={0}
-                placeholder="—"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              />
-            </div>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Leave scores blank to mark the game as scheduled. Season is
-            auto-calculated from the date.
-          </p>
-
           {formError && (
             <p className="text-red-600 text-sm font-medium">{formError}</p>
           )}
@@ -260,7 +213,7 @@ export function GamesPage() {
               className="btn-primary"
             >
               <Save className="h-4 w-4" />
-              {createGame.isPending ? "Saving..." : "Save Game"}
+              {createGame.isPending ? "Saving..." : "Schedule Game"}
             </button>
             <button
               type="button"
@@ -439,7 +392,7 @@ export function GamesPage() {
           <p className="font-bold text-secondary text-lg mb-1">No Games Yet</p>
           <p className="text-muted-foreground text-sm">
             {isAdmin
-              ? 'Click "Add Game" above to log your first game.'
+              ? 'Click "Add Game" above to schedule your first game.'
               : "Check back once games have been scheduled."}
           </p>
         </div>

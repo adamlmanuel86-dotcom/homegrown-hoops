@@ -1,14 +1,38 @@
+import { useState } from "react";
 import { useRoute, Link } from "wouter";
-import { useGetGame, useGetGamePlayerStats, useListTeams, useListPlayers } from "@workspace/api-client-react";
-import { ChevronLeft, CalendarDays } from "lucide-react";
+import { useUser } from "@clerk/react";
+import {
+  useGetGame,
+  useGetGamePlayerStats,
+  useListTeams,
+  useListPlayers,
+  useUpdateGame,
+  useGetMyProfile,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, CalendarDays, Pencil, Save, X } from "lucide-react";
 
 export function GameDetailPage() {
   const [, params] = useRoute("/games/:id");
   const id = Number(params?.id);
+  const { isSignedIn } = useUser();
+  const qc = useQueryClient();
+
   const { data: game, isLoading: loadingGame } = useGetGame(id, { query: { enabled: !!id } });
   const { data: playerStats, isLoading: loadingStats } = useGetGamePlayerStats(id, { query: { enabled: !!id } });
   const { data: teams } = useListTeams();
   const { data: players } = useListPlayers();
+  const { data: myProfile } = useGetMyProfile({
+    query: { enabled: isSignedIn === true, retry: false },
+  });
+
+  const isAdmin = myProfile?.role === "admin";
+  const updateGame = useUpdateGame();
+
+  const [editingScore, setEditingScore] = useState(false);
+  const [homeScoreInput, setHomeScoreInput] = useState("");
+  const [awayScoreInput, setAwayScoreInput] = useState("");
+  const [scoreError, setScoreError] = useState<string | null>(null);
 
   const homeTeam = teams?.find((t) => t.id === game?.homeTeamId);
   const awayTeam = teams?.find((t) => t.id === game?.awayTeamId);
@@ -19,6 +43,33 @@ export function GameDetailPage() {
 
   const homeStats = playerStats?.filter((s) => players?.find((p) => p.id === s.playerId)?.teamId === game?.homeTeamId) ?? [];
   const awayStats = playerStats?.filter((s) => players?.find((p) => p.id === s.playerId)?.teamId === game?.awayTeamId) ?? [];
+
+  function openScoreEditor() {
+    setHomeScoreInput(game?.homeScore != null ? String(game.homeScore) : "");
+    setAwayScoreInput(game?.awayScore != null ? String(game.awayScore) : "");
+    setScoreError(null);
+    setEditingScore(true);
+  }
+
+  async function handleScoreSave(e: React.FormEvent) {
+    e.preventDefault();
+    const home = parseInt(homeScoreInput);
+    const away = parseInt(awayScoreInput);
+    if (isNaN(home) || isNaN(away) || home < 0 || away < 0) {
+      setScoreError("Please enter valid scores for both teams.");
+      return;
+    }
+    await updateGame.mutateAsync({
+      id,
+      data: {
+        homeScore: home,
+        awayScore: away,
+        status: "final",
+      },
+    });
+    await qc.invalidateQueries({ queryKey: [`/api/games/${id}`] });
+    setEditingScore(false);
+  }
 
   if (loadingGame || loadingStats) {
     return (
@@ -106,7 +157,102 @@ export function GameDetailPage() {
             </div>
           </Link>
         </div>
+
+        {/* Admin score edit button inside the scoreboard */}
+        {isAdmin && !editingScore && (
+          <div className="flex justify-center pb-5">
+            <button
+              onClick={openScoreEditor}
+              className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/30"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {isFinal ? "Edit Score" : "Enter Final Score"}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Admin Score Entry Form */}
+      {isAdmin && editingScore && (
+        <form
+          onSubmit={handleScoreSave}
+          className="card-base p-6 space-y-5 border-primary/40"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-xl text-secondary">
+                {isFinal ? "EDIT SCORE" : "ENTER FINAL SCORE"}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Setting scores marks the game as final.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditingScore(false)}
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="label-upper block mb-2">
+                {awayTeam?.name ?? "Away"} Score
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={awayScoreInput}
+                onChange={(e) => { setAwayScoreInput(e.target.value); setScoreError(null); }}
+                placeholder="0"
+                className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+            </div>
+            <div>
+              <label className="label-upper block mb-2">
+                {homeTeam?.name ?? "Home"} Score
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={homeScoreInput}
+                onChange={(e) => { setHomeScoreInput(e.target.value); setScoreError(null); }}
+                placeholder="0"
+                className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+            </div>
+          </div>
+
+          {scoreError && (
+            <p className="text-red-600 text-sm font-medium">{scoreError}</p>
+          )}
+          {updateGame.isError && (
+            <p className="text-red-600 text-sm font-medium">
+              Failed to save score. Make sure you have admin access.
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={updateGame.isPending}
+              className="btn-primary"
+            >
+              <Save className="h-4 w-4" />
+              {updateGame.isPending ? "Saving..." : "Save Final Score"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingScore(false)}
+              className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Box Score */}
       {playerStats && playerStats.length > 0 ? (
