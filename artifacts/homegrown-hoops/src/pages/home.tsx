@@ -68,123 +68,79 @@ function CourtTexture() {
 }
 
 function WaveDivider({ flip = false }: { flip?: boolean }) {
-  /* 6 stacked wave layers — deepest navy at bottom, seafoam crests at top */
-  const layers = [
-    /* depth 1 — dark navy base */
-    {
-      path: "M-10,108 C 130,94  270,114 410,102 C 550,90  690,110 840,98 C 990,86 1130,106 1270,94 C 1360,85 1420,98  1450,92  L1450,130 L-10,130 Z",
-      fill: "#0d1e30",
-    },
-    /* depth 2 — deep navy */
-    {
-      path: "M-10,90 C 110,74  260,98  400,82 C 540,66  690,92  840,74 C 990,56 1140,84 1280,68 C 1370,56 1420,74  1450,66  L1450,130 L-10,130 Z",
-      fill: "#102438",
-    },
-    /* depth 3 — navy-teal */
-    {
-      path: "M-10,72 C 130,52  270,80  420,60 C 570,40  720,70  870,50 C 1020,30 1160,62 1300,44 C 1380,32 1430,52  1450,44  L1450,130 L-10,130 Z",
-      fill: "#0e3a50",
-    },
-    /* depth 4 — dark teal */
-    {
-      path: "M-10,56 C 100,34  260,62  400,40 C 540,18  700,52  840,30 C 980,8  1130,44 1270,24 C 1370,8  1430,32  1450,22  L1450,130 L-10,130 Z",
-      fill: "#0f5068",
-    },
-    /* depth 5 — teal */
-    {
-      path: "M-10,40 C 120,16  270,48  420,24 C 570,0   730,36  880,12 C 1030,-10 1180,26 1310,6  C 1390,-6  1430,16  1450,8   L1450,130 L-10,130 Z",
-      fill: "#136b82",
-    },
-    /* depth 6 — seafoam crest fill */
-    {
-      path: "M-10,26 C 100,4   260,36  400,12 C 540,-12 710,26  860,2  C 1010,-20 1160,14 1300,-4 C 1390,-14 1430,8   1450,-2  L1450,130 L-10,130 Z",
-      fill: "#1e8fa5",
-    },
-  ];
-
-  /* foam stroke highlights — lighter edges at the crests */
-  const foamStrokes = [
-    {
-      path: "M-10,22  C 100,0   260,32  400,8  C 540,-16 710,22  860,-2 C 1010,-24 1160,10 1300,-8 C 1390,-18 1430,4  1450,-6",
-      color: "#5ecfdc",
-      opacity: 0.55,
-      width: 1.8,
-    },
-    {
-      path: "M-10,56  C 130,36  270,62  420,42 C 570,22  730,54  880,32 C 1030,12 1180,46 1300,26 C 1380,12 1430,34  1450,24",
-      color: "#3ab8c8",
-      opacity: 0.40,
-      width: 1.4,
-    },
-    {
-      path: "M-10,74  C 110,56  270,80  420,62 C 570,44  730,72  880,52 C 1030,34 1170,64 1300,46 C 1380,34 1430,54  1450,44",
-      color: "#2a9aac",
-      opacity: 0.30,
-      width: 1.2,
-    },
-  ];
-
+  const uid = flip ? "b" : "a";
   return (
     <div
-      className="relative overflow-hidden w-full"
-      style={{ height: 118, transform: flip ? "scaleY(-1)" : undefined }}
+      style={{ height: 110, transform: flip ? "scaleY(-1)" : undefined }}
+      className="relative overflow-hidden w-full pointer-events-none select-none"
       aria-hidden="true"
     >
-      {/* Top gradient fade — blends into page background */}
-      <div
-        className="absolute inset-x-0 top-0 z-10 pointer-events-none"
-        style={{
-          height: 36,
-          background: "linear-gradient(to bottom, hsl(220 20% 98%), transparent)",
-        }}
-      />
-      {/* Bottom gradient fade — blends out to page background */}
-      <div
-        className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-        style={{
-          height: 36,
-          background: "linear-gradient(to top, hsl(220 20% 98%), transparent)",
-        }}
-      />
       <svg
-        viewBox="0 0 1440 130"
+        viewBox="0 0 1440 110"
         className="absolute inset-0 w-full h-full"
         preserveAspectRatio="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Deepest background slab */}
-        <rect x="-10" y="80" width="1460" height="60" fill="#0d1e30" />
+        <defs>
+          {/*
+            Luminance mask: black at top & bottom (transparent/hidden),
+            white in the middle (fully visible). This fades the waves
+            seamlessly into the surrounding page background.
+          */}
+          <linearGradient id={`vfade-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="#000" />
+            <stop offset="30%"  stopColor="#fff" />
+            <stop offset="70%"  stopColor="#fff" />
+            <stop offset="100%" stopColor="#000" />
+          </linearGradient>
+          <mask id={`mask-${uid}`}>
+            <rect width="1440" height="110" fill={`url(#vfade-${uid})`} />
+          </mask>
+        </defs>
 
-        {/* Stacked wave layers, back to front */}
-        {layers.map((l, i) => (
-          <path key={i} d={l.path} fill={l.fill} />
-        ))}
+        <g mask={`url(#mask-${uid})`}>
+          {/* Solid navy base fills the full band */}
+          <rect width="1440" height="110" fill="#0b1c2d" />
 
-        {/* Foam crest highlights */}
-        {foamStrokes.map((s, i) => (
+          {/* Layer 1 — deep navy, lowest ripple */}
           <path
-            key={i}
-            d={s.path}
+            d="M0,88 C180,76 360,94 540,82 C720,70 900,90 1080,78 C1260,66 1380,84 1440,78 L1440,110 L0,110 Z"
+            fill="#0d2035"
+          />
+          {/* Layer 2 — navy-teal */}
+          <path
+            d="M0,72 C200,58 400,76 600,62 C800,48 1000,70 1200,56 C1320,46 1400,64 1440,58 L1440,110 L0,110 Z"
+            fill="#0e2c42"
+          />
+          {/* Layer 3 — dark teal, mid wave */}
+          <path
+            d="M0,56 C180,40 380,60 560,44 C740,28 940,54 1120,38 C1280,24 1390,46 1440,38 L1440,110 L0,110 Z"
+            fill="#0f3850"
+          />
+          {/* Layer 4 — slightly lighter teal, topmost wave */}
+          <path
+            d="M0,40 C200,22 420,46 620,28 C820,10 1020,38 1220,20 C1350,8 1420,28 1440,20 L1440,110 L0,110 Z"
+            fill="#10435e"
+          />
+
+          {/* Subtle edge highlights on the top two crests */}
+          <path
+            d="M0,36 C200,18 420,42 620,24 C820,6 1020,34 1220,16 C1350,4 1420,24 1440,16"
             fill="none"
-            stroke={s.color}
-            strokeWidth={s.width}
-            opacity={s.opacity}
+            stroke="#1a5570"
+            strokeWidth="1.2"
+            opacity="0.6"
             strokeLinecap="round"
           />
-        ))}
-
-        {/* Tiny white foam speckle dots at topmost crests */}
-        {[200, 430, 670, 890, 1100, 1320].map((x, i) => (
-          <ellipse
-            key={i}
-            cx={x}
-            cy={i % 2 === 0 ? 14 : 8}
-            rx={18 + (i % 3) * 8}
-            ry={3}
-            fill="white"
-            opacity={0.12}
+          <path
+            d="M0,52 C180,36 380,56 560,40 C740,24 940,50 1120,34 C1280,20 1390,42 1440,34"
+            fill="none"
+            stroke="#163e54"
+            strokeWidth="1"
+            opacity="0.45"
+            strokeLinecap="round"
           />
-        ))}
+        </g>
       </svg>
     </div>
   );
