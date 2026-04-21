@@ -431,7 +431,7 @@ export function GameDetailPage() {
             { label: homeTeam?.name ?? "Home", team: homeTeam, stats: homeStats },
           ].map(({ label, team, stats }) => (
             <div key={label} className="card-base overflow-hidden">
-              <div className="px-5 py-3 flex items-center gap-3" style={{ backgroundColor: team?.primaryColor ?? "#C85A1B" }}>
+              <div className="px-5 py-3 flex items-center gap-3" style={{ background: `linear-gradient(to right, ${team?.secondaryColor ?? "#132237"}, ${team?.primaryColor ?? "#C85A1B"})` }}>
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-display text-sm text-white">
                   {team?.abbreviation ?? "?"}
                 </div>

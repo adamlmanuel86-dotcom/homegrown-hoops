@@ -44,16 +44,11 @@ export function TeamDetailPage() {
       </Link>
 
       {/* Team Banner */}
-      <div className="rounded-2xl overflow-hidden bg-secondary text-white relative">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            background: `radial-gradient(ellipse at top right, ${team.primaryColor ?? "#C85A1B"}, transparent 60%)`,
-          }}
-        />
+      <div className="rounded-2xl overflow-hidden text-white relative" style={{ background: `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"} 0%, ${team.primaryColor ?? "#C85A1B"} 100%)` }}>
+        <div className="absolute inset-0 opacity-10" style={{ background: "radial-gradient(ellipse at bottom left, #fff, transparent 70%)" }} />
         <div className="relative p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center gap-6">
           <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center font-display text-3xl text-white flex-shrink-0 shadow-lg"
+            className="w-20 h-20 rounded-2xl flex items-center justify-center font-display text-3xl text-white flex-shrink-0 shadow-lg border-2 border-white/20"
             style={{ backgroundColor: team.primaryColor ?? "#C85A1B" }}
           >
             {team.abbreviation}
@@ -102,7 +97,7 @@ export function TeamDetailPage() {
                 >
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center font-display text-sm text-white flex-shrink-0"
-                    style={{ backgroundColor: team.primaryColor ?? "#C85A1B" }}
+                    style={{ background: `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#C85A1B"})` }}
                   >
                     {player.number ?? "#"}
                   </div>
@@ -129,8 +124,8 @@ export function TeamDetailPage() {
         <div className="space-y-5">
           {/* Team Averages */}
           <div className="card-base overflow-hidden">
-            <div className="bg-secondary px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70">Team Averages</p>
+            <div className="px-4 py-3" style={{ background: `linear-gradient(to right, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#C85A1B"})` }}>
+              <p className="text-xs font-bold uppercase tracking-widest text-white/80">Team Averages</p>
             </div>
             <div className="p-4 space-y-3">
               {[
@@ -154,8 +149,8 @@ export function TeamDetailPage() {
 
           {/* Recent Games */}
           <div className="card-base overflow-hidden">
-            <div className="bg-secondary px-4 py-3 flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70">Recent Games</p>
+            <div className="px-4 py-3 flex items-center justify-between" style={{ background: `linear-gradient(to right, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#C85A1B"})` }}>
+              <p className="text-xs font-bold uppercase tracking-widest text-white/80">Recent Games</p>
               <Link href="/games" className="text-xs text-primary font-semibold hover:underline">All →</Link>
             </div>
             <div className="divide-y divide-border">

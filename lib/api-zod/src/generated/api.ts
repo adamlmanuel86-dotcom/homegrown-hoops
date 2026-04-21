@@ -27,6 +27,7 @@ export const ListTeamsResponseItem = zod.object({
   losses: zod.number(),
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
+  secondaryColor: zod.string(),
   createdAt: zod.string(),
 });
 export const ListTeamsResponse = zod.array(ListTeamsResponseItem);
@@ -40,6 +41,7 @@ export const CreateTeamBody = zod.object({
   abbreviation: zod.string(),
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
+  secondaryColor: zod.string(),
 });
 
 /**
@@ -58,6 +60,7 @@ export const GetTeamResponse = zod.object({
   losses: zod.number(),
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
+  secondaryColor: zod.string(),
   createdAt: zod.string(),
 });
 
@@ -74,6 +77,7 @@ export const UpdateTeamBody = zod.object({
   abbreviation: zod.string().optional(),
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string().optional(),
+  secondaryColor: zod.string().optional(),
 });
 
 export const UpdateTeamResponse = zod.object({
@@ -85,6 +89,7 @@ export const UpdateTeamResponse = zod.object({
   losses: zod.number(),
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
+  secondaryColor: zod.string(),
   createdAt: zod.string(),
 });
 

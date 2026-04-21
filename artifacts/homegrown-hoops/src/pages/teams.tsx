@@ -38,12 +38,16 @@ export function TeamsPage() {
             <Link
               key={team.id}
               href={`/teams/${team.id}`}
-              className="card-base p-6 hover:shadow-md hover:border-primary/30 transition-all group"
+              className="card-base overflow-hidden hover:shadow-md hover:border-primary/30 transition-all group"
             >
-              <div className="flex items-center gap-4 mb-5">
+              <div
+                className="h-2 w-full"
+                style={{ background: `linear-gradient(to right, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#C85A1B"})` }}
+              />
+              <div className="flex items-center gap-4 mb-5 pt-5 px-6">
                 <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center font-display text-xl text-white flex-shrink-0"
-                  style={{ backgroundColor: team.primaryColor ?? "#C85A1B" }}
+                  className="w-14 h-14 rounded-xl flex items-center justify-center font-display text-xl text-white flex-shrink-0 shadow-md"
+                  style={{ background: `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#C85A1B"})` }}
                 >
                   {team.abbreviation}
                 </div>
@@ -53,7 +57,7 @@ export function TeamsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-5">
+              <div className="grid grid-cols-3 gap-2 mb-5 px-6">
                 <div className="bg-muted rounded-lg p-3 text-center">
                   <p className="label-upper text-[10px] mb-1">W</p>
                   <p className="font-display text-2xl text-secondary">{team.wins}</p>
@@ -72,7 +76,7 @@ export function TeamsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between px-6 pb-6">
                 <span className="text-xs font-semibold text-muted-foreground">View Roster</span>
                 <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
               </div>

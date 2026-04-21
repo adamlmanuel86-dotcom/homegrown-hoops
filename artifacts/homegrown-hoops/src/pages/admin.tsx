@@ -31,6 +31,7 @@ interface TeamEditState {
   city: string;
   abbreviation: string;
   primaryColor: string;
+  secondaryColor: string;
 }
 
 export function AdminPage() {
@@ -63,7 +64,7 @@ export function AdminPage() {
   const updateTeam = useUpdateTeam();
 
   const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
-  const [teamEdit, setTeamEdit] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00" });
+  const [teamEdit, setTeamEdit] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
   const [teamSaveError, setTeamSaveError] = useState<string | null>(null);
 
   async function handleRoleChange(clerkUserId: string, newRole: Role) {
@@ -78,6 +79,7 @@ export function AdminPage() {
       city: team.city,
       abbreviation: team.abbreviation,
       primaryColor: team.primaryColor ?? "#FF6B00",
+      secondaryColor: team.secondaryColor ?? "#132237",
     });
     setTeamSaveError(null);
   }
@@ -100,6 +102,7 @@ export function AdminPage() {
           city: teamEdit.city.trim(),
           abbreviation: teamEdit.abbreviation.trim().toUpperCase().slice(0, 4),
           primaryColor: teamEdit.primaryColor,
+          secondaryColor: teamEdit.secondaryColor,
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/teams"] });
@@ -206,6 +209,18 @@ export function AdminPage() {
                             <span className="text-sm font-mono text-muted-foreground">{teamEdit.primaryColor.toUpperCase()}</span>
                           </div>
                         </div>
+                        <div>
+                          <label className="label-upper block mb-1.5">Secondary Color</label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={teamEdit.secondaryColor}
+                              onChange={(e) => setTeamEdit((s) => ({ ...s, secondaryColor: e.target.value }))}
+                              className="h-10 w-14 rounded-lg border border-border cursor-pointer p-0.5 bg-white"
+                            />
+                            <span className="text-sm font-mono text-muted-foreground">{teamEdit.secondaryColor.toUpperCase()}</span>
+                          </div>
+                        </div>
                       </div>
                       {teamSaveError && <p className="text-red-600 text-sm font-medium">{teamSaveError}</p>}
                       <div className="flex gap-2">
@@ -229,7 +244,7 @@ export function AdminPage() {
                     <div className="flex items-center gap-4">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center font-display text-sm text-white flex-shrink-0 shadow-sm"
-                        style={{ backgroundColor: team.primaryColor ?? "#FF6B00" }}
+                        style={{ background: `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#FF6B00"})` }}
                       >
                         {team.abbreviation}
                       </div>
@@ -238,11 +253,18 @@ export function AdminPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{team.city}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div
-                          className="w-5 h-5 rounded-full border border-border"
-                          style={{ backgroundColor: team.primaryColor ?? "#FF6B00" }}
-                          title={team.primaryColor ?? ""}
-                        />
+                        <div className="flex gap-1">
+                          <div
+                            className="w-4 h-4 rounded-full border border-border"
+                            style={{ backgroundColor: team.primaryColor ?? "#FF6B00" }}
+                            title={`Primary: ${team.primaryColor}`}
+                          />
+                          <div
+                            className="w-4 h-4 rounded-full border border-border"
+                            style={{ backgroundColor: team.secondaryColor ?? "#132237" }}
+                            title={`Secondary: ${team.secondaryColor}`}
+                          />
+                        </div>
                         <button
                           onClick={() => startEditTeam(team)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors text-secondary"

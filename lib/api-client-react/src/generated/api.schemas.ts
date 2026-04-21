@@ -19,6 +19,7 @@ export interface Team {
   /** @nullable */
   logoUrl?: string | null;
   primaryColor: string;
+  secondaryColor: string;
   createdAt: string;
 }
 
@@ -29,6 +30,7 @@ export interface CreateTeamBody {
   /** @nullable */
   logoUrl?: string | null;
   primaryColor: string;
+  secondaryColor: string;
 }
 
 export interface UpdateTeamBody {
@@ -38,6 +40,7 @@ export interface UpdateTeamBody {
   /** @nullable */
   logoUrl?: string | null;
   primaryColor?: string;
+  secondaryColor?: string;
 }
 
 export interface TeamStats {

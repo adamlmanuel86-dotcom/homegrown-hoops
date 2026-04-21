@@ -344,7 +344,9 @@ export function GamesPage() {
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs text-white flex-shrink-0"
                           style={{
-                            backgroundColor: team?.primaryColor ?? "#888",
+                            background: team
+                              ? `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#888"})`
+                              : "#888",
                           }}
                         >
                           {team?.abbreviation ?? "?"}

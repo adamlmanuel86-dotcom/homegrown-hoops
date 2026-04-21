@@ -13,4 +13,5 @@ export interface UpdateTeamBody {
   /** @nullable */
   logoUrl?: string | null;
   primaryColor?: string;
+  secondaryColor?: string;
 }

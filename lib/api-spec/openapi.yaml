@@ -680,6 +680,8 @@ components:
           type: ["string", "null"]
         primaryColor:
           type: string
+        secondaryColor:
+          type: string
         createdAt:
           type: string
       required:
@@ -690,6 +692,7 @@ components:
         - wins
         - losses
         - primaryColor
+        - secondaryColor
         - createdAt
 
     CreateTeamBody:
@@ -705,11 +708,14 @@ components:
           type: ["string", "null"]
         primaryColor:
           type: string
+        secondaryColor:
+          type: string
       required:
         - name
         - city
         - abbreviation
         - primaryColor
+        - secondaryColor
 
     UpdateTeamBody:
       type: object
@@ -723,6 +729,8 @@ components:
         logoUrl:
           type: ["string", "null"]
         primaryColor:
+          type: string
+        secondaryColor:
           type: string
 
     TeamStats:

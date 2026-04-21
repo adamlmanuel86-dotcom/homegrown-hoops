@@ -16,5 +16,6 @@ export interface Team {
   /** @nullable */
   logoUrl?: string | null;
   primaryColor: string;
+  secondaryColor: string;
   createdAt: string;
 }
