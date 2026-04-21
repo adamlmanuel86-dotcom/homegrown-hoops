@@ -13,12 +13,12 @@ import {
   useDeleteGameVideo,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ObjectUploader } from "@workspace/object-storage-web";
-import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink } from "lucide-react";
+import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2 } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
-function storageUrl(objectPath: string) {
+function videoUrl(objectPath: string) {
+  if (objectPath.startsWith("http")) return objectPath;
   return `${BASE_URL}/api/storage${objectPath}`;
 }
 
@@ -56,6 +56,8 @@ export function GameDetailPage() {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [savingVideo, setSavingVideo] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const homeTeam = teams?.find((t) => t.id === game?.homeTeamId);
   const awayTeam = teams?.find((t) => t.id === game?.awayTeamId);
@@ -108,6 +110,43 @@ export function GameDetailPage() {
   async function handleDeleteVideo(videoId: number) {
     await deleteGameVideo.mutateAsync({ id, videoId });
     await qc.invalidateQueries({ queryKey: [`/api/games/${id}/videos`] });
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const sigRes = await fetch(`${BASE_URL}/api/cloudinary/signature`, { method: "POST" });
+      if (!sigRes.ok) throw new Error("Failed to get upload signature");
+      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", String(timestamp));
+      formData.append("signature", signature);
+      formData.append("folder", folder);
+
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+        { method: "POST", body: formData }
+      );
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err?.error?.message ?? "Upload to Cloudinary failed");
+      }
+      const data = await uploadRes.json();
+      const secureUrl: string = data.secure_url;
+      setPendingObjectPath(secureUrl);
+      if (!videoTitle) setVideoTitle(file.name.replace(/\.[^.]+$/, ""));
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   }
 
   if (loadingGame || loadingStats) {
@@ -268,29 +307,31 @@ export function GameDetailPage() {
             </div>
 
             {!pendingObjectPath ? (
-              <div>
-                <p className="text-xs text-muted-foreground mb-3">Upload a video file (MP4, MOV, etc.)</p>
-                <ObjectUploader
-                  onGetUploadParameters={async (file) => {
-                    const res = await fetch(`${BASE_URL}/api/storage/uploads/request-url`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
-                    });
-                    const { uploadURL } = await res.json();
-                    return { method: "PUT" as const, url: uploadURL, headers: { "Content-Type": file.type } };
-                  }}
-                  onComplete={(result) => {
-                    const path = result.successful?.[0]?.response?.body?.objectPath as string | undefined;
-                    if (path) {
-                      setPendingObjectPath(path);
-                      if (!videoTitle) setVideoTitle(result.successful?.[0]?.name?.replace(/\.[^.]+$/, "") ?? "");
-                    }
-                  }}
-                  allowedFileTypes={["video/*"]}
-                >
-                  Upload Video
-                </ObjectUploader>
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">Select a video file (MP4, MOV, MKV, etc.)</p>
+                <label className={`flex flex-col items-center justify-center gap-3 w-full border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer transition-colors ${uploading ? "border-primary/40 bg-primary/5 cursor-default" : "border-border hover:border-primary/40 hover:bg-primary/5"}`}>
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                      <span className="text-sm font-medium text-secondary">Uploading to Cloudinary…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-7 w-7 text-muted-foreground/50" />
+                      <span className="text-sm font-medium text-secondary">Click to choose a video file</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="sr-only"
+                    disabled={uploading}
+                    onChange={handleFileUpload}
+                  />
+                </label>
+                {uploadError && (
+                  <p className="text-red-600 text-xs font-medium">{uploadError}</p>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
@@ -346,7 +387,7 @@ export function GameDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <a
-                      href={storageUrl(v.objectPath)}
+                      href={videoUrl(v.objectPath)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-semibold text-secondary hover:text-primary transition-colors flex items-center gap-1.5 truncate"

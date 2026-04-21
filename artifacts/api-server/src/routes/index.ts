@@ -8,6 +8,7 @@ import profilesRouter from "./profiles";
 import adminRouter from "./admin";
 import gameVideosRouter from "./gameVideos";
 import storageRouter from "./storage";
+import cloudinaryRouter from "./cloudinary";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(profilesRouter);
 router.use(adminRouter);
 router.use(gameVideosRouter);
 router.use(storageRouter);
+router.use(cloudinaryRouter);
 
 export default router;
