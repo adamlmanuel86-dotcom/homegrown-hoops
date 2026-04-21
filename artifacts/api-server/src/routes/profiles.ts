@@ -3,6 +3,7 @@ import { eq, count } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable } from "@workspace/db";
 import { serializeRow } from "../lib/serialize";
+import { isProtectedAdmin } from "../lib/adminGuard";
 import {
   CreateMyProfileBody,
   UpdateMyProfileBody,
@@ -61,14 +62,19 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
-  // First profile ever created automatically becomes admin
+  // Protected admin email always gets admin role, regardless of registration order
+  const protected_ = await isProtectedAdmin(userId);
+
+  // If not the protected admin, first profile ever created also becomes admin
   const [{ total }] = await db.select({ total: count() }).from(userProfilesTable);
   const isFirstUser = Number(total) === 0;
-  const role = isFirstUser ? "admin" : "player";
+
+  const shouldBeAdmin = protected_ || isFirstUser;
+  const role = shouldBeAdmin ? "admin" : "player";
 
   const [profile] = await db
     .insert(userProfilesTable)
-    .values({ ...parsed.data, clerkUserId: userId, isAdmin: isFirstUser, role })
+    .values({ ...parsed.data, clerkUserId: userId, isAdmin: shouldBeAdmin, role })
     .returning();
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));

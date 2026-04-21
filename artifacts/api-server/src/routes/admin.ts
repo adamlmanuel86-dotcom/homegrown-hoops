@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
+import { isProtectedAdmin } from "../lib/adminGuard";
 
 const router: IRouter = Router();
 
@@ -59,6 +60,13 @@ router.patch("/admin/users/:clerkUserId/role", async (req, res): Promise<void> =
 
   if (!role || !VALID_ROLES.includes(role as ValidRole)) {
     res.status(400).json({ error: `Role must be one of: ${VALID_ROLES.join(", ")}` });
+    return;
+  }
+
+  // The protected admin account's role can never be changed
+  const targetIsProtected = await isProtectedAdmin(clerkUserId);
+  if (targetIsProtected) {
+    res.status(403).json({ error: "The primary admin account role cannot be changed." });
     return;
   }
 

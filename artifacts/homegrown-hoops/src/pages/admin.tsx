@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useUser } from "@clerk/react";
 import { useGetMyProfile, useListAdminUsers, useUpdateUserRole } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User } from "lucide-react";
+import { Shield, User, Lock } from "lucide-react";
 
 const ROLES = ["admin", "coach", "player"] as const;
 type Role = typeof ROLES[number];
@@ -21,7 +21,7 @@ const roleLabel: Record<Role, string> = {
 };
 
 export function AdminPage() {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
 
@@ -102,11 +102,12 @@ export function AdminPage() {
           </div>
         ) : users?.length ? (
           <div className="divide-y divide-border">
-            {users.map((user) => {
-              const currentRole = (user.role ?? "player") as Role;
+            {users.map((u) => {
+              const currentRole = (u.role ?? "player") as Role;
+              const isProtected = u.clerkUserId === user?.id;
               return (
                 <div
-                  key={user.clerkUserId}
+                  key={u.clerkUserId}
                   className="flex items-center gap-4 px-6 py-4"
                 >
                   <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
@@ -114,9 +115,14 @@ export function AdminPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-secondary truncate">
-                      {user.firstName} {user.lastName}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-secondary truncate">
+                        {u.firstName} {u.lastName}
+                      </p>
+                      {isProtected && (
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" title="Primary admin — role is fixed" />
+                      )}
+                    </div>
                     <span
                       className={`inline-block text-xs px-2 py-0.5 rounded-full mt-1 ${roleBadge[currentRole]}`}
                     >
@@ -124,20 +130,26 @@ export function AdminPage() {
                     </span>
                   </div>
 
-                  <select
-                    value={currentRole}
-                    onChange={(e) =>
-                      handleRoleChange(user.clerkUserId, e.target.value as Role)
-                    }
-                    disabled={updateRole.isPending}
-                    className="border border-border rounded-lg px-3 py-2 text-sm font-semibold bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {roleLabel[r]}
-                      </option>
-                    ))}
-                  </select>
+                  {isProtected ? (
+                    <span className="text-xs text-muted-foreground italic px-3 py-2">
+                      Primary admin
+                    </span>
+                  ) : (
+                    <select
+                      value={currentRole}
+                      onChange={(e) =>
+                        handleRoleChange(u.clerkUserId, e.target.value as Role)
+                      }
+                      disabled={updateRole.isPending}
+                      className="border border-border rounded-lg px-3 py-2 text-sm font-semibold bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {roleLabel[r]}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               );
             })}
