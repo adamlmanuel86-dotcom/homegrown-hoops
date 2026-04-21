@@ -1,7 +1,7 @@
 import { useGetStatsSummary, useGetStatLeaders } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
-import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap } from "lucide-react";
+import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, ShieldCheck } from "lucide-react";
 
 export function Home() {
   const { data: summary, isLoading: loadingSummary } = useGetStatsSummary();
@@ -82,47 +82,47 @@ export function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { key: "points" as const, label: "Points Per Game" },
-              { key: "rebounds" as const, label: "Rebounds Per Game" },
-            ].map(({ key, label }) => (
-              <div key={key} className="card-base overflow-hidden">
-                <div className="bg-secondary px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-white/70">{label}</p>
-                </div>
-                <div className="divide-y divide-border">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {([
+              { key: "points"   as const, label: "Points",   abbr: "PPG", icon: Trophy },
+              { key: "rebounds" as const, label: "Rebounds",  abbr: "RPG", icon: Target },
+              { key: "assists"  as const, label: "Assists",   abbr: "APG", icon: Share2 },
+              { key: "steals"   as const, label: "Steals",    abbr: "SPG", icon: Zap },
+              { key: "blocks"   as const, label: "Blocks",    abbr: "BPG", icon: ShieldCheck },
+            ] as const).map(({ key, label, abbr, icon: Icon }) => {
+              const top = leaders?.[key]?.[0];
+              return (
+                <div key={key} className="card-base overflow-hidden flex flex-col">
+                  <div className="bg-secondary px-4 py-2.5 flex items-center gap-2">
+                    <Icon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-white/70">{label}</p>
+                  </div>
                   {loadingLeaders ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 px-4 py-3">
-                        <div className="h-4 w-4 rounded bg-muted animate-pulse" />
-                        <div className="flex-1 h-4 rounded bg-muted animate-pulse" />
-                        <div className="h-4 w-8 rounded bg-muted animate-pulse" />
-                      </div>
-                    ))
-                  ) : leaders?.[key]?.length ? (
-                    leaders[key].slice(0, 5).map((player, i) => (
-                      <Link
-                        key={player.playerId}
-                        href={`/players/${player.playerId}`}
-                        className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="w-5 text-center text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">{i + 1}</span>
-                          <div>
-                            <p className="text-sm font-bold text-secondary">{player.firstName} {player.lastName}</p>
-                            <p className="text-xs text-muted-foreground">{player.teamName || "Free Agent"}</p>
-                          </div>
-                        </div>
-                        <span className="font-display text-xl text-primary">{player.value.toFixed(1)}</span>
-                      </Link>
-                    ))
+                    <div className="flex-1 p-4 space-y-2 animate-pulse">
+                      <div className="h-7 w-16 rounded bg-muted" />
+                      <div className="h-4 w-24 rounded bg-muted" />
+                      <div className="h-3 w-16 rounded bg-muted" />
+                    </div>
+                  ) : top ? (
+                    <Link
+                      href={`/players/${top.playerId}`}
+                      className="flex-1 p-4 hover:bg-muted/50 transition-colors group"
+                    >
+                      <p className="font-display text-3xl text-primary leading-none mb-2">
+                        {top.value.toFixed(1)}
+                        <span className="text-xs font-sans font-bold text-muted-foreground ml-1">{abbr}</span>
+                      </p>
+                      <p className="text-sm font-bold text-secondary leading-tight group-hover:text-primary transition-colors">
+                        {top.firstName} {top.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{top.teamName || "Free Agent"}</p>
+                    </Link>
                   ) : (
-                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">No stats yet</div>
+                    <div className="flex-1 p-4 text-xs text-muted-foreground">No data yet</div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
