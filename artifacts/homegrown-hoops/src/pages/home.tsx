@@ -67,82 +67,17 @@ function CourtTexture() {
   );
 }
 
-function WaveDivider({ flip = false }: { flip?: boolean }) {
-  const uid = flip ? "b" : "a";
+function SectionBreak() {
   return (
     <div
-      style={{ height: 110, transform: flip ? "scaleY(-1)" : undefined }}
-      className="relative overflow-hidden w-full pointer-events-none select-none"
+      className="pointer-events-none select-none"
+      style={{
+        height: 1,
+        background:
+          "linear-gradient(90deg, transparent 0%, hsl(215 25% 78% / 0.45) 30%, hsl(215 25% 78% / 0.45) 70%, transparent 100%)",
+      }}
       aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 1440 110"
-        className="absolute inset-0 w-full h-full"
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          {/*
-            Luminance mask: black at top & bottom (transparent/hidden),
-            white in the middle (fully visible). This fades the waves
-            seamlessly into the surrounding page background.
-          */}
-          <linearGradient id={`vfade-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#000" />
-            <stop offset="30%"  stopColor="#fff" />
-            <stop offset="70%"  stopColor="#fff" />
-            <stop offset="100%" stopColor="#000" />
-          </linearGradient>
-          <mask id={`mask-${uid}`}>
-            <rect width="1440" height="110" fill={`url(#vfade-${uid})`} />
-          </mask>
-        </defs>
-
-        <g mask={`url(#mask-${uid})`}>
-          {/* Solid navy base fills the full band */}
-          <rect width="1440" height="110" fill="#0b1c2d" />
-
-          {/* Layer 1 — deep navy, lowest ripple */}
-          <path
-            d="M0,88 C180,76 360,94 540,82 C720,70 900,90 1080,78 C1260,66 1380,84 1440,78 L1440,110 L0,110 Z"
-            fill="#0d2035"
-          />
-          {/* Layer 2 — navy-teal */}
-          <path
-            d="M0,72 C200,58 400,76 600,62 C800,48 1000,70 1200,56 C1320,46 1400,64 1440,58 L1440,110 L0,110 Z"
-            fill="#0e2c42"
-          />
-          {/* Layer 3 — dark teal, mid wave */}
-          <path
-            d="M0,56 C180,40 380,60 560,44 C740,28 940,54 1120,38 C1280,24 1390,46 1440,38 L1440,110 L0,110 Z"
-            fill="#0f3850"
-          />
-          {/* Layer 4 — slightly lighter teal, topmost wave */}
-          <path
-            d="M0,40 C200,22 420,46 620,28 C820,10 1020,38 1220,20 C1350,8 1420,28 1440,20 L1440,110 L0,110 Z"
-            fill="#10435e"
-          />
-
-          {/* Subtle edge highlights on the top two crests */}
-          <path
-            d="M0,36 C200,18 420,42 620,24 C820,6 1020,34 1220,16 C1350,4 1420,24 1440,16"
-            fill="none"
-            stroke="#1a5570"
-            strokeWidth="1.2"
-            opacity="0.6"
-            strokeLinecap="round"
-          />
-          <path
-            d="M0,52 C180,36 380,56 560,40 C740,24 940,50 1120,34 C1280,20 1390,42 1440,34"
-            fill="none"
-            stroke="#163e54"
-            strokeWidth="1"
-            opacity="0.45"
-            strokeLinecap="round"
-          />
-        </g>
-      </svg>
-    </div>
+    />
   );
 }
 
@@ -156,7 +91,7 @@ export function Home() {
     teams?.find((t) => t.id === id)?.name ?? `Team #${id}`;
 
   return (
-    <div>
+    <div className="space-y-10">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-secondary text-white px-8 py-12 md:px-14 md:py-16">
         <CourtTexture />
@@ -193,10 +128,10 @@ export function Home() {
         </div>
       </section>
 
-      <WaveDivider />
+      <SectionBreak />
 
       {/* League Stats */}
-      <section className="mt-6">
+      <section>
         <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">League Overview</h2>
         <div className="grid grid-cols-3 gap-3 md:gap-5">
           {[
@@ -219,9 +154,9 @@ export function Home() {
         </div>
       </section>
 
-      <WaveDivider flip />
+      <SectionBreak />
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         {/* League Leaders */}
         <section className="lg:col-span-3 space-y-5">
           <div className="flex items-center justify-between">

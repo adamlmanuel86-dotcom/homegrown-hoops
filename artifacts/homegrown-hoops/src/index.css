@@ -92,6 +92,22 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /*
+    Faint noise/grain texture overlay — gives the page surface depth without
+    being decorative. Uses SVG fractalNoise rendered as a repeating data URI.
+    Opacity is intentionally very low so it reads as material, not pattern.
+  */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.032;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="256" height="256" filter="url(%23n)"/></svg>');
+    background-size: 256px 256px;
+  }
 }
 
 @layer utilities {
