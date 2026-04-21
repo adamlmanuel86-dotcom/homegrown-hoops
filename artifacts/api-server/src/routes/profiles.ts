@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable } from "@workspace/db";
 import { serializeRow } from "../lib/serialize";
@@ -61,9 +61,13 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
+  // First profile ever created automatically becomes admin
+  const [{ total }] = await db.select({ total: count() }).from(userProfilesTable);
+  const isFirstUser = Number(total) === 0;
+
   const [profile] = await db
     .insert(userProfilesTable)
-    .values({ ...parsed.data, clerkUserId: userId })
+    .values({ ...parsed.data, clerkUserId: userId, isAdmin: isFirstUser })
     .returning();
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
