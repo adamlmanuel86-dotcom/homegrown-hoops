@@ -46,37 +46,40 @@
 }
 
 :root {
-  --background: 220 20% 98%;
-  --foreground: 215 50% 12%;
-  --border: 220 14% 90%;
+  /* Page surface — very dark navy, near-black with blue undertone */
+  --background: 222 42% 7%;
+  --foreground: 210 16% 88%;
+  --border: 220 28% 17%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 215 50% 12%;
+  /* Cards — slightly elevated above the page */
+  --card: 220 36% 10%;
+  --card-foreground: 210 16% 88%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 215 50% 12%;
+  --popover: 220 36% 13%;
+  --popover-foreground: 210 16% 88%;
 
-  /* Burnt orange */
+  /* Burnt orange — accent only, never a background */
   --primary: 22 78% 46%;
   --primary-foreground: 0 0% 100%;
 
-  /* Deep navy */
-  --secondary: 215 53% 12%;
+  /* Deep navy — hero surfaces and dark panel headers */
+  --secondary: 215 50% 16%;
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 220 14% 95%;
-  --muted-foreground: 215 20% 48%;
+  /* Muted surfaces and de-emphasised text */
+  --muted: 220 32% 13%;
+  --muted-foreground: 215 18% 52%;
 
   --accent: 22 78% 46%;
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;
+  --destructive: 0 78% 55%;
   --destructive-foreground: 0 0% 98%;
 
-  --input: 220 14% 90%;
+  --input: 220 28% 15%;
   --ring: 22 78% 46%;
 
-  --navy: 215 53% 12%;
+  --navy: 215 50% 16%;
   --orange: 22 78% 46%;
 
   --app-font-sans: 'Inter', sans-serif;
@@ -94,9 +97,18 @@
   }
 
   /*
+    text-secondary maps to the navy surface color which is near-invisible
+    on the dark page background. Override it site-wide to use the foreground
+    (light) color so all headings and body text remain legible.
+  */
+  .text-secondary {
+    color: hsl(var(--foreground));
+  }
+
+  /*
     Faint noise/grain texture overlay — gives the page surface depth without
     being decorative. Uses SVG fractalNoise rendered as a repeating data URI.
-    Opacity is intentionally very low so it reads as material, not pattern.
+    Slightly higher opacity on dark backgrounds for the same perceived weight.
   */
   body::after {
     content: '';
@@ -104,7 +116,7 @@
     inset: 0;
     pointer-events: none;
     z-index: 9999;
-    opacity: 0.032;
+    opacity: 0.045;
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="256" height="256" filter="url(%23n)"/></svg>');
     background-size: 256px 256px;
   }

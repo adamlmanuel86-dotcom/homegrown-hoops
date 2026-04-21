@@ -74,7 +74,7 @@ function SectionBreak() {
       style={{
         height: 1,
         background:
-          "linear-gradient(90deg, transparent 0%, hsl(215 25% 78% / 0.45) 30%, hsl(215 25% 78% / 0.45) 70%, transparent 100%)",
+          "linear-gradient(90deg, transparent 0%, hsl(215 30% 32% / 0.7) 30%, hsl(215 30% 32% / 0.7) 70%, transparent 100%)",
       }}
       aria-hidden="true"
     />
