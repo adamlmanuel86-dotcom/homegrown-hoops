@@ -114,8 +114,11 @@ export function Home() {
               <span className="text-primary">EVERY GAME.</span>
             </Show>
           </h1>
-          <p className="text-white/70 text-lg max-w-md mb-8">
-            The definitive stats hub for neighborhood leagues and pickup legends.
+          <p className="text-white font-semibold text-xl max-w-md mb-2">
+            Your Game. Your Stats. Your Legacy.
+          </p>
+          <p className="text-white/60 text-sm max-w-md mb-8">
+            Atlantic Canada's home for high school basketball analytics.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/games" className="btn-primary text-base px-6 py-3">
