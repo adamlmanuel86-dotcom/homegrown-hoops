@@ -62,3 +62,4 @@ channel = "stable-25_05"
 
 [userenv.shared]
 ADMIN_EMAIL = "adamlmanuel86@gmail.com"
+CLOUDINARY_CLOUD_NAME = "dhdwhyjqq"
