@@ -16,7 +16,7 @@ type Role = typeof ROLES[number];
 
 const roleBadge: Record<Role, string> = {
   admin: "bg-primary/10 text-primary font-bold",
-  coach: "bg-blue-50 text-blue-700 font-semibold",
+  coach: "bg-blue-900/40 text-blue-300 font-semibold",
   player: "bg-muted text-muted-foreground font-medium",
 };
 

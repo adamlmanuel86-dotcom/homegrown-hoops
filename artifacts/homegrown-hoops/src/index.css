@@ -68,7 +68,7 @@
 
   /* Muted surfaces and de-emphasised text */
   --muted: 220 32% 13%;
-  --muted-foreground: 215 18% 52%;
+  --muted-foreground: 215 16% 62%;
 
   --accent: 22 78% 46%;
   --accent-foreground: 0 0% 100%;
@@ -96,14 +96,6 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /*
-    text-secondary maps to the navy surface color which is near-invisible
-    on the dark page background. Override it site-wide to use the foreground
-    (light) color so all headings and body text remain legible.
-  */
-  .text-secondary {
-    color: hsl(var(--foreground));
-  }
 
   /*
     Faint noise/grain texture overlay — gives the page surface depth without
@@ -137,5 +129,18 @@
   }
   .btn-navy {
     @apply bg-secondary text-secondary-foreground rounded-lg px-5 py-2.5 font-bold text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2;
+  }
+
+  /*
+    text-secondary maps to the navy surface color — invisible on the dark page.
+    Override here (utilities layer) so this wins over Tailwind's generated rule.
+    All headings, body copy, and labels that use text-secondary become foreground.
+    hover:text-secondary on back-nav links becomes orange (primary) on hover.
+  */
+  .text-secondary {
+    color: hsl(var(--foreground));
+  }
+  .hover\:text-secondary:hover {
+    color: hsl(var(--primary));
   }
 }

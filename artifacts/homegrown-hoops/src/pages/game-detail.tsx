@@ -177,8 +177,8 @@ export function GameDetailPage() {
       {/* Score Card */}
       <div className="rounded-2xl overflow-hidden bg-secondary text-white">
         <div className="flex items-center justify-center gap-1 py-2 px-4 border-b border-white/10">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/50">{game.season}</p>
-          {game.location && <p className="text-xs text-white/40 before:content-['·'] before:mx-2">{game.location}</p>}
+          <p className="text-xs font-bold uppercase tracking-widest text-white/70">{game.season}</p>
+          {game.location && <p className="text-xs text-white/60 before:content-['·'] before:mx-2">{game.location}</p>}
         </div>
 
         <div className="grid grid-cols-3 items-center py-10 px-6">
@@ -190,7 +190,7 @@ export function GameDetailPage() {
               <p className={`font-display text-lg leading-tight group-hover:text-primary transition-colors ${awayWon ? "text-white" : "text-white/60"}`}>
                 {awayTeam?.name?.toUpperCase() ?? "AWAY"}
               </p>
-              <p className="text-xs text-white/40 mt-0.5">{awayTeam?.city}</p>
+              <p className="text-xs text-white/60 mt-0.5">{awayTeam?.city}</p>
             </div>
           </Link>
 
@@ -199,15 +199,15 @@ export function GameDetailPage() {
               <>
                 <div className="flex items-center gap-4">
                   <span className={`font-display text-6xl ${awayWon ? "text-primary" : "text-white/90"}`}>{game.awayScore}</span>
-                  <span className="font-display text-2xl text-white/30">–</span>
+                  <span className="font-display text-2xl text-white/50">–</span>
                   <span className={`font-display text-6xl ${homeWon ? "text-primary" : "text-white/90"}`}>{game.homeScore}</span>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/40">Final · {game.gameDate}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/65">Final · {game.gameDate}</p>
               </>
             ) : (
               <>
-                <p className="font-display text-4xl text-white/30">VS</p>
-                <p className={`text-xs font-bold uppercase tracking-widest ${game.status === "in_progress" ? "text-green-400" : "text-white/40"}`}>
+                <p className="font-display text-4xl text-white/55">VS</p>
+                <p className={`text-xs font-bold uppercase tracking-widest ${game.status === "in_progress" ? "text-green-400" : "text-white/65"}`}>
                   {game.status === "in_progress" ? "Live" : game.gameDate}
                 </p>
               </>
@@ -222,7 +222,7 @@ export function GameDetailPage() {
               <p className={`font-display text-lg leading-tight group-hover:text-primary transition-colors ${homeWon ? "text-white" : "text-white/60"}`}>
                 {homeTeam?.name?.toUpperCase() ?? "HOME"}
               </p>
-              <p className="text-xs text-white/40 mt-0.5">{homeTeam?.city}</p>
+              <p className="text-xs text-white/60 mt-0.5">{homeTeam?.city}</p>
             </div>
           </Link>
         </div>
@@ -335,7 +335,7 @@ export function GameDetailPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2 text-sm font-medium">
+                <div className="flex items-center gap-2 text-green-400 bg-green-900/30 rounded-lg px-3 py-2 text-sm font-medium">
                   <Video className="h-4 w-4" /> Video uploaded — add a title to save it
                 </div>
                 <div>
@@ -402,7 +402,7 @@ export function GameDetailPage() {
                   {canDelete && (
                     <button
                       onClick={() => handleDeleteVideo(v.id)}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-900/30 transition-colors flex-shrink-0"
                       title="Delete video"
                     >
                       <Trash2 className="h-4 w-4" />
