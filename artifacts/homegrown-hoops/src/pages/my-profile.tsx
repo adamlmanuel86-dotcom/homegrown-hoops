@@ -86,7 +86,7 @@ export function MyProfilePage() {
     if (isNew) {
       await create.mutateAsync({ data: payload });
     } else {
-      await update.mutateAsync(payload);
+      await update.mutateAsync({ data: payload });
     }
 
     await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
