@@ -68,43 +68,123 @@ function CourtTexture() {
 }
 
 function WaveDivider({ flip = false }: { flip?: boolean }) {
+  /* 6 stacked wave layers — deepest navy at bottom, seafoam crests at top */
+  const layers = [
+    /* depth 1 — dark navy base */
+    {
+      path: "M-10,108 C 130,94  270,114 410,102 C 550,90  690,110 840,98 C 990,86 1130,106 1270,94 C 1360,85 1420,98  1450,92  L1450,130 L-10,130 Z",
+      fill: "#0d1e30",
+    },
+    /* depth 2 — deep navy */
+    {
+      path: "M-10,90 C 110,74  260,98  400,82 C 540,66  690,92  840,74 C 990,56 1140,84 1280,68 C 1370,56 1420,74  1450,66  L1450,130 L-10,130 Z",
+      fill: "#102438",
+    },
+    /* depth 3 — navy-teal */
+    {
+      path: "M-10,72 C 130,52  270,80  420,60 C 570,40  720,70  870,50 C 1020,30 1160,62 1300,44 C 1380,32 1430,52  1450,44  L1450,130 L-10,130 Z",
+      fill: "#0e3a50",
+    },
+    /* depth 4 — dark teal */
+    {
+      path: "M-10,56 C 100,34  260,62  400,40 C 540,18  700,52  840,30 C 980,8  1130,44 1270,24 C 1370,8  1430,32  1450,22  L1450,130 L-10,130 Z",
+      fill: "#0f5068",
+    },
+    /* depth 5 — teal */
+    {
+      path: "M-10,40 C 120,16  270,48  420,24 C 570,0   730,36  880,12 C 1030,-10 1180,26 1310,6  C 1390,-6  1430,16  1450,8   L1450,130 L-10,130 Z",
+      fill: "#136b82",
+    },
+    /* depth 6 — seafoam crest fill */
+    {
+      path: "M-10,26 C 100,4   260,36  400,12 C 540,-12 710,26  860,2  C 1010,-20 1160,14 1300,-4 C 1390,-14 1430,8   1450,-2  L1450,130 L-10,130 Z",
+      fill: "#1e8fa5",
+    },
+  ];
+
+  /* foam stroke highlights — lighter edges at the crests */
+  const foamStrokes = [
+    {
+      path: "M-10,22  C 100,0   260,32  400,8  C 540,-16 710,22  860,-2 C 1010,-24 1160,10 1300,-8 C 1390,-18 1430,4  1450,-6",
+      color: "#5ecfdc",
+      opacity: 0.55,
+      width: 1.8,
+    },
+    {
+      path: "M-10,56  C 130,36  270,62  420,42 C 570,22  730,54  880,32 C 1030,12 1180,46 1300,26 C 1380,12 1430,34  1450,24",
+      color: "#3ab8c8",
+      opacity: 0.40,
+      width: 1.4,
+    },
+    {
+      path: "M-10,74  C 110,56  270,80  420,62 C 570,44  730,72  880,52 C 1030,34 1170,64 1300,46 C 1380,34 1430,54  1450,44",
+      color: "#2a9aac",
+      opacity: 0.30,
+      width: 1.2,
+    },
+  ];
+
   return (
-    <div className="relative overflow-hidden" style={{ height: 48 }} aria-hidden="true">
+    <div
+      className="relative overflow-hidden w-full"
+      style={{ height: 118, transform: flip ? "scaleY(-1)" : undefined }}
+      aria-hidden="true"
+    >
+      {/* Top gradient fade — blends into page background */}
+      <div
+        className="absolute inset-x-0 top-0 z-10 pointer-events-none"
+        style={{
+          height: 36,
+          background: "linear-gradient(to bottom, hsl(220 20% 98%), transparent)",
+        }}
+      />
+      {/* Bottom gradient fade — blends out to page background */}
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
+        style={{
+          height: 36,
+          background: "linear-gradient(to top, hsl(220 20% 98%), transparent)",
+        }}
+      />
       <svg
-        viewBox="0 0 1440 48"
+        viewBox="0 0 1440 130"
         className="absolute inset-0 w-full h-full"
         preserveAspectRatio="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {flip ? (
-          <>
-            <path
-              d="M0,24 C180,48 360,8 540,28 C720,48 900,10 1080,30 C1260,48 1380,18 1440,24 L1440,0 L0,0 Z"
-              fill="hsl(215 50% 17% / 0.06)"
-            />
-            <path
-              d="M0,32 C200,12 400,44 600,24 C800,4 1000,40 1200,20 C1320,8 1400,28 1440,20"
-              fill="none"
-              stroke="hsl(22 78% 46% / 1)"
-              strokeWidth="1"
-              opacity="0.18"
-            />
-          </>
-        ) : (
-          <>
-            <path
-              d="M0,16 C200,40 400,4 600,28 C800,48 1000,12 1200,32 C1320,44 1400,20 1440,24 L1440,48 L0,48 Z"
-              fill="hsl(215 50% 17% / 0.06)"
-            />
-            <path
-              d="M0,20 C180,44 360,8 540,32 C720,48 920,8 1100,28 C1260,44 1380,16 1440,22"
-              fill="none"
-              stroke="hsl(22 78% 46% / 1)"
-              strokeWidth="1"
-              opacity="0.18"
-            />
-          </>
-        )}
+        {/* Deepest background slab */}
+        <rect x="-10" y="80" width="1460" height="60" fill="#0d1e30" />
+
+        {/* Stacked wave layers, back to front */}
+        {layers.map((l, i) => (
+          <path key={i} d={l.path} fill={l.fill} />
+        ))}
+
+        {/* Foam crest highlights */}
+        {foamStrokes.map((s, i) => (
+          <path
+            key={i}
+            d={s.path}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={s.width}
+            opacity={s.opacity}
+            strokeLinecap="round"
+          />
+        ))}
+
+        {/* Tiny white foam speckle dots at topmost crests */}
+        {[200, 430, 670, 890, 1100, 1320].map((x, i) => (
+          <ellipse
+            key={i}
+            cx={x}
+            cy={i % 2 === 0 ? 14 : 8}
+            rx={18 + (i % 3) * 8}
+            ry={3}
+            fill="white"
+            opacity={0.12}
+          />
+        ))}
       </svg>
     </div>
   );
