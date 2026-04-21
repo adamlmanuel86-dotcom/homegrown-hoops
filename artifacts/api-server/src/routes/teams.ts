@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
-import { db, teamsTable, gamesTable } from "@workspace/db";
+import { getAuth } from "@clerk/express";
+import { db, teamsTable, gamesTable, userProfilesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import {
   CreateTeamBody,
@@ -13,6 +14,15 @@ import {
   GetTeamStatsParams,
   GetTeamStatsResponse,
 } from "@workspace/api-zod";
+
+import type { Request } from "express";
+
+async function requireAdmin(req: Request): Promise<boolean> {
+  const { userId } = getAuth(req);
+  if (!userId) return false;
+  const [profile] = await db.select().from(userProfilesTable).where(eq(userProfilesTable.clerkUserId, userId));
+  return profile?.role === "admin";
+}
 
 const router: IRouter = Router();
 
@@ -46,6 +56,10 @@ router.get("/teams/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/teams/:id", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req))) {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
   const params = UpdateTeamParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
