@@ -47,6 +47,22 @@ router.get("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
+  // If this user is a protected admin but their stored role isn't "admin"
+  // (e.g. the second admin email was added after their profile was created),
+  // silently upgrade the record now.
+  if (profile.role !== "admin") {
+    const protected_ = await isProtectedAdmin(userId);
+    if (protected_) {
+      const [upgraded] = await db
+        .update(userProfilesTable)
+        .set({ role: "admin", isAdmin: true, updatedAt: new Date() })
+        .where(eq(userProfilesTable.clerkUserId, userId))
+        .returning();
+      res.json(GetMyProfileResponse.parse(serializeRow(upgraded)));
+      return;
+    }
+  }
+
   res.json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
 

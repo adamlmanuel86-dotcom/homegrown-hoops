@@ -3,7 +3,7 @@ import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { User, Save, Pencil, CheckCircle } from "lucide-react";
+import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck } from "lucide-react";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 2);
@@ -278,6 +278,59 @@ export function MyProfilePage() {
           )}
         </form>
       )}
+
+      {/* ── Account Info — only the signed-in owner ever sees this ────────── */}
+      <div className="card-base p-6 space-y-4">
+        <h3 className="label-upper text-xs text-muted-foreground">Account Info</h3>
+
+        {/* Email */}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Mail className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Email Address</p>
+            <p className="text-sm font-semibold text-foreground truncate">
+              {user?.primaryEmailAddress?.emailAddress ?? "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Role */}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Role</p>
+            {profile?.role ? (
+              <RoleBadge role={profile.role} />
+            ) : (
+              <span className="text-sm font-semibold text-muted-foreground">—</span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function RoleBadge({ role }: { role: string }) {
+  const styles: Record<string, string> = {
+    admin:  "bg-primary/15 text-primary border border-primary/30",
+    coach:  "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+    player: "bg-white/8 text-foreground/70 border border-white/10",
+  };
+  const labels: Record<string, string> = {
+    admin:  "Admin",
+    coach:  "Coach",
+    player: "Player",
+  };
+  const cls = styles[role] ?? styles.player;
+  const label = labels[role] ?? role.charAt(0).toUpperCase() + role.slice(1);
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${cls}`}>
+      {label}
+    </span>
   );
 }
