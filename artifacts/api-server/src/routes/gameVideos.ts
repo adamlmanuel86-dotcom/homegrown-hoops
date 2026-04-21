@@ -44,10 +44,9 @@ router.post("/games/:id/videos", async (req, res): Promise<void> => {
   }
 
   const { userId, profile } = authed;
-  const role = profile?.role ?? "player";
 
-  if (!["admin", "coach", "player"].includes(role)) {
-    res.status(403).json({ error: "Must have a profile to upload videos" });
+  if (profile?.role !== "admin") {
+    res.status(403).json({ error: "Only admins can upload videos" });
     return;
   }
 

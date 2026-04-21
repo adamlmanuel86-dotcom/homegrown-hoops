@@ -40,7 +40,7 @@ export function GameDetailPage() {
   });
 
   const isAdmin = myProfile?.role === "admin";
-  const canUpload = isSignedIn && !!myProfile;
+  const canUpload = isAdmin;
 
   const updateGame = useUpdateGame();
   const addGameVideo = useAddGameVideo();
