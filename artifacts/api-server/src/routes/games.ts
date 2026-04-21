@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, or, sql } from "drizzle-orm";
-import { db, gamesTable, gamePlayerStatsTable, teamsTable } from "@workspace/db";
+import { eq, and, desc, or } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
+import { db, gamesTable, gamePlayerStatsTable, teamsTable, userProfilesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import {
   CreateGameBody,
@@ -58,6 +59,22 @@ router.get("/games", async (req, res): Promise<void> => {
 });
 
 router.post("/games", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (!profile?.isAdmin) {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
   const parsed = CreateGameBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

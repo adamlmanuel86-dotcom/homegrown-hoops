@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useListGames, useListTeams } from "@workspace/api-client-react";
+import { useListGames, useListTeams, useCreateGame, useGetMyProfile } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { CalendarDays, ArrowRight } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@clerk/react";
+import { CalendarDays, ArrowRight, Plus, X, Save } from "lucide-react";
 
 const statusStyle: Record<string, string> = {
   final: "bg-secondary text-white",
@@ -9,35 +11,287 @@ const statusStyle: Record<string, string> = {
   scheduled: "bg-muted text-muted-foreground",
 };
 
+function deriveSeason(dateStr: string): string {
+  const d = new Date(dateStr);
+  const month = d.getUTCMonth() + 1;
+  const year = d.getUTCFullYear();
+  const startYear = month >= 9 ? year : year - 1;
+  return `${startYear}-${String(startYear + 1).slice(2)}`;
+}
+
+type GameForm = {
+  gameDate: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeScore: string;
+  awayScore: string;
+};
+
+const emptyForm: GameForm = {
+  gameDate: "",
+  homeTeamId: "",
+  awayTeamId: "",
+  homeScore: "",
+  awayScore: "",
+};
+
 export function GamesPage() {
+  const { isSignedIn } = useUser();
   const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>();
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<GameForm>(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const qc = useQueryClient();
 
   const { data: teams } = useListTeams();
   const { data: games, isLoading } = useListGames(
-    selectedTeamId || selectedSeason ? { teamId: selectedTeamId, season: selectedSeason } : undefined
+    selectedTeamId || selectedSeason
+      ? { teamId: selectedTeamId, season: selectedSeason }
+      : undefined
   );
+  const { data: myProfile } = useGetMyProfile({
+    query: { enabled: isSignedIn === true, retry: false },
+  });
+
+  const isAdmin = myProfile?.isAdmin === true;
+  const createGame = useCreateGame();
 
   const seasons = [...new Set(games?.map((g) => g.season) ?? [])].sort().reverse();
 
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) {
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setFormError(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.homeTeamId || !form.awayTeamId) {
+      setFormError("Please select both teams.");
+      return;
+    }
+    if (form.homeTeamId === form.awayTeamId) {
+      setFormError("Home and away teams must be different.");
+      return;
+    }
+    if (!form.gameDate) {
+      setFormError("Please select a date.");
+      return;
+    }
+
+    const homeScore =
+      form.homeScore !== "" ? parseInt(form.homeScore) : null;
+    const awayScore =
+      form.awayScore !== "" ? parseInt(form.awayScore) : null;
+    const hasScores = homeScore !== null && awayScore !== null;
+
+    await createGame.mutateAsync({
+      data: {
+        homeTeamId: parseInt(form.homeTeamId),
+        awayTeamId: parseInt(form.awayTeamId),
+        gameDate: form.gameDate,
+        season: deriveSeason(form.gameDate),
+        homeScore,
+        awayScore,
+        status: hasScores ? "final" : "scheduled",
+        location: null,
+        notes: null,
+      },
+    });
+
+    await qc.invalidateQueries({ queryKey: ["/api/games"] });
+    setForm(emptyForm);
+    setShowForm(false);
+  }
+
   return (
     <div className="space-y-8">
-      <div>
-        <p className="label-upper mb-1">Schedule & Results</p>
-        <h1 className="font-display text-4xl md:text-5xl text-secondary">GAME LOG</h1>
-        <p className="text-muted-foreground mt-2">Every game, every score</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="label-upper mb-1">Schedule & Results</p>
+          <h1 className="font-display text-4xl md:text-5xl text-secondary">
+            GAME LOG
+          </h1>
+          <p className="text-muted-foreground mt-2">Every game, every score</p>
+        </div>
+
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setShowForm((v) => !v);
+              setForm(emptyForm);
+              setFormError(null);
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors flex-shrink-0 mt-1 ${
+              showForm
+                ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "btn-primary"
+            }`}
+          >
+            {showForm ? (
+              <>
+                <X className="h-4 w-4" /> Cancel
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" /> Add Game
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {/* Add Game Form */}
+      {isAdmin && showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="card-base p-6 space-y-5 border-primary/30"
+        >
+          <h2 className="font-display text-xl text-secondary">NEW GAME</h2>
+
+          <div>
+            <label className="label-upper block mb-1.5">Date *</label>
+            <input
+              type="date"
+              name="gameDate"
+              value={form.gameDate}
+              onChange={handleChange}
+              required
+              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="label-upper block mb-1.5">Home Team *</label>
+              <select
+                name="homeTeamId"
+                value={form.homeTeamId}
+                onChange={handleChange}
+                required
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+              >
+                <option value="">Select home team</option>
+                {teams?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="label-upper block mb-1.5">Away Team *</label>
+              <select
+                name="awayTeamId"
+                value={form.awayTeamId}
+                onChange={handleChange}
+                required
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+              >
+                <option value="">Select away team</option>
+                {teams?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label-upper block mb-1.5">
+                Home Score{" "}
+                <span className="normal-case text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </label>
+              <input
+                type="number"
+                name="homeScore"
+                value={form.homeScore}
+                onChange={handleChange}
+                min={0}
+                placeholder="—"
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+            </div>
+            <div>
+              <label className="label-upper block mb-1.5">
+                Away Score{" "}
+                <span className="normal-case text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </label>
+              <input
+                type="number"
+                name="awayScore"
+                value={form.awayScore}
+                onChange={handleChange}
+                min={0}
+                placeholder="—"
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Leave scores blank to mark the game as scheduled. Season is
+            auto-calculated from the date.
+          </p>
+
+          {formError && (
+            <p className="text-red-600 text-sm font-medium">{formError}</p>
+          )}
+          {createGame.isError && (
+            <p className="text-red-600 text-sm font-medium">
+              Failed to save game. Make sure you have admin access.
+            </p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="submit"
+              disabled={createGame.isPending}
+              className="btn-primary"
+            >
+              <Save className="h-4 w-4" />
+              {createGame.isPending ? "Saving..." : "Save Game"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setForm(emptyForm);
+              }}
+              className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <select
           value={selectedTeamId ?? ""}
-          onChange={(e) => setSelectedTeamId(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={(e) =>
+            setSelectedTeamId(
+              e.target.value ? Number(e.target.value) : undefined
+            )
+          }
           className="border border-border rounded-lg px-4 py-2.5 text-sm font-semibold bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         >
           <option value="">All Teams</option>
           {teams?.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
           ))}
         </select>
         {seasons.length > 0 && (
@@ -47,11 +301,16 @@ export function GamesPage() {
             className="border border-border rounded-lg px-4 py-2.5 text-sm font-semibold bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           >
             <option value="">All Seasons</option>
-            {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+            {seasons.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         )}
       </div>
 
+      {/* Game List */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -87,8 +346,16 @@ export function GamesPage() {
             const homeTeam = teams?.find((t) => t.id === game.homeTeamId);
             const awayTeam = teams?.find((t) => t.id === game.awayTeamId);
             const isFinal = game.status === "final";
-            const homeWon = isFinal && game.homeScore != null && game.awayScore != null && game.homeScore > game.awayScore;
-            const awayWon = isFinal && game.homeScore != null && game.awayScore != null && game.awayScore > game.homeScore;
+            const homeWon =
+              isFinal &&
+              game.homeScore != null &&
+              game.awayScore != null &&
+              game.homeScore > game.awayScore;
+            const awayWon =
+              isFinal &&
+              game.homeScore != null &&
+              game.awayScore != null &&
+              game.awayScore > game.homeScore;
 
             return (
               <Link
@@ -96,44 +363,69 @@ export function GamesPage() {
                 href={`/games/${game.id}`}
                 className="card-base p-5 flex items-center gap-5 hover:shadow-md hover:border-primary/30 transition-all group"
               >
-                {/* Meta */}
                 <div className="w-24 flex-shrink-0">
                   <p className="label-upper text-[10px] mb-1">{game.season}</p>
-                  <p className="text-sm font-semibold text-secondary">{game.gameDate}</p>
-                  <span className={`inline-block mt-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${statusStyle[game.status] ?? "bg-muted text-muted-foreground"}`}>
+                  <p className="text-sm font-semibold text-secondary">
+                    {game.gameDate}
+                  </p>
+                  <span
+                    className={`inline-block mt-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                      statusStyle[game.status] ??
+                      "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {game.status === "in_progress" ? "Live" : game.status}
                   </span>
                 </div>
 
-                {/* Teams & Score */}
                 <div className="flex-1 space-y-2.5">
                   {[
                     { team: homeTeam, score: game.homeScore, won: homeWon },
                     { team: awayTeam, score: game.awayScore, won: awayWon },
                   ].map(({ team, score, won }, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-3">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between gap-3"
+                    >
                       <div className="flex items-center gap-3">
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs text-white flex-shrink-0"
-                          style={{ backgroundColor: team?.primaryColor ?? "#888" }}
+                          style={{
+                            backgroundColor: team?.primaryColor ?? "#888",
+                          }}
                         >
                           {team?.abbreviation ?? "?"}
                         </div>
-                        <span className={`text-sm font-semibold ${won ? "text-secondary font-bold" : "text-muted-foreground"}`}>
+                        <span
+                          className={`text-sm font-semibold ${
+                            won
+                              ? "text-secondary font-bold"
+                              : "text-muted-foreground"
+                          }`}
+                        >
                           {team?.name ?? (idx === 0 ? "Home" : "Away")}
                         </span>
                       </div>
-                      <span className={`font-display text-xl ${won ? "text-primary" : isFinal ? "text-secondary" : "text-muted-foreground"}`}>
+                      <span
+                        className={`font-display text-xl ${
+                          won
+                            ? "text-primary"
+                            : isFinal
+                            ? "text-secondary"
+                            : "text-muted-foreground"
+                        }`}
+                      >
                         {isFinal ? score : "—"}
                       </span>
                     </div>
                   ))}
                 </div>
 
-                {/* Location + Arrow */}
                 <div className="flex-shrink-0 flex flex-col items-end gap-2">
                   {game.location && (
-                    <p className="text-xs text-muted-foreground text-right hidden sm:block max-w-[100px] leading-snug">{game.location}</p>
+                    <p className="text-xs text-muted-foreground text-right hidden sm:block max-w-[100px] leading-snug">
+                      {game.location}
+                    </p>
                   )}
                   <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
                 </div>
@@ -145,7 +437,11 @@ export function GamesPage() {
         <div className="card-base p-16 text-center">
           <CalendarDays className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
           <p className="font-bold text-secondary text-lg mb-1">No Games Yet</p>
-          <p className="text-muted-foreground text-sm">Check back once games have been scheduled.</p>
+          <p className="text-muted-foreground text-sm">
+            {isAdmin
+              ? 'Click "Add Game" above to log your first game.'
+              : "Check back once games have been scheduled."}
+          </p>
         </div>
       )}
     </div>
