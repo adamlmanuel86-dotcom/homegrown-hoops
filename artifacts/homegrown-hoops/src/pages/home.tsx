@@ -118,7 +118,7 @@ export function Home() {
             Your Game. Your Stats. Your Legacy.
           </p>
           <p className="text-white/60 text-sm max-w-md mb-8">
-            Atlantic Canada's home for high school basketball analytics.
+            Atlantic Canada's Home for Youth Basketball Analytics.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/games" className="btn-primary text-base px-6 py-3">
