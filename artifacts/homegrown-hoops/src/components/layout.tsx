@@ -2,7 +2,8 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, UserButton, useUser } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { Menu, X, Trophy, Users, CalendarDays, Home, User, Shield } from "lucide-react";
+import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield } from "lucide-react";
+import { HomegrownHoopsLogo } from "@/components/logo";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,11 +27,8 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
       <header className="bg-secondary text-secondary-foreground sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <Trophy className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-display text-xl tracking-wide text-white">HOMEGROWN HOOPS</span>
+          <Link href="/">
+            <HomegrownHoopsLogo size="md" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
