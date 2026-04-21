@@ -8,9 +8,19 @@ import {
   useListPlayers,
   useUpdateGame,
   useGetMyProfile,
+  useListGameVideos,
+  useAddGameVideo,
+  useDeleteGameVideo,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, CalendarDays, Pencil, Save, X } from "lucide-react";
+import { ObjectUploader } from "@workspace/object-storage-web";
+import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink } from "lucide-react";
+
+const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+
+function storageUrl(objectPath: string) {
+  return `${BASE_URL}/api/storage${objectPath}`;
+}
 
 export function GameDetailPage() {
   const [, params] = useRoute("/games/:id");
@@ -25,14 +35,27 @@ export function GameDetailPage() {
   const { data: myProfile } = useGetMyProfile({
     query: { enabled: isSignedIn === true, retry: false },
   });
+  const { data: videos, isLoading: loadingVideos } = useListGameVideos(id, {
+    query: { enabled: !!id },
+  });
 
   const isAdmin = myProfile?.role === "admin";
+  const canUpload = isSignedIn && !!myProfile;
+
   const updateGame = useUpdateGame();
+  const addGameVideo = useAddGameVideo();
+  const deleteGameVideo = useDeleteGameVideo();
 
   const [editingScore, setEditingScore] = useState(false);
   const [homeScoreInput, setHomeScoreInput] = useState("");
   const [awayScoreInput, setAwayScoreInput] = useState("");
   const [scoreError, setScoreError] = useState<string | null>(null);
+
+  const [videoTitle, setVideoTitle] = useState("");
+  const [pendingObjectPath, setPendingObjectPath] = useState<string | null>(null);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [savingVideo, setSavingVideo] = useState(false);
 
   const homeTeam = teams?.find((t) => t.id === game?.homeTeamId);
   const awayTeam = teams?.find((t) => t.id === game?.awayTeamId);
@@ -59,16 +82,32 @@ export function GameDetailPage() {
       setScoreError("Please enter valid scores for both teams.");
       return;
     }
-    await updateGame.mutateAsync({
-      id,
-      data: {
-        homeScore: home,
-        awayScore: away,
-        status: "final",
-      },
-    });
+    await updateGame.mutateAsync({ id, data: { homeScore: home, awayScore: away, status: "final" } });
     await qc.invalidateQueries({ queryKey: [`/api/games/${id}`] });
     setEditingScore(false);
+  }
+
+  async function handleVideoSave() {
+    if (!pendingObjectPath) return;
+    if (!videoTitle.trim()) {
+      setTitleError("Please enter a title for this video.");
+      return;
+    }
+    setSavingVideo(true);
+    try {
+      await addGameVideo.mutateAsync({ id, data: { title: videoTitle.trim(), objectPath: pendingObjectPath } });
+      await qc.invalidateQueries({ queryKey: [`/api/games/${id}/videos`] });
+      setVideoTitle("");
+      setPendingObjectPath(null);
+      setShowUploadForm(false);
+    } finally {
+      setSavingVideo(false);
+    }
+  }
+
+  async function handleDeleteVideo(videoId: number) {
+    await deleteGameVideo.mutateAsync({ id, videoId });
+    await qc.invalidateQueries({ queryKey: [`/api/games/${id}/videos`] });
   }
 
   if (loadingGame || loadingStats) {
@@ -104,12 +143,8 @@ export function GameDetailPage() {
         </div>
 
         <div className="grid grid-cols-3 items-center py-10 px-6">
-          {/* Away Team */}
           <Link href={awayTeam ? `/teams/${awayTeam.id}` : "#"} className="flex flex-col items-center gap-3 group">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg"
-              style={{ backgroundColor: awayTeam?.primaryColor ?? "#555" }}
-            >
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: awayTeam?.primaryColor ?? "#555" }}>
               {awayTeam?.abbreviation ?? "?"}
             </div>
             <div className="text-center">
@@ -120,7 +155,6 @@ export function GameDetailPage() {
             </div>
           </Link>
 
-          {/* Score */}
           <div className="flex flex-col items-center gap-2">
             {isFinal ? (
               <>
@@ -135,18 +169,14 @@ export function GameDetailPage() {
               <>
                 <p className="font-display text-4xl text-white/30">VS</p>
                 <p className={`text-xs font-bold uppercase tracking-widest ${game.status === "in_progress" ? "text-green-400" : "text-white/40"}`}>
-                  {game.status === "in_progress" ? "Live" : `${game.gameDate}`}
+                  {game.status === "in_progress" ? "Live" : game.gameDate}
                 </p>
               </>
             )}
           </div>
 
-          {/* Home Team */}
           <Link href={homeTeam ? `/teams/${homeTeam.id}` : "#"} className="flex flex-col items-center gap-3 group">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg"
-              style={{ backgroundColor: homeTeam?.primaryColor ?? "#555" }}
-            >
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: homeTeam?.primaryColor ?? "#555" }}>
               {homeTeam?.abbreviation ?? "?"}
             </div>
             <div className="text-center">
@@ -158,7 +188,6 @@ export function GameDetailPage() {
           </Link>
         </div>
 
-        {/* Admin score edit button inside the scoreboard */}
         {isAdmin && !editingScore && (
           <div className="flex justify-center pb-5">
             <button
@@ -174,85 +203,184 @@ export function GameDetailPage() {
 
       {/* Admin Score Entry Form */}
       {isAdmin && editingScore && (
-        <form
-          onSubmit={handleScoreSave}
-          className="card-base p-6 space-y-5 border-primary/40"
-        >
+        <form onSubmit={handleScoreSave} className="card-base p-6 space-y-5 border-primary/40">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display text-xl text-secondary">
-                {isFinal ? "EDIT SCORE" : "ENTER FINAL SCORE"}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Setting scores marks the game as final.
-              </p>
+              <h2 className="font-display text-xl text-secondary">{isFinal ? "EDIT SCORE" : "ENTER FINAL SCORE"}</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">Setting scores marks the game as final.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setEditingScore(false)}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
-            >
+            <button type="button" onClick={() => setEditingScore(false)} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
-
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="label-upper block mb-2">
-                {awayTeam?.name ?? "Away"} Score
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={awayScoreInput}
-                onChange={(e) => { setAwayScoreInput(e.target.value); setScoreError(null); }}
-                placeholder="0"
-                className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              />
+              <label className="label-upper block mb-2">{awayTeam?.name ?? "Away"} Score</label>
+              <input type="number" min={0} value={awayScoreInput} onChange={(e) => { setAwayScoreInput(e.target.value); setScoreError(null); }} placeholder="0"
+                className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
             </div>
             <div>
-              <label className="label-upper block mb-2">
-                {homeTeam?.name ?? "Home"} Score
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={homeScoreInput}
-                onChange={(e) => { setHomeScoreInput(e.target.value); setScoreError(null); }}
-                placeholder="0"
-                className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              />
+              <label className="label-upper block mb-2">{homeTeam?.name ?? "Home"} Score</label>
+              <input type="number" min={0} value={homeScoreInput} onChange={(e) => { setHomeScoreInput(e.target.value); setScoreError(null); }} placeholder="0"
+                className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
             </div>
           </div>
-
-          {scoreError && (
-            <p className="text-red-600 text-sm font-medium">{scoreError}</p>
-          )}
-          {updateGame.isError && (
-            <p className="text-red-600 text-sm font-medium">
-              Failed to save score. Make sure you have admin access.
-            </p>
-          )}
-
+          {scoreError && <p className="text-red-600 text-sm font-medium">{scoreError}</p>}
+          {updateGame.isError && <p className="text-red-600 text-sm font-medium">Failed to save score.</p>}
           <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={updateGame.isPending}
-              className="btn-primary"
-            >
+            <button type="submit" disabled={updateGame.isPending} className="btn-primary">
               <Save className="h-4 w-4" />
               {updateGame.isPending ? "Saving..." : "Save Final Score"}
             </button>
-            <button
-              type="button"
-              onClick={() => setEditingScore(false)}
-              className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
-            >
+            <button type="button" onClick={() => setEditingScore(false)} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors">
               Cancel
             </button>
           </div>
         </form>
       )}
+
+      {/* Game Videos */}
+      <div className="card-base overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+          <Video className="h-5 w-5 text-primary" />
+          <h2 className="font-bold text-secondary">Game Videos</h2>
+          {videos && videos.length > 0 && (
+            <span className="ml-auto text-sm text-muted-foreground">{videos.length} {videos.length === 1 ? "video" : "videos"}</span>
+          )}
+          {canUpload && !showUploadForm && (
+            <button
+              onClick={() => { setShowUploadForm(true); setPendingObjectPath(null); setVideoTitle(""); setTitleError(null); }}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:opacity-90 transition-opacity"
+            >
+              <Upload className="h-3.5 w-3.5" /> Attach Video
+            </button>
+          )}
+        </div>
+
+        {/* Upload Form */}
+        {canUpload && showUploadForm && (
+          <div className="px-6 py-5 border-b border-border bg-primary/5 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-secondary text-sm">Attach a Video</p>
+              <button onClick={() => { setShowUploadForm(false); setPendingObjectPath(null); }} className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {!pendingObjectPath ? (
+              <div>
+                <p className="text-xs text-muted-foreground mb-3">Upload a video file (MP4, MOV, etc.)</p>
+                <ObjectUploader
+                  onGetUploadParameters={async (file) => {
+                    const res = await fetch(`${BASE_URL}/api/storage/uploads/request-url`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+                    });
+                    const { uploadURL } = await res.json();
+                    return { method: "PUT" as const, url: uploadURL, headers: { "Content-Type": file.type } };
+                  }}
+                  onComplete={(result) => {
+                    const path = result.successful?.[0]?.response?.body?.objectPath as string | undefined;
+                    if (path) {
+                      setPendingObjectPath(path);
+                      if (!videoTitle) setVideoTitle(result.successful?.[0]?.name?.replace(/\.[^.]+$/, "") ?? "");
+                    }
+                  }}
+                  allowedFileTypes={["video/*"]}
+                >
+                  Upload Video
+                </ObjectUploader>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2 text-sm font-medium">
+                  <Video className="h-4 w-4" /> Video uploaded — add a title to save it
+                </div>
+                <div>
+                  <label className="label-upper block mb-1.5">Video Title *</label>
+                  <input
+                    type="text"
+                    value={videoTitle}
+                    onChange={(e) => { setVideoTitle(e.target.value); setTitleError(null); }}
+                    placeholder="e.g. Full game highlights"
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  />
+                  {titleError && <p className="text-red-600 text-xs mt-1">{titleError}</p>}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleVideoSave} disabled={savingVideo} className="btn-primary text-sm py-2">
+                    <Save className="h-3.5 w-3.5" />
+                    {savingVideo ? "Saving..." : "Save Video"}
+                  </button>
+                  <button onClick={() => setPendingObjectPath(null)} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors">
+                    Re-upload
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Video List */}
+        {loadingVideos ? (
+          <div className="divide-y divide-border">
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
+                <div className="w-10 h-10 rounded-xl bg-muted flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-48" />
+                  <div className="h-3 bg-muted rounded w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : videos && videos.length > 0 ? (
+          <div className="divide-y divide-border">
+            {videos.map((v) => {
+              const canDelete = isAdmin || (myProfile?.clerkUserId === v.uploaderClerkUserId);
+              return (
+                <div key={v.id} className="flex items-center gap-4 px-6 py-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Video className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <a
+                      href={storageUrl(v.objectPath)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-secondary hover:text-primary transition-colors flex items-center gap-1.5 truncate"
+                    >
+                      {v.title}
+                      <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 opacity-50" />
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Uploaded by {v.uploaderName} · {new Date(v.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDeleteVideo(v.id)}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
+                      title="Delete video"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-6 py-10 text-center">
+            <Video className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm font-medium text-secondary mb-1">No videos yet</p>
+            <p className="text-xs text-muted-foreground">
+              {canUpload ? 'Click "Attach Video" above to add game footage.' : "Sign in to attach video footage to this game."}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Box Score */}
       {playerStats && playerStats.length > 0 ? (
@@ -262,10 +390,7 @@ export function GameDetailPage() {
             { label: homeTeam?.name ?? "Home", team: homeTeam, stats: homeStats },
           ].map(({ label, team, stats }) => (
             <div key={label} className="card-base overflow-hidden">
-              <div
-                className="px-5 py-3 flex items-center gap-3"
-                style={{ backgroundColor: team?.primaryColor ?? "#C85A1B" }}
-              >
+              <div className="px-5 py-3 flex items-center gap-3" style={{ backgroundColor: team?.primaryColor ?? "#C85A1B" }}>
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-display text-sm text-white">
                   {team?.abbreviation ?? "?"}
                 </div>
@@ -282,34 +407,30 @@ export function GameDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats
-                      .sort((a, b) => b.points - a.points)
-                      .map((s) => {
-                        const player = players?.find((p) => p.id === s.playerId);
-                        return (
-                          <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                            <td className="px-4 py-3">
-                              {player ? (
-                                <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
-                                  {player.firstName} {player.lastName}
-                                </Link>
-                              ) : (
-                                <span className="text-muted-foreground">Unknown</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-3 text-center font-bold text-primary">{s.points}</td>
-                            <td className="px-3 py-3 text-center text-secondary font-medium">{s.rebounds}</td>
-                            <td className="px-3 py-3 text-center text-secondary font-medium">{s.assists}</td>
-                            <td className="px-3 py-3 text-center text-secondary font-medium">{s.steals}</td>
-                            <td className="px-3 py-3 text-center text-secondary font-medium">{s.blocks}</td>
-                            <td className="px-3 py-3 text-center text-secondary font-medium">{s.turnovers}</td>
-                            <td className="px-3 py-3 text-center text-muted-foreground">{s.minutesPlayed}</td>
-                            <td className="px-3 py-3 text-center text-muted-foreground">{s.fieldGoalsMade}/{s.fieldGoalsAttempted}</td>
-                            <td className="px-3 py-3 text-center text-muted-foreground">{s.threesMade}/{s.threesAttempted}</td>
-                            <td className="px-3 py-3 text-center text-muted-foreground">{s.freeThrowsMade}/{s.freeThrowsAttempted}</td>
-                          </tr>
-                        );
-                      })}
+                    {stats.sort((a, b) => b.points - a.points).map((s) => {
+                      const player = players?.find((p) => p.id === s.playerId);
+                      return (
+                        <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            {player ? (
+                              <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
+                                {player.firstName} {player.lastName}
+                              </Link>
+                            ) : <span className="text-muted-foreground">Unknown</span>}
+                          </td>
+                          <td className="px-3 py-3 text-center font-bold text-primary">{s.points}</td>
+                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.rebounds}</td>
+                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.assists}</td>
+                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.steals}</td>
+                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.blocks}</td>
+                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.turnovers}</td>
+                          <td className="px-3 py-3 text-center text-muted-foreground">{s.minutesPlayed}</td>
+                          <td className="px-3 py-3 text-center text-muted-foreground">{s.fieldGoalsMade}/{s.fieldGoalsAttempted}</td>
+                          <td className="px-3 py-3 text-center text-muted-foreground">{s.threesMade}/{s.threesAttempted}</td>
+                          <td className="px-3 py-3 text-center text-muted-foreground">{s.freeThrowsMade}/{s.freeThrowsAttempted}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

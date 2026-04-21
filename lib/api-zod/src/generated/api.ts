@@ -616,3 +616,63 @@ export const UpdateProfileResponse = zod.object({
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string().min(1),
+  size: zod.number().min(1),
+  contentType: zod.string().min(1),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Serve an uploaded object
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce.string(),
+});
+
+/**
+ * @summary List videos attached to a game
+ */
+export const ListGameVideosParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListGameVideosResponseItem = zod.object({
+  id: zod.number(),
+  gameId: zod.number(),
+  uploaderClerkUserId: zod.string(),
+  uploaderName: zod.string(),
+  title: zod.string(),
+  objectPath: zod.string(),
+  createdAt: zod.string(),
+});
+export const ListGameVideosResponse = zod.array(ListGameVideosResponseItem);
+
+/**
+ * @summary Attach a video to a game (coach or player)
+ */
+export const AddGameVideoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddGameVideoBody = zod.object({
+  title: zod.string().min(1),
+  objectPath: zod.string().min(1),
+});
+
+/**
+ * @summary Delete a game video (uploader or admin only)
+ */
+export const DeleteGameVideoParams = zod.object({
+  id: zod.coerce.number(),
+  videoId: zod.coerce.number(),
+});

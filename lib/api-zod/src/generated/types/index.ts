@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./addGameVideoBody";
 export * from "./adminUserListItem";
 export * from "./createGameBody";
 export * from "./createGameBodyStatus";
@@ -15,6 +16,7 @@ export * from "./createUserProfileBody";
 export * from "./game";
 export * from "./gamePlayerStat";
 export * from "./gameStatus";
+export * from "./gameVideo";
 export * from "./healthStatus";
 export * from "./listGamesParams";
 export * from "./listPlayersParams";
@@ -31,6 +33,8 @@ export * from "./updatePlayerBody";
 export * from "./updateTeamBody";
 export * from "./updateUserProfileBody";
 export * from "./updateUserRoleBody";
+export * from "./uploadUrlRequest";
+export * from "./uploadUrlResponse";
 export * from "./upsertGamePlayerStatBody";
 export * from "./userProfile";
 export * from "./userRole";

@@ -22,6 +22,10 @@ tags:
     description: User profile operations
   - name: admin
     description: Admin operations
+  - name: storage
+    description: Object storage upload and serving endpoints
+  - name: videos
+    description: Game video attachment operations
 paths:
   /healthz:
     get:
@@ -538,6 +542,114 @@ paths:
                 $ref: "#/components/schemas/UserProfile"
         "403":
           description: Forbidden
+
+  /storage/uploads/request-url:
+    post:
+      tags: [storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [storage]
+      operationId: getStorageObject
+      summary: Serve an uploaded object
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object content
+
+  /games/{id}/videos:
+    get:
+      operationId: listGameVideos
+      tags: [videos]
+      summary: List videos attached to a game
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of game videos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameVideo"
+    post:
+      operationId: addGameVideo
+      tags: [videos]
+      summary: Attach a video to a game (coach or player)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddGameVideoBody"
+      responses:
+        "201":
+          description: Video attached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameVideo"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /games/{id}/videos/{videoId}:
+    delete:
+      operationId: deleteGameVideo
+      tags: [videos]
+      summary: Delete a game video (uploader or admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
 
 components:
   schemas:
@@ -1129,3 +1241,57 @@ components:
           type: ["integer", "null"]
         bio:
           type: ["string", "null"]
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+
+    GameVideo:
+      type: object
+      required: [id, gameId, uploaderClerkUserId, uploaderName, title, objectPath, createdAt]
+      properties:
+        id:
+          type: integer
+        gameId:
+          type: integer
+        uploaderClerkUserId:
+          type: string
+        uploaderName:
+          type: string
+        title:
+          type: string
+        objectPath:
+          type: string
+        createdAt:
+          type: string
+
+    AddGameVideoBody:
+      type: object
+      required: [title, objectPath]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1

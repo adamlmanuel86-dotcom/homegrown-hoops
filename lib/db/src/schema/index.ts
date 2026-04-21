@@ -3,3 +3,4 @@ export * from "./players";
 export * from "./games";
 export * from "./gamePlayerStats";
 export * from "./userProfiles";
+export * from "./gameVideos";

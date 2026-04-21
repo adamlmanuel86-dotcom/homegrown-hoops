@@ -334,6 +334,37 @@ export interface UpdateUserProfileBody {
   bio?: string | null;
 }
 
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface GameVideo {
+  id: number;
+  gameId: number;
+  uploaderClerkUserId: string;
+  uploaderName: string;
+  title: string;
+  objectPath: string;
+  createdAt: string;
+}
+
+export interface AddGameVideoBody {
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 1 */
+  objectPath: string;
+}
+
 export type ListPlayersParams = {
   teamId?: number;
 };
