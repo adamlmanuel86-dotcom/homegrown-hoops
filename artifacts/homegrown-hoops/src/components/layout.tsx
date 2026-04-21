@@ -1,14 +1,15 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Show, UserButton, useUser } from "@clerk/react";
+import { Show, UserButton, useUser, useClerk } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen } from "lucide-react";
+import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
   const { user, isSignedIn } = useUser();
+  const { signOut } = useClerk();
 
   const { data: myProfile } = useGetMyProfile({
     query: { enabled: isSignedIn === true, retry: false },
@@ -32,6 +33,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <HomegrownHoopsLogo size="md" />
           </Link>
 
+          {/* ── Desktop nav ──────────────────────────────────────────────── */}
           <nav className="hidden md:flex items-center gap-1">
             {links.map((link) => (
               <Link
@@ -48,14 +50,18 @@ export function Layout({ children }: { children: ReactNode }) {
             ))}
 
             <div className="ml-4 flex items-center gap-2">
+              {/* ── Signed-out: Login button ── */}
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
-                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
+                  className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
                 >
+                  <LogIn className="h-4 w-4" />
                   Sign In
                 </Link>
               </Show>
+
+              {/* ── Signed-in: profile links + avatar + Sign Out ── */}
               <Show when="signed-in">
                 {isAdmin && (
                   <Link
@@ -81,11 +87,21 @@ export function Layout({ children }: { children: ReactNode }) {
                   <User className="h-4 w-4" />
                   {user?.firstName ?? "Profile"}
                 </Link>
+
                 <UserButton />
+
+                <button
+                  onClick={() => signOut({ redirectUrl: "/" })}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-white/8 text-white/80 border border-white/15 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </button>
               </Show>
             </div>
           </nav>
 
+          {/* ── Mobile hamburger ─────────────────────────────────────────── */}
           <button
             className="md:hidden p-2 text-white/80 hover:text-white transition-colors"
             onClick={() => setIsOpen(!isOpen)}
@@ -95,6 +111,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      {/* ── Mobile drawer ───────────────────────────────────────────────── */}
       {isOpen && (
         <div className="md:hidden bg-secondary text-white absolute top-16 left-0 right-0 z-40 shadow-xl border-t border-white/10">
           <div className="container mx-auto px-4 py-3 flex flex-col gap-1">
@@ -112,22 +129,26 @@ export function Layout({ children }: { children: ReactNode }) {
               </Link>
             ))}
 
-            <div className="pt-2 pb-1 px-4 space-y-1">
+            <div className="mt-2 pt-3 border-t border-white/10 flex flex-col gap-2 pb-2">
+              {/* ── Signed-out ── */}
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full bg-primary text-white px-4 py-3 rounded-lg text-sm font-bold text-center hover:opacity-90"
+                  className="flex items-center justify-center gap-2 w-full bg-primary text-white px-4 py-3 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
                 >
+                  <LogIn className="h-4 w-4" />
                   Sign In
                 </Link>
               </Show>
+
+              {/* ── Signed-in ── */}
               <Show when="signed-in">
                 {isAdmin && (
                   <Link
                     href="/admin"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
                   >
                     <Shield className="h-4 w-4" />
                     Admin Panel
@@ -136,13 +157,20 @@ export function Layout({ children }: { children: ReactNode }) {
                 <Link
                   href="/my-profile"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
                 >
                   <User className="h-4 w-4" />
-                  My Profile
+                  {user?.firstName ?? "My Profile"}
                 </Link>
-                <div className="py-2 px-4">
-                  <UserButton />
+
+                <div className="px-1">
+                  <button
+                    onClick={() => { setIsOpen(false); signOut({ redirectUrl: "/" }); }}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg text-sm font-bold bg-white/8 text-white/80 border border-white/15 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
                 </div>
               </Show>
             </div>
