@@ -41,7 +41,7 @@ router.get("/profiles/me", async (req, res): Promise<void> => {
   res.json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
 
-router.post("/profiles", async (req, res): Promise<void> => {
+router.post("/profiles/me", async (req, res): Promise<void> => {
   const userId = requireAuth(req, res);
   if (!userId) return;
 
