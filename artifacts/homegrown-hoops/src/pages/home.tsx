@@ -1,4 +1,4 @@
-import { useGetStatsSummary, useGetStatLeaders } from "@workspace/api-client-react";
+import { useGetStatsSummary, useGetStatLeaders, useListTeams } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
 import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, ShieldCheck } from "lucide-react";
@@ -6,7 +6,11 @@ import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share
 export function Home() {
   const { data: summary, isLoading: loadingSummary } = useGetStatsSummary();
   const { data: leaders, isLoading: loadingLeaders } = useGetStatLeaders();
+  const { data: teams } = useListTeams();
   const { user } = useUser();
+
+  const teamById = (id: number) =>
+    teams?.find((t) => t.id === id)?.name ?? `Team #${id}`;
 
   return (
     <div className="space-y-10">
@@ -163,11 +167,11 @@ export function Home() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm font-semibold">
-                        <span>Team #{game.awayTeamId}</span>
+                        <span>{teamById(game.awayTeamId)}</span>
                         <span className="font-display text-base">{game.awayScore ?? "—"}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
-                        <span>Team #{game.homeTeamId}</span>
+                        <span>{teamById(game.homeTeamId)}</span>
                         <span className="font-display text-base">{game.homeScore ?? "—"}</span>
                       </div>
                     </div>
