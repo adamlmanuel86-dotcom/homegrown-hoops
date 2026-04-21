@@ -1,12 +1,19 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, UserButton, useUser } from "@clerk/react";
-import { Menu, X, Trophy, Users, CalendarDays, Home, User } from "lucide-react";
+import { useGetMyProfile } from "@workspace/api-client-react";
+import { Menu, X, Trophy, Users, CalendarDays, Home, User, Shield } from "lucide-react";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
+
+  const { data: myProfile } = useGetMyProfile({
+    query: { enabled: isSignedIn === true, retry: false },
+  });
+
+  const isAdmin = myProfile?.role === "admin";
 
   const links = [
     { href: "/", label: "Home", icon: Home },
@@ -40,7 +47,8 @@ export function Layout({ children }: { children: ReactNode }) {
                 {link.label}
               </Link>
             ))}
-            <div className="ml-4 flex items-center gap-3">
+
+            <div className="ml-4 flex items-center gap-2">
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
@@ -50,9 +58,26 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               </Show>
               <Show when="signed-in">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      location === "/admin"
+                        ? "bg-primary/20 text-primary"
+                        : "text-white/70 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/my-profile"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${location === "/my-profile" ? "bg-white/10 text-white" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    location === "/my-profile"
+                      ? "bg-white/10 text-white"
+                      : "text-white/70 hover:text-white hover:bg-white/10"
+                  }`}
                 >
                   <User className="h-4 w-4" />
                   {user?.firstName ?? "Profile"}
@@ -87,7 +112,8 @@ export function Layout({ children }: { children: ReactNode }) {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-2 pb-1 px-4 space-y-2">
+
+            <div className="pt-2 pb-1 px-4 space-y-1">
               <Show when="signed-out">
                 <Link
                   href="/sign-in"
@@ -98,6 +124,16 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               </Show>
               <Show when="signed-in">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin Panel
+                  </Link>
+                )}
                 <Link
                   href="/my-profile"
                   onClick={() => setIsOpen(false)}

@@ -2,6 +2,9 @@ import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+export const USER_ROLES = ["admin", "coach", "player"] as const;
+export type UserRole = typeof USER_ROLES[number];
+
 export const userProfilesTable = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
   clerkUserId: text("clerk_user_id").notNull().unique(),
@@ -12,6 +15,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   graduationYear: integer("graduation_year"),
   bio: text("bio"),
   isAdmin: boolean("is_admin").notNull().default(false),
+  role: text("role").notNull().default("player"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -19,6 +23,7 @@ export const userProfilesTable = pgTable("user_profiles", {
 export const insertUserProfileSchema = createInsertSchema(userProfilesTable).omit({
   id: true,
   isAdmin: true,
+  role: true,
   createdAt: true,
   updatedAt: true,
 });

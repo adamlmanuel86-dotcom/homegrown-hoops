@@ -473,6 +473,41 @@ export const GetStatsSummaryResponse = zod.object({
 });
 
 /**
+ * @summary List all users with roles (admin only)
+ */
+export const ListAdminUsersResponseItem = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  role: zod.enum(["admin", "coach", "player"]),
+  isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem);
+
+/**
+ * @summary Update a user's role (admin only)
+ */
+export const UpdateUserRoleParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const UpdateUserRoleBody = zod.object({
+  role: zod.enum(["admin", "coach", "player"]),
+});
+
+export const UpdateUserRoleResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  role: zod.enum(["admin", "coach", "player"]),
+  isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
  * @summary Get the signed-in user's profile
  */
 export const GetMyProfileResponse = zod.object({
@@ -485,6 +520,7 @@ export const GetMyProfileResponse = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "coach", "player"]),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -523,6 +559,7 @@ export const UpdateMyProfileResponse = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "coach", "player"]),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -544,6 +581,7 @@ export const GetProfileResponse = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "coach", "player"]),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -574,6 +612,7 @@ export const UpdateProfileResponse = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "coach", "player"]),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

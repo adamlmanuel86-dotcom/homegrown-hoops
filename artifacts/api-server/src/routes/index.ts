@@ -5,6 +5,7 @@ import playersRouter from "./players";
 import gamesRouter from "./games";
 import statsRouter from "./stats";
 import profilesRouter from "./profiles";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(playersRouter);
 router.use(gamesRouter);
 router.use(statsRouter);
 router.use(profilesRouter);
+router.use(adminRouter);
 
 export default router;

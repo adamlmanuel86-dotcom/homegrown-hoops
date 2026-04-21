@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./adminUserListItem";
 export * from "./createGameBody";
 export * from "./createGameBodyStatus";
 export * from "./createPlayerBody";
@@ -29,5 +30,7 @@ export * from "./updateGameBodyStatus";
 export * from "./updatePlayerBody";
 export * from "./updateTeamBody";
 export * from "./updateUserProfileBody";
+export * from "./updateUserRoleBody";
 export * from "./upsertGamePlayerStatBody";
 export * from "./userProfile";
+export * from "./userRole";

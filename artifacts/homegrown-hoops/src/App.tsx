@@ -15,6 +15,7 @@ import { GamesPage } from "@/pages/games";
 import { GameDetailPage } from "@/pages/game-detail";
 import { MyProfilePage } from "@/pages/my-profile";
 import { ProfilePage } from "@/pages/profile";
+import { AdminPage } from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -112,6 +113,7 @@ function Router() {
         <Route path="/games/:id" component={GameDetailPage} />
         <Route path="/my-profile" component={MyProfilePage} />
         <Route path="/profiles/:clerkUserId" component={ProfilePage} />
+        <Route path="/admin" component={AdminPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -7,21 +7,12 @@
  */
 import type { UserRole } from "./userRole";
 
-export interface UserProfile {
+export interface AdminUserListItem {
   id: number;
   clerkUserId: string;
   firstName: string;
   lastName: string;
-  /** @nullable */
-  school?: string | null;
-  /** @nullable */
-  position?: string | null;
-  /** @nullable */
-  graduationYear?: number | null;
-  /** @nullable */
-  bio?: string | null;
-  isAdmin: boolean;
   role: UserRole;
+  isAdmin: boolean;
   createdAt: string;
-  updatedAt: string;
 }

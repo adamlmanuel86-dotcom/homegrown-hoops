@@ -64,10 +64,11 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
   // First profile ever created automatically becomes admin
   const [{ total }] = await db.select({ total: count() }).from(userProfilesTable);
   const isFirstUser = Number(total) === 0;
+  const role = isFirstUser ? "admin" : "player";
 
   const [profile] = await db
     .insert(userProfilesTable)
-    .values({ ...parsed.data, clerkUserId: userId, isAdmin: isFirstUser })
+    .values({ ...parsed.data, clerkUserId: userId, isAdmin: isFirstUser, role })
     .returning();
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));

@@ -267,6 +267,14 @@ export interface StatsSummary {
   recentGames: Game[];
 }
 
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+export const UserRole = {
+  admin: "admin",
+  coach: "coach",
+  player: "player",
+} as const;
+
 export interface UserProfile {
   id: number;
   clerkUserId: string;
@@ -281,8 +289,23 @@ export interface UserProfile {
   /** @nullable */
   bio?: string | null;
   isAdmin: boolean;
+  role: UserRole;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UpdateUserRoleBody {
+  role: UserRole;
+}
+
+export interface AdminUserListItem {
+  id: number;
+  clerkUserId: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  isAdmin: boolean;
+  createdAt: string;
 }
 
 export interface CreateUserProfileBody {

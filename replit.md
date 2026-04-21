@@ -21,12 +21,14 @@ Mobile-friendly basketball stats tracking website for community/neighborhood lea
 - Games log (filter by team/season) + game detail with full box score
 - Clerk authentication (sign in / sign up)
 - User profile system: signed-in users can create/edit their profile (name, school, position, graduation year, bio); profiles are publicly viewable at `/profiles/:clerkUserId`; only the owner or an admin can edit
+- Three-tier role system: admin, coach, player (default). First account to register is auto-promoted to admin. Admins see an "Admin" link in the nav leading to `/admin` panel where they can change any user's role.
 
 ## Database Schema
 
 Tables: `teams`, `players`, `games`, `game_player_stats`, `user_profiles`
-- `user_profiles`: clerkUserId (unique), firstName, lastName, school, position, graduationYear, bio, isAdmin (default false)
-- Admin access granted by setting `is_admin = true` directly in DB for a given `clerk_user_id`
+- `user_profiles`: clerkUserId (unique), firstName, lastName, school, position, graduationYear, bio, isAdmin (bool), role ('admin'|'coach'|'player', default 'player')
+- First account to register automatically gets role='admin' and isAdmin=true
+- Role changes done via admin panel UI (PATCH /api/admin/users/:clerkUserId/role)
 
 ## Stack
 
