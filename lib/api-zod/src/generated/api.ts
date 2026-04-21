@@ -513,6 +513,25 @@ export const UpdateUserRoleResponse = zod.object({
 });
 
 /**
+ * @summary List all public user profiles
+ */
+export const ListProfilesResponseItem = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "coach", "player"]),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListProfilesResponse = zod.array(ListProfilesResponseItem);
+
+/**
  * @summary Get the signed-in user's profile
  */
 export const GetMyProfileResponse = zod.object({

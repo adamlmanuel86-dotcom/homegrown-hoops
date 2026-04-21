@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, count } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable } from "@workspace/db";
-import { serializeRow } from "../lib/serialize";
+import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 import {
   CreateMyProfileBody,
@@ -12,6 +12,14 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+router.get("/profiles", async (_req, res): Promise<void> => {
+  const profiles = await db
+    .select()
+    .from(userProfilesTable)
+    .orderBy(userProfilesTable.lastName);
+  res.json(serializeRows(profiles));
+});
 
 function requireAuth(
   req: Parameters<Parameters<typeof router.use>[0]>[0],

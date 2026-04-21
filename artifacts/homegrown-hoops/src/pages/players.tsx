@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { useListTeams, useListPlayers } from "@workspace/api-client-react";
+import { useListProfiles } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { Users, ArrowRight, Search } from "lucide-react";
+import { Users, ArrowRight, Search, GraduationCap } from "lucide-react";
+
+const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 
 export function PlayersPage() {
   const [search, setSearch] = useState("");
-  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>();
-  const { data: teams } = useListTeams();
-  const { data: players, isLoading } = useListPlayers(selectedTeamId ? { teamId: selectedTeamId } : undefined);
+  const [selectedPosition, setSelectedPosition] = useState("");
+  const { data: profiles, isLoading } = useListProfiles();
 
-  const filtered = players?.filter((p) =>
-    `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = profiles?.filter((p) => {
+    const nameMatch = `${p.firstName} ${p.lastName}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const posMatch = !selectedPosition || p.position === selectedPosition;
+    return nameMatch && posMatch;
+  });
 
   return (
     <div className="space-y-8">
@@ -21,7 +26,6 @@ export function PlayersPage() {
         <p className="text-muted-foreground mt-2">Every baller in the league</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -34,13 +38,13 @@ export function PlayersPage() {
           />
         </div>
         <select
-          value={selectedTeamId ?? ""}
-          onChange={(e) => setSelectedTeamId(e.target.value ? Number(e.target.value) : undefined)}
+          value={selectedPosition}
+          onChange={(e) => setSelectedPosition(e.target.value)}
           className="border border-border rounded-lg px-4 py-2.5 text-sm font-semibold bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         >
-          <option value="">All Teams</option>
-          {teams?.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
+          <option value="">All Positions</option>
+          {POSITIONS.map((pos) => (
+            <option key={pos} value={pos}>{pos}</option>
           ))}
         </select>
       </div>
@@ -53,33 +57,48 @@ export function PlayersPage() {
               <div className="flex-1 space-y-2">
                 <div className="h-4 bg-muted rounded w-3/4" />
                 <div className="h-3 bg-muted rounded w-1/2" />
+                <div className="h-3 bg-muted rounded w-1/3" />
               </div>
             </div>
           ))}
         </div>
       ) : filtered?.length ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((player) => {
-            const team = teams?.find((t) => t.id === player.teamId);
+          {filtered.map((profile) => {
+            const initials = `${profile.firstName[0] ?? ""}${profile.lastName[0] ?? ""}`.toUpperCase();
             return (
               <Link
-                key={player.id}
-                href={`/players/${player.id}`}
+                key={profile.id}
+                href={`/profiles/${profile.clerkUserId}`}
                 className="card-base p-4 flex items-center gap-4 hover:shadow-md hover:border-primary/30 transition-all group"
               >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center font-display text-lg text-white flex-shrink-0"
-                  style={{ backgroundColor: team?.primaryColor ?? "#C85A1B" }}
-                >
-                  {player.number ?? "#"}
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center font-display text-lg text-white flex-shrink-0 bg-primary/80">
+                  {initials}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-secondary text-sm leading-tight">
-                    {player.firstName} {player.lastName}
+                    {profile.firstName} {profile.lastName}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {player.position ?? "—"} · {team?.abbreviation ?? "FA"}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {profile.position && (
+                      <span className="text-xs font-bold text-primary">
+                        {profile.position}
+                      </span>
+                    )}
+                    {profile.school && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        {profile.school}
+                      </span>
+                    )}
+                  </div>
+                  {profile.graduationYear && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <GraduationCap className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs text-muted-foreground">
+                        Class of {profile.graduationYear}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </Link>
@@ -91,7 +110,9 @@ export function PlayersPage() {
           <Users className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
           <p className="font-bold text-secondary text-lg mb-1">No Players Found</p>
           <p className="text-muted-foreground text-sm">
-            {search ? "Try a different search." : "Players will appear here once added."}
+            {search || selectedPosition
+              ? "Try a different search or filter."
+              : "Players will appear here once they've created a profile."}
           </p>
         </div>
       )}
