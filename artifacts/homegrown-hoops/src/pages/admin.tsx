@@ -7,9 +7,10 @@ import {
   useUpdateUserRole,
   useListTeams,
   useUpdateTeam,
+  useDeleteTeam,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle } from "lucide-react";
 
 const ROLES = ["admin", "coach", "player"] as const;
 type Role = typeof ROLES[number];
@@ -62,10 +63,12 @@ export function AdminPage() {
 
   const updateRole = useUpdateUserRole();
   const updateTeam = useUpdateTeam();
+  const deleteTeam = useDeleteTeam();
 
   const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
   const [teamEdit, setTeamEdit] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
   const [teamSaveError, setTeamSaveError] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
 
   async function handleRoleChange(clerkUserId: string, newRole: Role) {
     await updateRole.mutateAsync({ clerkUserId, data: { role: newRole } });
@@ -87,6 +90,12 @@ export function AdminPage() {
   function cancelEditTeam() {
     setEditingTeamId(null);
     setTeamSaveError(null);
+  }
+
+  async function handleTeamDelete(teamId: number) {
+    await deleteTeam.mutateAsync({ id: teamId });
+    await qc.invalidateQueries({ queryKey: ["/api/teams"] });
+    setConfirmingDeleteId(null);
   }
 
   async function handleTeamSave(teamId: number) {
@@ -240,7 +249,39 @@ export function AdminPage() {
                         </button>
                       </div>
                     </div>
+                  ) : confirmingDeleteId === team.id ? (
+                    /* ── Inline delete confirmation ── */
+                    <div className="flex items-start gap-3 py-1">
+                      <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <AlertTriangle className="h-4 w-4 text-red-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          Delete <span className="text-red-400">{team.name}</span>?
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          This will permanently remove the team and all associated games and stats.
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleTeamDelete(team.id)}
+                            disabled={deleteTeam.isPending}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {deleteTeam.isPending ? "Deleting…" : "Yes, delete"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteId(null)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
+                    /* ── Normal team row ── */
                     <div className="flex items-center gap-4">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center font-display text-sm text-white flex-shrink-0 shadow-sm"
@@ -271,6 +312,13 @@ export function AdminPage() {
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Edit
+                        </button>
+                        <button
+                          onClick={() => { setEditingTeamId(null); setConfirmingDeleteId(team.id); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
                         </button>
                       </div>
                     </div>

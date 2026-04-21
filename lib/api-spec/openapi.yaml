@@ -116,6 +116,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Team"
+    delete:
+      operationId: deleteTeam
+      tags: [teams]
+      summary: Delete a team (admin only). Cascades to games and stats.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Admin only
+        "404":
+          description: Not found
 
   /teams/{id}/stats:
     get:

@@ -78,6 +78,27 @@ router.patch("/teams/:id", async (req, res): Promise<void> => {
   res.json(UpdateTeamResponse.parse(serializeRow(team)));
 });
 
+router.delete("/teams/:id", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req))) {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [deleted] = await db
+    .delete(teamsTable)
+    .where(eq(teamsTable.id, id))
+    .returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Team not found" });
+    return;
+  }
+  res.status(204).send();
+});
+
 router.get("/teams/:id/stats", async (req, res): Promise<void> => {
   const params = GetTeamStatsParams.safeParse(req.params);
   if (!params.success) {

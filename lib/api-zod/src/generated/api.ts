@@ -94,6 +94,13 @@ export const UpdateTeamResponse = zod.object({
 });
 
 /**
+ * @summary Delete a team (admin only). Cascades to games and stats.
+ */
+export const DeleteTeamParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Get aggregated stats for a team
  */
 export const GetTeamStatsParams = zod.object({
