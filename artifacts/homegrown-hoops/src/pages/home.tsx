@@ -3,6 +3,113 @@ import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
 import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, ShieldCheck } from "lucide-react";
 
+function CourtTexture() {
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full"
+      viewBox="0 0 1000 420"
+      preserveAspectRatio="xMaxYMid slice"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {/* Court outer boundary */}
+      <rect x="4" y="4" width="992" height="412" fill="none" stroke="white" strokeWidth="1.5" opacity="0.07" />
+
+      {/* Half-court line */}
+      <line x1="500" y1="4" x2="500" y2="416" stroke="white" strokeWidth="1" opacity="0.05" />
+
+      {/* Center circle */}
+      <circle cx="500" cy="210" r="55" fill="none" stroke="white" strokeWidth="1.2" opacity="0.05" />
+      <circle cx="500" cy="210" r="4" fill="white" opacity="0.05" />
+
+      {/* === RIGHT HALF-COURT (basket on right) === */}
+
+      {/* Three-point arc: center at basket (940,210), radius 240 */}
+      {/* Corner top: (940-0, 210-210+240) no... */}
+      {/* Corners at x=700, computed y: sqrt(240²-(940-700)²) = sqrt(57600-57600)=0 — exact corner */}
+      {/* Use x=710: sqrt(240²-230²)=sqrt(57600-52900)=sqrt(4700)=68.6 → y=210±69 */}
+      {/* Corner 3pt lines from baseline at x=992 to x=710 at y=141 and y=279 */}
+      <line x1="992" y1="141" x2="710" y2="141" stroke="white" strokeWidth="1.4" opacity="0.07" />
+      <line x1="992" y1="279" x2="710" y2="279" stroke="white" strokeWidth="1.4" opacity="0.07" />
+      {/* Arc from (710,141) to (710,279) with radius 240, center at basket (940,210) — sweep clockwise */}
+      <path d="M 710,141 A 240,240 0 0 1 710,279" fill="none" stroke="white" strokeWidth="1.4" opacity="0.07" />
+
+      {/* Lane / Key: 16ft wide centered, 19ft long */}
+      {/* Scaled ~8px/ft: 128px wide, 152px long from baseline */}
+      {/* Lane from x=840 to x=992, y=146 to y=274 */}
+      <rect x="840" y="146" width="152" height="128" fill="none" stroke="white" strokeWidth="1.3" opacity="0.07" />
+
+      {/* Free throw circle: center at x=840, y=210, radius=55 */}
+      <circle cx="840" cy="210" r="55" fill="none" stroke="white" strokeWidth="1.2" opacity="0.07" />
+
+      {/* Free throw line at x=840 */}
+      <line x1="840" y1="146" x2="840" y2="274" stroke="white" strokeWidth="1.3" opacity="0.07" />
+
+      {/* Basket & backboard */}
+      <line x1="980" y1="196" x2="980" y2="224" stroke="white" strokeWidth="3" opacity="0.09" />
+      <circle cx="940" cy="210" r="15" fill="none" stroke="white" strokeWidth="1.2" opacity="0.08" />
+
+      {/* Restricted arc */}
+      <path d="M 920,210 A 22,22 0 0 1 960,210" fill="none" stroke="white" strokeWidth="1.1" opacity="0.07" />
+
+      {/* Lane hash marks (top lane) */}
+      <line x1="840" y1="162" x2="860" y2="162" stroke="white" strokeWidth="1" opacity="0.06" />
+      <line x1="840" y1="180" x2="860" y2="180" stroke="white" strokeWidth="1" opacity="0.06" />
+      <line x1="840" y1="198" x2="860" y2="198" stroke="white" strokeWidth="1" opacity="0.06" />
+      {/* Lane hash marks (bottom lane) */}
+      <line x1="840" y1="258" x2="860" y2="258" stroke="white" strokeWidth="1" opacity="0.06" />
+      <line x1="840" y1="240" x2="860" y2="240" stroke="white" strokeWidth="1" opacity="0.06" />
+      <line x1="840" y1="222" x2="860" y2="222" stroke="white" strokeWidth="1" opacity="0.06" />
+
+      {/* Orange accent: faint three-point arc overlay */}
+      <path d="M 710,141 A 240,240 0 0 1 710,279" fill="none" stroke="#c45c22" strokeWidth="1" opacity="0.12" />
+    </svg>
+  );
+}
+
+function WaveDivider({ flip = false }: { flip?: boolean }) {
+  return (
+    <div className="relative overflow-hidden" style={{ height: 48 }} aria-hidden="true">
+      <svg
+        viewBox="0 0 1440 48"
+        className="absolute inset-0 w-full h-full"
+        preserveAspectRatio="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {flip ? (
+          <>
+            <path
+              d="M0,24 C180,48 360,8 540,28 C720,48 900,10 1080,30 C1260,48 1380,18 1440,24 L1440,0 L0,0 Z"
+              fill="hsl(215 50% 17% / 0.06)"
+            />
+            <path
+              d="M0,32 C200,12 400,44 600,24 C800,4 1000,40 1200,20 C1320,8 1400,28 1440,20"
+              fill="none"
+              stroke="hsl(22 78% 46% / 1)"
+              strokeWidth="1"
+              opacity="0.18"
+            />
+          </>
+        ) : (
+          <>
+            <path
+              d="M0,16 C200,40 400,4 600,28 C800,48 1000,12 1200,32 C1320,44 1400,20 1440,24 L1440,48 L0,48 Z"
+              fill="hsl(215 50% 17% / 0.06)"
+            />
+            <path
+              d="M0,20 C180,44 360,8 540,32 C720,48 920,8 1100,28 C1260,44 1380,16 1440,22"
+              fill="none"
+              stroke="hsl(22 78% 46% / 1)"
+              strokeWidth="1"
+              opacity="0.18"
+            />
+          </>
+        )}
+      </svg>
+    </div>
+  );
+}
+
 export function Home() {
   const { data: summary, isLoading: loadingSummary } = useGetStatsSummary();
   const { data: leaders, isLoading: loadingLeaders } = useGetStatLeaders();
@@ -13,12 +120,13 @@ export function Home() {
     teams?.find((t) => t.id === id)?.name ?? `Team #${id}`;
 
   return (
-    <div className="space-y-10">
+    <div>
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-secondary text-white px-8 py-12 md:px-14 md:py-16">
+        <CourtTexture />
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -right-16 -top-16 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
-          <div className="absolute -left-10 bottom-0 w-48 h-48 bg-primary/10 rounded-full blur-2xl" />
+          <div className="absolute -right-16 -top-16 w-72 h-72 bg-primary/15 rounded-full blur-3xl" />
+          <div className="absolute -left-10 bottom-0 w-48 h-48 bg-primary/8 rounded-full blur-2xl" />
         </div>
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 bg-primary/20 text-primary-foreground/90 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest mb-5">
@@ -49,8 +157,10 @@ export function Home() {
         </div>
       </section>
 
+      <WaveDivider />
+
       {/* League Stats */}
-      <section>
+      <section className="mt-6">
         <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">League Overview</h2>
         <div className="grid grid-cols-3 gap-3 md:gap-5">
           {[
@@ -73,7 +183,9 @@ export function Home() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <WaveDivider flip />
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-6">
         {/* League Leaders */}
         <section className="lg:col-span-3 space-y-5">
           <div className="flex items-center justify-between">
