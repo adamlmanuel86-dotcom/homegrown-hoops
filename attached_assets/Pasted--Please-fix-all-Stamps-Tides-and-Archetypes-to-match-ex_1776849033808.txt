@@ -1,0 +1,29 @@
+“Please fix all Stamps, Tides and Archetypes to match exactly the following. Do not change anything else.
+STAMPS — game by game achievements:
+Double Digits — earned by scoring 10 or more points in a single game
+Glass Work — earned by recording 5 or more rebounds in a single game
+Goggles — earned by recording 4 or more assists in a single game
+Wet — earned by scoring 25 or more points in a single game
+The Distance — earned by making 3 or more three pointers in a single game
+Full Send — earned by recording points, assists and rebounds all in the same game
+The Double — earned by recording double figures in any two of points, rebounds or assists in the same game
+Full Flood — earned by recording a triple double, double figures in points, rebounds and assists all in the same game. Rarest and most prestigious Stamp on the platform.
+Shift Worker — earned by playing every game in a season, manually tracked by admin
+TIDES — season end awards:
+High Tide — top scorer on team for the season
+Rising Tide — most improved player stats season over season
+The Keeper — led league in rebounds for the season
+Lighthouse — most consistent performer, lowest stat variance all season
+The Swell — highest single game scoring performance of the season
+Shoreline — played every single game of the season
+The Source — season assist leader
+The Crest — MVP of the season, highest combined points rebounds and assists per game
+ARCHETYPES — one per player, updated every 5 games:
+Uncharted — Your story hasn’t been written yet. Play games, earn stats, and discover who you are on the court. This is where every player begins.
+The Mainstay — Consistent points scorer. Earned by averaging the highest points per game on your team across the season.
+The Vortex — Rebounds dominant. Earned by leading your team in total rebounds for the season.
+The Current — Assists and playmaking. Earned by leading your team in total assists for the season.
+The Deep — Three point specialist. Earned by making the most three pointers on your team for the season. Operates from range that demands respect.
+The Climb — Improving across points and rebounds. Earned by showing the biggest statistical improvement from the first half to the second half of the season.
+The Spark — Changes the game in limited minutes. Earned by having the highest points per minute ratio on the team among players averaging under 15 minutes per game.
+Please update every popup description, every archetype card description and every requirement shown anywhere on the site to match exactly what is written above. Do not invent new requirements or descriptions.”**

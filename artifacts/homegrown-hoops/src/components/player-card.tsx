@@ -11,7 +11,7 @@ const ARCHETYPE_META: Record<string, { icon: LucideIcon; color: string; label: s
   "The Mainstay":{ icon: Anchor,   color: "#60A5FA", label: "The Mainstay" },
   "The Vortex":  { icon: Wind,     color: "#34D399", label: "The Vortex" },
   "The Current": { icon: Zap,      color: "#38BDF8", label: "The Current" },
-  "The Distance":{ icon: Target,   color: "#A78BFA", label: "The Distance" },
+  "The Deep":    { icon: Target,   color: "#A78BFA", label: "The Deep" },
   "The Climb":   { icon: Mountain, color: "#F97316", label: "The Climb" },
   "The Spark":   { icon: Flame,    color: "#F472B6", label: "The Spark" },
 };
