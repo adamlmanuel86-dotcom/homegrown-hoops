@@ -2,11 +2,13 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, UserButton, useUser, useClerk } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers } from "lucide-react";
+import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers, HelpCircle } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
+import { Walkthrough } from "@/components/walkthrough";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [location] = useLocation();
   const { user, isSignedIn } = useUser();
   const { signOut } = useClerk();
@@ -28,6 +30,10 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
+      {showWalkthrough && (
+        <Walkthrough onClose={() => setShowWalkthrough(false)} />
+      )}
+
       <header className="bg-secondary text-secondary-foreground sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
@@ -49,6 +55,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 {link.label}
               </Link>
             ))}
+
+            <button
+              onClick={() => setShowWalkthrough(true)}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white/50 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1.5"
+            >
+              <HelpCircle className="h-3.5 w-3.5" /> How It Works
+            </button>
 
             <div className="ml-4 flex items-center gap-2">
               {/* ── Signed-out: Login button ── */}
@@ -129,6 +142,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 {link.label}
               </Link>
             ))}
+
+            <button
+              onClick={() => { setIsOpen(false); setShowWalkthrough(true); }}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-white/50 hover:text-white transition-colors"
+            >
+              <HelpCircle className="h-4 w-4" /> How It Works
+            </button>
 
             <div className="mt-2 pt-3 border-t border-white/10 flex flex-col gap-2 pb-2">
               {/* ── Signed-out ── */}

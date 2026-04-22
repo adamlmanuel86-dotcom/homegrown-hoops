@@ -1,0 +1,21 @@
+Build a complete onboarding experience for new users with the following flow:
+Step 1 — Sign Up Screen
+Clean sign up with email or Google. Below the sign in button add small text that says: ‘Free for the 2026 pilot season. No credit card required.’
+Step 2 — Welcome Screen
+Full screen dark navy background. Homegrown Hoops logo pulses once on screen. Single line of text appears: ‘Your legacy starts here.’ One button below that says: Build My Profile. No skip option on this screen.
+Step 3 — Profile Setup
+One field appears at a time in conversational style. Progress indicator at top showing 5 steps. Fields in order: What’s your name, What school do you play for with dropdown of registered teams, What position do you play with dropdown, What year do you graduate with dropdown, Add a photo marked as optional with a skip option.
+Step 4 — The Card Reveal
+Screen goes dark. Text fades in: ‘Every player starts the same way.’ Pause. Then ‘Uncharted.’ appears. Then the player card animates up from the bottom of the screen showing their name, school, photo or silhouette, Uncharted archetype glowing in center, all Stamps as locked grey icons, Legacy Score showing 0. Text beneath the card says: ‘Your card will update after every game. Earn Stamps. Earn your Archetype. Build your Legacy.’ Three buttons: Share My Card which downloads card image to camera roll with suggested caption ‘Just joined Homegrown Hoops. Uncharted for now. 👀 #HomegrownHoops #YourGameYourLegacy’, Show me around which launches the walkthrough, and Explore Homegrown Hoops which goes to homepage.
+Step 5 — Optional Walkthrough
+Six slides the user can swipe through. Skip button always visible. Can exit at any slide. Never forced. Slides as follows:
+Slide 1: Headline ‘Your Profile Card’. Text ‘This is yours. It updates after every game, every season. Share it anywhere.’
+Slide 2: Headline ‘Stamps’. Text ‘Earn Stamps through real performance. Double Digits. Full Flood. Glass Work. Nobody gives these to you — you earn them.’
+Slide 3: Headline ‘Archetypes’. Text ‘Every player starts Uncharted. Your stats decide who you become. The Vortex. The Current. The Mainstay. Your game writes the story.’
+Slide 4: Headline ‘Tides’. Text ‘At the end of every season the best performers earn Tides. The Crest goes to one player. Will it be you?’
+Slide 5: Headline ‘Legacy Score’. Text ‘Everything you do adds to your Legacy Score. It never resets. It follows you. It is yours forever.’
+Slide 6: Headline ‘Your Game. Your Stats. Your Legacy.’ Text ‘Welcome to Homegrown Hoops.’ Button that says: Let’s Go — takes user to homepage.
+Walkthrough access after onboarding:
+Add a small How It Works link in the main navigation that launches the same walkthrough slides at any time. Always accessible, never hidden.
+Design throughout:
+Dark navy backgrounds, orange accents, white text. Bold headlines. Premium and exciting feeling. Designed for teenagers. Consistent with existing site design.”**

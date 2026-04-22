@@ -18,6 +18,7 @@ import { ProfilePage } from "@/pages/profile";
 import { AdminPage } from "@/pages/admin";
 import { OurStoryPage } from "@/pages/our-story";
 import { ArchetypesPage } from "@/pages/archetypes";
+import { OnboardingPage } from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -196,8 +197,16 @@ function SignInPage() {
 function SignUpPage() {
   // To update login providers, app branding, or OAuth settings use the Auth pane in the workspace toolbar.
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12 gap-5">
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+        afterSignUpUrl={`${basePath}/onboarding`}
+      />
+      <p className="text-sm text-muted-foreground font-medium text-center">
+        Free for the 2026 pilot season. No credit card required.
+      </p>
     </div>
   );
 }
@@ -223,25 +232,33 @@ function ClerkQueryClientCacheInvalidator() {
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/sign-up/*?" component={SignUpPage} />
-        <Route path="/teams" component={TeamsPage} />
-        <Route path="/teams/:id" component={TeamDetailPage} />
-        <Route path="/players" component={PlayersPage} />
-        <Route path="/players/:id" component={PlayerDetailPage} />
-        <Route path="/games" component={GamesPage} />
-        <Route path="/games/:id" component={GameDetailPage} />
-        <Route path="/my-profile" component={MyProfilePage} />
-        <Route path="/profiles/:clerkUserId" component={ProfilePage} />
-        <Route path="/admin" component={AdminPage} />
-        <Route path="/our-story" component={OurStoryPage} />
-        <Route path="/archetypes" component={ArchetypesPage} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      {/* Full-screen routes — no nav layout */}
+      <Route path="/onboarding" component={OnboardingPage} />
+
+      {/* Standard routes — inside nav layout */}
+      <Route>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/sign-in/*?" component={SignInPage} />
+            <Route path="/sign-up/*?" component={SignUpPage} />
+            <Route path="/teams" component={TeamsPage} />
+            <Route path="/teams/:id" component={TeamDetailPage} />
+            <Route path="/players" component={PlayersPage} />
+            <Route path="/players/:id" component={PlayerDetailPage} />
+            <Route path="/games" component={GamesPage} />
+            <Route path="/games/:id" component={GameDetailPage} />
+            <Route path="/my-profile" component={MyProfilePage} />
+            <Route path="/profiles/:clerkUserId" component={ProfilePage} />
+            <Route path="/admin" component={AdminPage} />
+            <Route path="/our-story" component={OurStoryPage} />
+            <Route path="/archetypes" component={ArchetypesPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
+    </Switch>
   );
 }
 
