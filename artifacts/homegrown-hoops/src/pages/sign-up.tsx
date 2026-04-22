@@ -1,19 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSignUp } from "@clerk/react";
-import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const LS_KEY = "hh_su_state";
+
+function saveState(email: string) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ email, ts: Date.now() }));
+  } catch {}
+}
+
+function clearState() {
+  try {
+    localStorage.removeItem(LS_KEY);
+  } catch {}
+}
+
+function loadState(): { email: string } | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { email: string; ts: number };
+    // Discard stale state older than 20 minutes
+    if (Date.now() - parsed.ts > 20 * 60 * 1000) {
+      clearState();
+      return null;
+    }
+    return { email: parsed.email };
+  } catch {
+    return null;
+  }
+}
 
 export function CustomSignUpPage() {
   const { signUp } = useSignUp();
-  const [, setLocation] = useLocation();
 
-  const [step, setStep] = useState<"form" | "verify">("form");
+  const [step, setStep] = useState<"form" | "verify" | "link-sent">("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [hasSavedState, setHasSavedState] = useState(false);
+
+  // ── Auto-restore: if Clerk still has a pending verification and we have a
+  //    saved email in localStorage, jump straight to the code entry screen.
+  //    This covers the "user switched to Mail app and came back" scenario.
+  useEffect(() => {
+    if (!signUp) return;
+    if (step !== "form") return;
+
+    const pendingEmailVerification =
+      signUp.status === "missing_requirements" &&
+      (signUp.unverifiedFields as string[]).includes("email_address");
+
+    const saved = loadState();
+
+    if (pendingEmailVerification && saved?.email) {
+      setEmail(saved.email);
+      setStep("verify");
+      return;
+    }
+
+    // Even if Clerk state is gone, show the "Already have a code?" hint
+    setHasSavedState(!!saved);
+  }, [signUp]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +86,7 @@ export function CustomSignUpPage() {
         setError(sendErr.longMessage ?? sendErr.message ?? "Could not send verification code.");
         return;
       }
+      saveState(email);
       setStep("verify");
     } catch (err: unknown) {
       const e2 = err as { errors?: { longMessage?: string }[]; message?: string };
@@ -60,6 +112,7 @@ export function CustomSignUpPage() {
         return;
       }
       if (signUp.status === "complete") {
+        clearState();
         const { error: finalErr } = await signUp.finalize({
           navigate: async ({ decorateUrl }) => {
             window.location.href = decorateUrl(
@@ -70,7 +123,6 @@ export function CustomSignUpPage() {
         if (finalErr) {
           setError(finalErr.longMessage ?? finalErr.message ?? "Could not finalize sign-up.");
         }
-        // navigate callback above handles the redirect
       } else {
         setError("Verification incomplete — please try again.");
       }
@@ -89,10 +141,51 @@ export function CustomSignUpPage() {
       const { error: sendErr } = await signUp.verifications.sendEmailCode();
       if (sendErr) {
         setError(sendErr.longMessage ?? sendErr.message ?? "Could not resend — please try again.");
+      } else {
+        saveState(email);
       }
     } catch {
       setError("Could not resend — please try again.");
     }
+  }
+
+  async function handleSendMagicLink() {
+    if (!signUp || loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      const { error: linkErr } = await signUp.verifications.sendEmailLink({
+        redirectUrl: `${window.location.origin}${basePath}/onboarding`,
+      });
+      if (linkErr) {
+        setError(linkErr.longMessage ?? linkErr.message ?? "Could not send magic link.");
+      } else {
+        saveState(email);
+        setStep("link-sent");
+      }
+    } catch (err: unknown) {
+      const e2 = err as { errors?: { longMessage?: string }[]; message?: string };
+      setError(e2.errors?.[0]?.longMessage ?? e2.message ?? "Could not send magic link.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleGoToVerify() {
+    const saved = loadState();
+    if (saved?.email) setEmail(saved.email);
+    setCode("");
+    setError("");
+    setStep("verify");
+  }
+
+  function handleReset() {
+    clearState();
+    if (signUp) signUp.reset().catch(() => {});
+    setStep("form");
+    setCode("");
+    setError("");
+    setHasSavedState(false);
   }
 
   return (
@@ -129,46 +222,50 @@ export function CustomSignUpPage() {
             border: "1px solid hsl(220, 28%, 17%)",
           }}
         >
-          {step === "form" ? (
+          {/* ── STEP: form ───────────────────────────────────────────────── */}
+          {step === "form" && (
             <>
-              <h1
-                style={{
-                  fontFamily: "'Anton', sans-serif",
-                  fontSize: 28,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                  color: "hsl(210, 16%, 92%)",
-                  textAlign: "center",
-                  margin: "0 0 4px",
-                }}
-              >
-                Create Account
-              </h1>
-              <p
-                style={{
-                  color: "hsl(215, 16%, 62%)",
-                  fontSize: 14,
-                  textAlign: "center",
-                  margin: "0 0 24px",
-                }}
-              >
-                Free for the 2026 pilot season
-              </p>
+              <h1 style={headingStyle}>Create Account</h1>
+              <p style={subtitleStyle}>Free for the 2026 pilot season</p>
+
+              {/* "Already have a code?" banner */}
+              {hasSavedState && (
+                <button
+                  type="button"
+                  onClick={handleGoToVerify}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: "1px solid hsl(22, 78%, 38%)",
+                    background: "hsla(22, 78%, 46%, 0.1)",
+                    color: "hsl(22, 78%, 70%)",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginBottom: 20,
+                    textAlign: "left",
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>📬</span>
+                  <span>
+                    Already have a code?{" "}
+                    <span style={{ textDecoration: "underline" }}>
+                      Enter it here →
+                    </span>
+                  </span>
+                </button>
+              )}
 
               <form onSubmit={handleSubmit} noValidate>
                 <div style={{ marginBottom: 16 }}>
-                  <label
-                    htmlFor="email"
-                    style={{
-                      display: "block",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      color: "hsl(210, 16%, 78%)",
-                      marginBottom: 6,
-                    }}
-                  >
+                  <label htmlFor="email" style={labelStyle}>
                     Email Address
                   </label>
                   <input
@@ -179,34 +276,12 @@ export function CustomSignUpPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="you@example.com"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "12px 14px",
-                      borderRadius: 10,
-                      border: "1px solid hsl(220, 28%, 22%)",
-                      background: "hsl(220, 28%, 13%)",
-                      color: "hsl(210, 16%, 92%)",
-                      fontSize: 15,
-                      boxSizing: "border-box",
-                      outline: "none",
-                    }}
+                    style={inputStyle}
                   />
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <label
-                    htmlFor="password"
-                    style={{
-                      display: "block",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      color: "hsl(210, 16%, 78%)",
-                      marginBottom: 6,
-                    }}
-                  >
+                  <label htmlFor="password" style={labelStyle}>
                     Password
                   </label>
                   <input
@@ -218,156 +293,69 @@ export function CustomSignUpPage() {
                     required
                     minLength={8}
                     placeholder="Min 8 characters"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "12px 14px",
-                      borderRadius: 10,
-                      border: "1px solid hsl(220, 28%, 22%)",
-                      background: "hsl(220, 28%, 13%)",
-                      color: "hsl(210, 16%, 92%)",
-                      fontSize: 15,
-                      boxSizing: "border-box",
-                      outline: "none",
-                    }}
+                    style={inputStyle}
                   />
                 </div>
 
-                {error && (
-                  <p
-                    style={{
-                      color: "hsl(10, 85%, 65%)",
-                      fontSize: 13,
-                      marginBottom: 16,
-                      background: "hsla(10,85%,65%,0.1)",
-                      border: "1px solid hsla(10,85%,65%,0.25)",
-                      borderRadius: 8,
-                      padding: "10px 12px",
-                    }}
-                  >
-                    {error}
-                  </p>
-                )}
+                {error && <ErrorBox message={error} />}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                    width: "100%",
-                    padding: "14px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: loading
-                      ? "hsl(22, 60%, 36%)"
-                      : "hsl(22, 78%, 46%)",
-                    color: "#ffffff",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    boxSizing: "border-box",
-                    touchAction: "manipulation",
-                    WebkitTapHighlightColor: "transparent",
-                    opacity: loading ? 0.85 : 1,
-                  }}
-                >
-                  {loading && (
-                    <svg
-                      style={{ width: 18, height: 18, animation: "su-spin 0.8s linear infinite", flexShrink: 0 }}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
-                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
-                  )}
+                <button type="submit" disabled={loading} style={primaryBtnStyle(loading)}>
+                  {loading && <Spinner />}
                   {loading ? "Creating your account…" : "Continue →"}
                 </button>
               </form>
 
-              <p
-                style={{
-                  textAlign: "center",
-                  fontSize: 13,
-                  color: "hsl(215, 16%, 62%)",
-                  marginTop: 20,
-                  marginBottom: 0,
-                }}
-              >
+              <p style={footerTextStyle}>
                 Already have an account?{" "}
-                <a
-                  href={`${basePath}/sign-in`}
-                  style={{
-                    color: "hsl(22, 78%, 52%)",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                  }}
-                >
+                <a href={`${basePath}/sign-in`} style={linkStyle}>
                   Sign in
                 </a>
               </p>
+
+              {/* Static "Already have a code?" fallback for users who know */}
+              {!hasSavedState && (
+                <p style={{ ...footerTextStyle, marginTop: 8 }}>
+                  Already started signing up?{" "}
+                  <button
+                    type="button"
+                    onClick={handleGoToVerify}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      color: "hsl(22, 78%, 52%)",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      textDecoration: "underline",
+                      touchAction: "manipulation",
+                      WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    Enter your code →
+                  </button>
+                </p>
+              )}
             </>
-          ) : (
+          )}
+
+          {/* ── STEP: verify ─────────────────────────────────────────────── */}
+          {step === "verify" && (
             <>
-              <h1
-                style={{
-                  fontFamily: "'Anton', sans-serif",
-                  fontSize: 28,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                  color: "hsl(210, 16%, 92%)",
-                  textAlign: "center",
-                  margin: "0 0 8px",
-                }}
-              >
-                Check Your Email
-              </h1>
-              <p
-                style={{
-                  color: "hsl(215, 16%, 62%)",
-                  fontSize: 14,
-                  textAlign: "center",
-                  margin: "0 0 16px",
-                }}
-              >
+              <h1 style={headingStyle}>Check Your Email</h1>
+              <p style={subtitleStyle}>
                 We sent a 6-digit code to{" "}
                 <strong style={{ color: "hsl(210, 16%, 88%)" }}>{email}</strong>
               </p>
 
-              {/* Spam note */}
-              <div
-                style={{
-                  background: "hsla(45,100%,60%,0.08)",
-                  border: "1px solid hsla(45,100%,60%,0.25)",
-                  borderRadius: 8,
-                  padding: "10px 12px",
-                  marginBottom: 20,
-                  fontSize: 13,
-                  color: "hsl(45, 80%, 78%)",
-                }}
-              >
-                📬 Check your <strong>spam or junk folder</strong> if you don't see the email.
+              <div style={spamNoteStyle}>
+                📬 Check your <strong>spam or junk folder</strong> if you don't
+                see the email. Codes are valid for 10 minutes.
               </div>
 
               <form onSubmit={handleVerify} noValidate>
                 <div style={{ marginBottom: 20 }}>
-                  <label
-                    htmlFor="code"
-                    style={{
-                      display: "block",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      color: "hsl(210, 16%, 78%)",
-                      marginBottom: 6,
-                    }}
-                  >
+                  <label htmlFor="code" style={labelStyle}>
                     6-Digit Code
                   </label>
                   <input
@@ -384,77 +372,20 @@ export function CustomSignUpPage() {
                     placeholder="000000"
                     autoFocus
                     style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "14px",
-                      borderRadius: 10,
-                      border: "1px solid hsl(220, 28%, 22%)",
-                      background: "hsl(220, 28%, 13%)",
-                      color: "hsl(210, 16%, 92%)",
+                      ...inputStyle,
                       fontSize: 24,
                       fontWeight: 700,
                       letterSpacing: "0.4em",
                       textAlign: "center",
-                      boxSizing: "border-box",
-                      outline: "none",
+                      padding: "14px",
                     }}
                   />
                 </div>
 
-                {error && (
-                  <p
-                    style={{
-                      color: "hsl(10, 85%, 65%)",
-                      fontSize: 13,
-                      marginBottom: 16,
-                      background: "hsla(10,85%,65%,0.1)",
-                      border: "1px solid hsla(10,85%,65%,0.25)",
-                      borderRadius: 8,
-                      padding: "10px 12px",
-                    }}
-                  >
-                    {error}
-                  </p>
-                )}
+                {error && <ErrorBox message={error} />}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                    width: "100%",
-                    padding: "14px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: loading
-                      ? "hsl(22, 60%, 36%)"
-                      : "hsl(22, 78%, 46%)",
-                    color: "#ffffff",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    boxSizing: "border-box",
-                    marginBottom: 12,
-                    touchAction: "manipulation",
-                    WebkitTapHighlightColor: "transparent",
-                    opacity: loading ? 0.85 : 1,
-                  }}
-                >
-                  {loading && (
-                    <svg
-                      style={{ width: 18, height: 18, animation: "su-spin 0.8s linear infinite", flexShrink: 0 }}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
-                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
-                  )}
+                <button type="submit" disabled={loading} style={{ ...primaryBtnStyle(loading), marginBottom: 12 }}>
+                  {loading && <Spinner />}
                   {loading ? "Verifying your code…" : "Verify & Continue"}
                 </button>
               </form>
@@ -463,46 +394,126 @@ export function CustomSignUpPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={loading}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "13px",
-                  borderRadius: 10,
-                  border: "1px solid hsl(22, 78%, 40%)",
-                  background: "transparent",
-                  color: "hsl(22, 78%, 58%)",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: loading ? "not-allowed" : "pointer",
-                  boxSizing: "border-box",
-                  marginBottom: 12,
-                  touchAction: "manipulation",
-                  WebkitTapHighlightColor: "transparent",
-                }}
+                style={outlineBtnStyle(loading)}
               >
                 Resend Code
               </button>
 
+              {/* Magic link alternative */}
+              <div
+                style={{
+                  borderTop: "1px solid hsl(220, 28%, 17%)",
+                  margin: "16px 0 12px",
+                  paddingTop: 16,
+                }}
+              >
+                <p
+                  style={{
+                    color: "hsl(215, 16%, 58%)",
+                    fontSize: 13,
+                    textAlign: "center",
+                    margin: "0 0 10px",
+                  }}
+                >
+                  Having trouble with the code?
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSendMagicLink}
+                  disabled={loading}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    width: "100%",
+                    padding: "13px",
+                    borderRadius: 10,
+                    border: "1px solid hsl(220, 28%, 24%)",
+                    background: "hsl(220, 28%, 13%)",
+                    color: "hsl(210, 16%, 82%)",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    boxSizing: "border-box",
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                    opacity: loading ? 0.7 : 1,
+                  }}
+                >
+                  <span>✨</span>
+                  Send me a magic link instead
+                </button>
+              </div>
+
               <button
                 type="button"
-                onClick={async () => {
-                  if (signUp) await signUp.reset();
-                  setStep("form");
-                  setCode("");
-                  setError("");
-                }}
+                onClick={handleReset}
+                style={ghostBtnStyle}
+              >
+                ← Change email address
+              </button>
+            </>
+          )}
+
+          {/* ── STEP: link-sent ───────────────────────────────────────────── */}
+          {step === "link-sent" && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: 20 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>
+                <h1 style={{ ...headingStyle, marginBottom: 8 }}>Magic Link Sent!</h1>
+                <p style={{ ...subtitleStyle, marginBottom: 0 }}>
+                  We emailed a sign-in link to{" "}
+                  <strong style={{ color: "hsl(210, 16%, 88%)" }}>{email}</strong>
+                </p>
+              </div>
+
+              <div
                 style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "10px",
-                  border: "none",
-                  background: "transparent",
-                  color: "hsl(215, 16%, 52%)",
-                  fontSize: 13,
-                  cursor: "pointer",
-                  touchAction: "manipulation",
-                  WebkitTapHighlightColor: "transparent",
+                  background: "hsla(22, 78%, 46%, 0.08)",
+                  border: "1px solid hsla(22, 78%, 46%, 0.25)",
+                  borderRadius: 10,
+                  padding: "14px 16px",
+                  marginBottom: 20,
+                  fontSize: 14,
+                  color: "hsl(22, 78%, 75%)",
+                  lineHeight: 1.55,
                 }}
+              >
+                <strong>How it works:</strong> Open your email app, find the
+                message from Homegrown Hoops, and tap the link. It will
+                automatically sign you in — no code needed.
+              </div>
+
+              <div style={spamNoteStyle}>
+                📬 Check your <strong>spam or junk folder</strong> if you don't
+                see the email within a minute.
+              </div>
+
+              {error && <ErrorBox message={error} />}
+
+              <button
+                type="button"
+                onClick={handleSendMagicLink}
+                disabled={loading}
+                style={{ ...outlineBtnStyle(loading), marginBottom: 12 }}
+              >
+                {loading && <Spinner />}
+                {loading ? "Sending…" : "Resend Magic Link"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setStep("verify"); setError(""); }}
+                style={ghostBtnStyle}
+              >
+                ← Use a 6-digit code instead
+              </button>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                style={{ ...ghostBtnStyle, marginTop: 4 }}
               >
                 ← Change email address
               </button>
@@ -511,5 +522,162 @@ export function CustomSignUpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Shared style objects ─────────────────────────────────────────────────────
+
+const headingStyle: React.CSSProperties = {
+  fontFamily: "'Anton', sans-serif",
+  fontSize: 28,
+  textTransform: "uppercase",
+  letterSpacing: "0.03em",
+  color: "hsl(210, 16%, 92%)",
+  textAlign: "center",
+  margin: "0 0 4px",
+};
+
+const subtitleStyle: React.CSSProperties = {
+  color: "hsl(215, 16%, 62%)",
+  fontSize: 14,
+  textAlign: "center",
+  margin: "0 0 24px",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.1em",
+  color: "hsl(210, 16%, 78%)",
+  marginBottom: 6,
+};
+
+const inputStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  padding: "12px 14px",
+  borderRadius: 10,
+  border: "1px solid hsl(220, 28%, 22%)",
+  background: "hsl(220, 28%, 13%)",
+  color: "hsl(210, 16%, 92%)",
+  fontSize: 15,
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+function primaryBtnStyle(loading: boolean): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    width: "100%",
+    padding: "14px",
+    borderRadius: 10,
+    border: "none",
+    background: loading ? "hsl(22, 60%, 36%)" : "hsl(22, 78%, 46%)",
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    cursor: loading ? "not-allowed" : "pointer",
+    boxSizing: "border-box",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    opacity: loading ? 0.85 : 1,
+  };
+}
+
+function outlineBtnStyle(loading: boolean): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+    padding: "13px",
+    borderRadius: 10,
+    border: "1px solid hsl(22, 78%, 40%)",
+    background: "transparent",
+    color: "hsl(22, 78%, 58%)",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: loading ? "not-allowed" : "pointer",
+    boxSizing: "border-box",
+    marginBottom: 12,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    opacity: loading ? 0.7 : 1,
+  };
+}
+
+const ghostBtnStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  padding: "10px",
+  border: "none",
+  background: "transparent",
+  color: "hsl(215, 16%, 52%)",
+  fontSize: 13,
+  cursor: "pointer",
+  touchAction: "manipulation",
+  WebkitTapHighlightColor: "transparent",
+};
+
+const spamNoteStyle: React.CSSProperties = {
+  background: "hsla(45,100%,60%,0.08)",
+  border: "1px solid hsla(45,100%,60%,0.25)",
+  borderRadius: 8,
+  padding: "10px 12px",
+  marginBottom: 20,
+  fontSize: 13,
+  color: "hsl(45, 80%, 78%)",
+};
+
+const footerTextStyle: React.CSSProperties = {
+  textAlign: "center",
+  fontSize: 13,
+  color: "hsl(215, 16%, 62%)",
+  marginTop: 20,
+  marginBottom: 0,
+};
+
+const linkStyle: React.CSSProperties = {
+  color: "hsl(22, 78%, 52%)",
+  fontWeight: 600,
+  textDecoration: "none",
+};
+
+function Spinner() {
+  return (
+    <svg
+      style={{ width: 18, height: 18, animation: "su-spin 0.8s linear infinite", flexShrink: 0 }}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <p
+      style={{
+        color: "hsl(10, 85%, 65%)",
+        fontSize: 13,
+        marginBottom: 16,
+        background: "hsla(10,85%,65%,0.1)",
+        border: "1px solid hsla(10,85%,65%,0.25)",
+        borderRadius: 8,
+        padding: "10px 12px",
+      }}
+    >
+      {message}
+    </p>
   );
 }
