@@ -60,12 +60,17 @@ export function CustomSignUpPage() {
         return;
       }
       if (signUp.status === "complete") {
-        const { error: finalErr } = await signUp.finalize();
+        const { error: finalErr } = await signUp.finalize({
+          navigate: async ({ decorateUrl }) => {
+            window.location.href = decorateUrl(
+              `${window.location.origin}${basePath}/onboarding`
+            );
+          },
+        });
         if (finalErr) {
           setError(finalErr.longMessage ?? finalErr.message ?? "Could not finalize sign-up.");
-          return;
         }
-        setLocation("/onboarding");
+        // navigate callback above handles the redirect
       } else {
         setError("Verification incomplete — please try again.");
       }
