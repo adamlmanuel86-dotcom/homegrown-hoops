@@ -276,7 +276,7 @@ function formatEarnedDate(iso: string): string {
 
 // ─── Achievement Popup ─────────────────────────────────────────────────────────
 type PopupItem =
-  | { kind: "stamp"; meta: (typeof STAMPS)[number]; entry: RecognitionEntry | null }
+  | { kind: "stamp"; meta: (typeof STAMPS)[number]; entry: RecognitionEntry | null; count: number }
   | { kind: "tide"; meta: (typeof TIDES)[number]; entry: RecognitionEntry | null };
 
 function AchievementPopup({
@@ -355,6 +355,9 @@ function AchievementPopup({
               style={{ fontSize: "17px", letterSpacing: "0.01em" }}
             >
               {meta.label}
+              {item.kind === "stamp" && item.count >= 2 && (
+                <span style={{ color: "#F97316", marginLeft: 4 }}>x{item.count}</span>
+              )}
             </p>
             <p
               className="mt-0.5 font-bold uppercase"
@@ -437,7 +440,17 @@ function AchievementPopup({
 // ─── Stamps Section ────────────────────────────────────────────────────────────
 export function StampsSection({ earned }: { earned: RecognitionEntry[] }) {
   const [selected, setSelected] = useState<(typeof STAMPS)[number] | null>(null);
-  const earnedMap = new Map(earned.map((e) => [e.id, e]));
+
+  // Build a count map: id → number of times earned
+  const countMap = new Map<string, number>();
+  // Keep the most-recent entry per stamp (for date display in popup)
+  const latestMap = new Map<string, RecognitionEntry>();
+  for (const e of earned) {
+    countMap.set(e.id, (countMap.get(e.id) ?? 0) + 1);
+    const existing = latestMap.get(e.id);
+    if (!existing || e.earnedAt > existing.earnedAt) latestMap.set(e.id, e);
+  }
+  const uniqueEarned = countMap.size;
 
   return (
     <>
@@ -455,22 +468,22 @@ export function StampsSection({ earned }: { earned: RecognitionEntry[] }) {
           </div>
           <div className="flex-1 h-px bg-gradient-to-r from-primary/40 to-transparent ml-1" />
           <span className="text-xs font-bold text-muted-foreground">
-            {earned.length}/{STAMPS.length}
+            {uniqueEarned}/{STAMPS.length}
           </span>
         </div>
 
         {/* Grid */}
         <div className="grid grid-cols-4 gap-3">
           {STAMPS.map((stamp) => {
-            const entry = earnedMap.get(stamp.id) ?? null;
-            const isEarned = entry !== null;
+            const count = countMap.get(stamp.id) ?? 0;
+            const isEarned = count > 0;
             const Icon = stamp.icon;
             return (
               <button
                 key={stamp.id}
                 className="flex flex-col items-center gap-1.5 cursor-pointer group"
                 onClick={() => setSelected(stamp)}
-                aria-label={`${stamp.label} — ${isEarned ? "earned" : "locked"}`}
+                aria-label={`${stamp.label} — ${isEarned ? `earned${count >= 2 ? ` x${count}` : ""}` : "locked"}`}
               >
                 {/* Badge circle */}
                 <div
@@ -499,7 +512,7 @@ export function StampsSection({ earned }: { earned: RecognitionEntry[] }) {
                     </div>
                   )}
                 </div>
-                {/* Label */}
+                {/* Label — show multiplier in orange only when earned 2+ times */}
                 <p
                   className="text-center leading-tight"
                   style={{
@@ -512,6 +525,11 @@ export function StampsSection({ earned }: { earned: RecognitionEntry[] }) {
                   }}
                 >
                   {stamp.label}
+                  {count >= 2 && (
+                    <span style={{ color: "#F97316", display: "block", fontSize: "9px" }}>
+                      x{count}
+                    </span>
+                  )}
                 </p>
               </button>
             );
@@ -525,7 +543,8 @@ export function StampsSection({ earned }: { earned: RecognitionEntry[] }) {
           item={{
             kind: "stamp",
             meta: selected,
-            entry: earnedMap.get(selected.id) ?? null,
+            entry: latestMap.get(selected.id) ?? null,
+            count: countMap.get(selected.id) ?? 0,
           }}
           onClose={() => setSelected(null)}
         />
