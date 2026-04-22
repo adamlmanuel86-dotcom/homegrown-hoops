@@ -68,6 +68,7 @@ export function GameDetailPage() {
   const [savingVideo, setSavingVideo] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const homeTeam = teams?.find((t) => t.id === game?.homeTeamId);
   const awayTeam = teams?.find((t) => t.id === game?.awayTeamId);
@@ -197,6 +198,7 @@ export function GameDetailPage() {
     if (!file) return;
     setUploading(true);
     setUploadError(null);
+    setUploadProgress(0);
     try {
       const sigRes = await fetch(`${BASE_URL}/api/cloudinary/signature`, { method: "POST" });
       if (!sigRes.ok) throw new Error("Failed to get upload signature");
@@ -209,22 +211,38 @@ export function GameDetailPage() {
       formData.append("signature", signature);
       formData.append("folder", folder);
 
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-        { method: "POST", body: formData }
-      );
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({}));
-        throw new Error(err?.error?.message ?? "Upload to Cloudinary failed");
-      }
-      const data = await uploadRes.json();
-      const secureUrl: string = data.secure_url;
+      // Use XHR so we can track upload progress for large videos
+      const secureUrl = await new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`);
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data.secure_url);
+          } else {
+            let msg = "Upload to Cloudinary failed";
+            try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch { /* */ }
+            reject(new Error(msg));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Network error — check your connection and try again."));
+        xhr.ontimeout = () => reject(new Error("Upload timed out — try a smaller file or a faster connection."));
+        xhr.timeout = 10 * 60 * 1000; // 10 minute timeout for long videos
+        xhr.send(formData);
+      });
+
       setPendingObjectPath(secureUrl);
       if (!videoTitle) setVideoTitle(file.name.replace(/\.[^.]+$/, ""));
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
+      setUploadProgress(0);
       e.target.value = "";
     }
   }
@@ -391,14 +409,26 @@ export function GameDetailPage() {
                 <p className="text-xs text-muted-foreground">Select a video file (MP4, MOV, MKV, etc.)</p>
                 <label className={`flex flex-col items-center justify-center gap-3 w-full border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer transition-colors ${uploading ? "border-primary/40 bg-primary/5 cursor-default" : "border-border hover:border-primary/40 hover:bg-primary/5"}`}>
                   {uploading ? (
-                    <>
-                      <Loader2 className="h-7 w-7 text-primary animate-spin" />
-                      <span className="text-sm font-medium text-secondary">Uploading to Cloudinary…</span>
-                    </>
+                    <div className="w-full space-y-3 pointer-events-none">
+                      <Loader2 className="h-7 w-7 text-primary animate-spin mx-auto" />
+                      <p className="text-sm font-semibold text-secondary text-center">
+                        {uploadProgress > 0 ? `Uploading… ${uploadProgress}%` : "Preparing upload…"}
+                      </p>
+                      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Large videos may take several minutes — please keep this page open.
+                      </p>
+                    </div>
                   ) : (
                     <>
                       <Upload className="h-7 w-7 text-muted-foreground/50" />
                       <span className="text-sm font-medium text-secondary">Click to choose a video file</span>
+                      <span className="text-xs text-muted-foreground">MP4, MOV, MKV — any size</span>
                     </>
                   )}
                   <input

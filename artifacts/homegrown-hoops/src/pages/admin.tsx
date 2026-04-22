@@ -12,9 +12,12 @@ import {
   useCreateTeam,
   useUpdateTeam,
   useDeleteTeam,
+  useListGames,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck } from "lucide-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays } from "lucide-react";
+
+const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 const ROLES = ["admin", "coach", "player"] as const;
 type Role = typeof ROLES[number];
@@ -68,6 +71,10 @@ export function AdminPage() {
     query: { enabled: isAdmin === true },
   });
 
+  const { data: games, isLoading: gamesLoading } = useListGames({
+    query: { enabled: isAdmin === true },
+  });
+
   const updateRole = useUpdateUserRole();
   const updateProfile = useUpdateProfile();
   const deleteProfile = useDeleteProfile();
@@ -75,6 +82,15 @@ export function AdminPage() {
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
 
+  const deleteGame = useMutation({
+    mutationFn: async (gameId: number) => {
+      const res = await fetch(`${BASE_URL}/api/games/${gameId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete game");
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
+  });
+
+  const [confirmingDeleteGameId, setConfirmingDeleteGameId] = useState<number | null>(null);
   const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
   const [teamEdit, setTeamEdit] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
   const [teamSaveError, setTeamSaveError] = useState<string | null>(null);
@@ -216,6 +232,102 @@ export function AdminPage() {
         <p className="label-upper mb-1">Management</p>
         <h1 className="font-display text-4xl md:text-5xl text-secondary">ADMIN PANEL</h1>
         <p className="text-muted-foreground mt-2">Manage teams, users, and league settings.</p>
+      </div>
+
+      {/* Game Management */}
+      <div className="card-base overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          <h2 className="font-bold text-secondary">Games</h2>
+          {games && (
+            <span className="text-sm text-muted-foreground ml-1">
+              {games.length} {games.length === 1 ? "game" : "games"}
+            </span>
+          )}
+        </div>
+
+        {gamesLoading ? (
+          <div className="divide-y divide-border">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-48" />
+                  <div className="h-3 bg-muted rounded w-32" />
+                </div>
+                <div className="h-8 bg-muted rounded-lg w-20" />
+              </div>
+            ))}
+          </div>
+        ) : games?.length ? (
+          <div className="divide-y divide-border">
+            {games.map((g) => {
+              const homeTeam = teams?.find((t) => t.id === g.homeTeamId);
+              const awayTeam = teams?.find((t) => t.id === g.awayTeamId);
+              const isConfirming = confirmingDeleteGameId === g.id;
+              return (
+                <div key={g.id} className="px-6 py-4">
+                  {isConfirming ? (
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          Delete <span className="text-red-400">{awayTeam?.name ?? "Away"} vs {homeTeam?.name ?? "Home"}</span>?
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Are you sure you want to delete this game? This cannot be undone. All stats and videos will be removed.
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={async () => {
+                              await deleteGame.mutateAsync(g.id);
+                              setConfirmingDeleteGameId(null);
+                            }}
+                            disabled={deleteGame.isPending}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 hover:bg-red-600 active:scale-95 text-white transition-all touch-manipulation disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {deleteGame.isPending ? "Deleting…" : "Yes, delete"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteGameId(null)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted active:scale-95 transition-all touch-manipulation"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-secondary text-sm">
+                          {awayTeam?.name ?? "Away"} vs {homeTeam?.name ?? "Home"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {g.gameDate} · {g.season}
+                          {g.homeScore != null && g.awayScore != null && (
+                            <span className="ml-2 font-bold text-primary">{g.awayScore}–{g.homeScore}</span>
+                          )}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setConfirmingDeleteGameId(g.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 active:scale-95 transition-all touch-manipulation"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-6 py-12 text-center text-muted-foreground text-sm">
+            No games scheduled yet.
+          </div>
+        )}
       </div>
 
       {/* Team Management */}

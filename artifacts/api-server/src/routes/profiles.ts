@@ -1,9 +1,32 @@
 import { Router, type IRouter } from "express";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
+
+/**
+ * When a user sets their team via a profile, ensure a matching entry exists
+ * in the `players` table so that the stat entry UI can find them.
+ * Matched by first + last name within the same team; creates if missing.
+ */
+async function syncPlayerEntry(firstName: string, lastName: string, teamId: number | null | undefined) {
+  if (!teamId || !firstName || !lastName) return;
+  const [existing] = await db
+    .select({ id: playersTable.id })
+    .from(playersTable)
+    .where(
+      and(
+        eq(playersTable.firstName, firstName),
+        eq(playersTable.lastName, lastName),
+        eq(playersTable.teamId, teamId)
+      )
+    );
+  if (!existing) {
+    await db.insert(playersTable).values({ firstName, lastName, teamId });
+  }
+}
+
 import {
   CreateMyProfileBody,
   UpdateMyProfileBody,
@@ -116,6 +139,9 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
     .values({ ...parsed.data, clerkUserId: userId, isAdmin: shouldBeAdmin, role })
     .returning();
 
+  // Keep players table in sync so stat entry can find this user
+  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined);
+
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
 
@@ -139,6 +165,9 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Profile not found" });
     return;
   }
+
+  // Keep players table in sync when team changes
+  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined);
 
   res.json(GetMyProfileResponse.parse(serializeRow(profile)));
 });

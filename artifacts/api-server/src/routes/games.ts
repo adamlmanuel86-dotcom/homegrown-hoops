@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc, or } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, gamesTable, gamePlayerStatsTable, teamsTable, userProfilesTable } from "@workspace/db";
+import { db, gamesTable, gamePlayerStatsTable, teamsTable, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { runFullRecognition } from "../recognition";
 import {
@@ -97,6 +97,39 @@ router.get("/games/:id", async (req, res): Promise<void> => {
     return;
   }
   res.json(GetGameResponse.parse(serializeRow(game)));
+});
+
+router.delete("/games/:id", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (profile?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid game id" });
+    return;
+  }
+
+  // game_player_stats and game_videos cascade on delete
+  const [deleted] = await db.delete(gamesTable).where(eq(gamesTable.id, id)).returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+
+  res.status(204).send();
 });
 
 router.patch("/games/:id", async (req, res): Promise<void> => {
