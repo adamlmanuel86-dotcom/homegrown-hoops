@@ -7,6 +7,7 @@ import {
   useListProfiles,
   useUpdateUserRole,
   useUpdateProfile,
+  useDeleteProfile,
   useListTeams,
   useCreateTeam,
   useUpdateTeam,
@@ -69,6 +70,7 @@ export function AdminPage() {
 
   const updateRole = useUpdateUserRole();
   const updateProfile = useUpdateProfile();
+  const deleteProfile = useDeleteProfile();
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
@@ -85,6 +87,7 @@ export function AdminPage() {
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [profileEdit, setProfileEdit] = useState<{ teamId: string; verified: boolean }>({ teamId: "", verified: false });
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
+  const [confirmingDeleteProfileId, setConfirmingDeleteProfileId] = useState<string | null>(null);
 
   function startEditProfile(clerkUserId: string, currentTeamId: number | null | undefined, currentVerified: boolean) {
     setEditingProfileId(clerkUserId);
@@ -95,6 +98,12 @@ export function AdminPage() {
   function cancelEditProfile() {
     setEditingProfileId(null);
     setProfileSaveError(null);
+  }
+
+  async function handleProfileDelete(clerkUserId: string) {
+    await deleteProfile.mutateAsync({ clerkUserId });
+    await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+    setConfirmingDeleteProfileId(null);
   }
 
   async function handleProfileSave(clerkUserId: string) {
@@ -521,6 +530,7 @@ export function AdminPage() {
               return (
                 <div key={p.clerkUserId} className="px-6 py-4">
                   {isEditing ? (
+                    /* ── Edit form ── */
                     <div className="space-y-4">
                       <p className="text-sm font-bold text-secondary">
                         {p.firstName} {p.lastName}
@@ -581,7 +591,39 @@ export function AdminPage() {
                         </button>
                       </div>
                     </div>
+                  ) : confirmingDeleteProfileId === p.clerkUserId ? (
+                    /* ── Delete confirmation ── */
+                    <div className="flex items-start gap-3 py-1">
+                      <div className="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <AlertTriangle className="h-4 w-4 text-red-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          Delete <span className="text-red-400">{p.firstName} {p.lastName}</span>?
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Are you sure you want to delete this profile? This cannot be undone.
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleProfileDelete(p.clerkUserId)}
+                            disabled={deleteProfile.isPending}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {deleteProfile.isPending ? "Deleting…" : "Yes, delete"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteProfileId(null)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
+                    /* ── Normal row ── */
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center font-display text-sm text-white flex-shrink-0 bg-primary/80">
                         {initials}
@@ -616,13 +658,22 @@ export function AdminPage() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => startEditProfile(p.clerkUserId, p.teamId, p.verified ?? false)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors text-secondary flex-shrink-0"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Edit
-                      </button>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => startEditProfile(p.clerkUserId, p.teamId, p.verified ?? false)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors text-secondary"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => { cancelEditProfile(); setConfirmingDeleteProfileId(p.clerkUserId); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

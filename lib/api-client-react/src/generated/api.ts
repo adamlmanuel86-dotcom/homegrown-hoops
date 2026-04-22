@@ -2386,6 +2386,90 @@ export const useUpdateProfile = <
 };
 
 /**
+ * @summary Admin-only — permanently delete a player profile
+ */
+export const getDeleteProfileUrl = (clerkUserId: string) => {
+  return `/api/profiles/${clerkUserId}`;
+};
+
+export const deleteProfile = async (
+  clerkUserId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteProfileUrl(clerkUserId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteProfileMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteProfile>>,
+    TError,
+    { clerkUserId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteProfile>>,
+  TError,
+  { clerkUserId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteProfile>>,
+    { clerkUserId: string }
+  > = (props) => {
+    const { clerkUserId } = props ?? {};
+
+    return deleteProfile(clerkUserId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteProfile>>
+>;
+
+export type DeleteProfileMutationError = ErrorType<void>;
+
+/**
+ * @summary Admin-only — permanently delete a player profile
+ */
+export const useDeleteProfile = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteProfile>>,
+    TError,
+    { clerkUserId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteProfile>>,
+  TError,
+  { clerkUserId: string },
+  TContext
+> => {
+  return useMutation(getDeleteProfileMutationOptions(options));
+};
+
+/**
  * @summary Request a presigned URL for file upload
  */
 export const getRequestUploadUrlUrl = () => {

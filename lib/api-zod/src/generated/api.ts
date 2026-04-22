@@ -722,6 +722,13 @@ export const UpdateProfileResponse = zod.object({
 });
 
 /**
+ * @summary Admin-only — permanently delete a player profile
+ */
+export const DeleteProfileParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+/**
  * @summary Request a presigned URL for file upload
  */
 

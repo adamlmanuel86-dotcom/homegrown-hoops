@@ -574,6 +574,23 @@ paths:
                 $ref: "#/components/schemas/UserProfile"
         "403":
           description: Forbidden
+    delete:
+      operationId: deleteProfile
+      tags: [profiles]
+      summary: Admin-only — permanently delete a player profile
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Profile deleted
+        "403":
+          description: Forbidden
+        "404":
+          description: Profile not found
 
   /storage/uploads/request-url:
     post:
