@@ -17,4 +17,6 @@ export interface UpdateUserProfileBody {
   graduationYear?: number | null;
   /** @nullable */
   bio?: string | null;
+  /** @nullable */
+  teamId?: number | null;
 }

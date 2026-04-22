@@ -4,14 +4,16 @@ import { useUser } from "@clerk/react";
 import {
   useGetMyProfile,
   useListAdminUsers,
+  useListProfiles,
   useUpdateUserRole,
+  useUpdateProfile,
   useListTeams,
   useCreateTeam,
   useUpdateTeam,
   useDeleteTeam,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck } from "lucide-react";
 
 const ROLES = ["admin", "coach", "player"] as const;
 type Role = typeof ROLES[number];
@@ -61,8 +63,12 @@ export function AdminPage() {
   const { data: teams, isLoading: teamsLoading } = useListTeams({
     query: { enabled: isAdmin === true },
   });
+  const { data: profiles, isLoading: profilesLoading } = useListProfiles({
+    query: { enabled: isAdmin === true },
+  });
 
   const updateRole = useUpdateUserRole();
+  const updateProfile = useUpdateProfile();
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
@@ -75,6 +81,38 @@ export function AdminPage() {
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [newTeam, setNewTeam] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
   const [addTeamError, setAddTeamError] = useState<string | null>(null);
+
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [profileEdit, setProfileEdit] = useState<{ teamId: string; verified: boolean }>({ teamId: "", verified: false });
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
+
+  function startEditProfile(clerkUserId: string, currentTeamId: number | null | undefined, currentVerified: boolean) {
+    setEditingProfileId(clerkUserId);
+    setProfileEdit({ teamId: currentTeamId?.toString() ?? "", verified: currentVerified });
+    setProfileSaveError(null);
+  }
+
+  function cancelEditProfile() {
+    setEditingProfileId(null);
+    setProfileSaveError(null);
+  }
+
+  async function handleProfileSave(clerkUserId: string) {
+    try {
+      await updateProfile.mutateAsync({
+        clerkUserId,
+        data: {
+          teamId: profileEdit.teamId ? parseInt(profileEdit.teamId) : null,
+          verified: profileEdit.verified,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+      setEditingProfileId(null);
+      setProfileSaveError(null);
+    } catch {
+      setProfileSaveError("Failed to save. Please try again.");
+    }
+  }
 
   async function handleRoleChange(clerkUserId: string, newRole: Role) {
     await updateRole.mutateAsync({ clerkUserId, data: { role: newRole } });
@@ -444,6 +482,156 @@ export function AdminPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Registered Players */}
+      <div className="card-base overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+          <UserCheck className="h-5 w-5 text-primary" />
+          <h2 className="font-bold text-secondary">Registered Players</h2>
+          {profiles && (
+            <span className="text-sm text-muted-foreground">
+              {profiles.length} {profiles.length === 1 ? "profile" : "profiles"}
+            </span>
+          )}
+        </div>
+
+        {profilesLoading ? (
+          <div className="divide-y divide-border">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
+                <div className="w-10 h-10 rounded-xl bg-muted flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-40" />
+                  <div className="h-3 bg-muted rounded w-28" />
+                </div>
+                <div className="h-8 bg-muted rounded-lg w-20" />
+              </div>
+            ))}
+          </div>
+        ) : profiles?.length ? (
+          <div className="divide-y divide-border">
+            {profiles.map((p) => {
+              const team = teams?.find((t) => t.id === p.teamId);
+              const initials = `${p.firstName[0] ?? ""}${p.lastName[0] ?? ""}`.toUpperCase();
+              const isEditing = editingProfileId === p.clerkUserId;
+
+              return (
+                <div key={p.clerkUserId} className="px-6 py-4">
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      <p className="text-sm font-bold text-secondary">
+                        {p.firstName} {p.lastName}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="label-upper block mb-1.5">Assign Team</label>
+                          <select
+                            value={profileEdit.teamId}
+                            onChange={(e) => setProfileEdit((s) => ({ ...s, teamId: e.target.value }))}
+                            className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+                          >
+                            <option value="">No team</option>
+                            {teams?.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} — {t.city}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-end pb-1">
+                          <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <div
+                              onClick={() => setProfileEdit((s) => ({ ...s, verified: !s.verified }))}
+                              className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
+                                profileEdit.verified ? "bg-primary" : "bg-muted-foreground/30"
+                              }`}
+                            >
+                              <div
+                                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                                  profileEdit.verified ? "translate-x-5" : ""
+                                }`}
+                              />
+                            </div>
+                            <span className="text-sm font-semibold text-secondary">
+                              {profileEdit.verified ? "Verified player" : "Not verified"}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      {profileSaveError && (
+                        <p className="text-red-500 text-sm font-medium">{profileSaveError}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleProfileSave(p.clerkUserId)}
+                          disabled={updateProfile.isPending}
+                          className="btn-primary text-sm py-2"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          {updateProfile.isPending ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          onClick={cancelEditProfile}
+                          className="px-3 py-2 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center font-display text-sm text-white flex-shrink-0 bg-primary/80">
+                        {initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-secondary text-sm">{p.firstName} {p.lastName}</p>
+                          {p.verified && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-400/25 px-1.5 py-0.5 rounded-full">
+                              <CheckCircle className="h-2.5 w-2.5" /> Verified
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {p.position && (
+                            <span className="text-xs font-bold text-primary">{p.position}</span>
+                          )}
+                          {p.school && (
+                            <span className="text-xs text-muted-foreground truncate">{p.school}</span>
+                          )}
+                          {team ? (
+                            <span
+                              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                              style={{ backgroundColor: team.primaryColor ?? "#F97316" }}
+                            >
+                              {team.name}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-muted-foreground/60 italic">
+                              No team
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => startEditProfile(p.clerkUserId, p.teamId, p.verified ?? false)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors text-secondary flex-shrink-0"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-6 py-12 text-center text-muted-foreground text-sm">
+            No player profiles registered yet.
           </div>
         )}
       </div>

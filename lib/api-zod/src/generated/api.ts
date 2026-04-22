@@ -531,6 +531,8 @@ export const ListProfilesResponseItem = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
@@ -563,6 +565,8 @@ export const GetMyProfileResponse = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
@@ -592,6 +596,7 @@ export const CreateMyProfileBody = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
 });
 
 /**
@@ -604,6 +609,7 @@ export const UpdateMyProfileBody = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
 });
 
 export const UpdateMyProfileResponse = zod.object({
@@ -615,6 +621,8 @@ export const UpdateMyProfileResponse = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
@@ -650,6 +658,8 @@ export const GetProfileResponse = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
@@ -670,19 +680,15 @@ export const GetProfileResponse = zod.object({
 });
 
 /**
- * @summary Update a user profile (admin only)
+ * @summary Admin override — set teamId and verified status for any profile
  */
 export const UpdateProfileParams = zod.object({
   clerkUserId: zod.coerce.string(),
 });
 
 export const UpdateProfileBody = zod.object({
-  firstName: zod.string().optional(),
-  lastName: zod.string().optional(),
-  school: zod.string().nullish(),
-  position: zod.string().nullish(),
-  graduationYear: zod.number().nullish(),
-  bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean().optional(),
 });
 
 export const UpdateProfileResponse = zod.object({
@@ -694,6 +700,8 @@ export const UpdateProfileResponse = zod.object({
   position: zod.string().nullish(),
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(

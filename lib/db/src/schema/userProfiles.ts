@@ -14,6 +14,8 @@ export const userProfilesTable = pgTable("user_profiles", {
   position: text("position"),
   graduationYear: integer("graduation_year"),
   bio: text("bio"),
+  teamId: integer("team_id"),
+  verified: boolean("verified").notNull().default(false),
   isAdmin: boolean("is_admin").notNull().default(false),
   role: text("role").notNull().default("player"),
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
@@ -27,6 +29,7 @@ export const insertUserProfileSchema = createInsertSchema(userProfilesTable).omi
   id: true,
   isAdmin: true,
   role: true,
+  verified: true,
   createdAt: true,
   updatedAt: true,
 });

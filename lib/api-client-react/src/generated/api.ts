@@ -18,6 +18,7 @@ import type {
 
 import type {
   AddGameVideoBody,
+  AdminUpdateProfileBody,
   AdminUserListItem,
   CreateGameBody,
   CreatePlayerBody,
@@ -2298,7 +2299,7 @@ export function useGetProfile<
 }
 
 /**
- * @summary Update a user profile (admin only)
+ * @summary Admin override — set teamId and verified status for any profile
  */
 export const getUpdateProfileUrl = (clerkUserId: string) => {
   return `/api/profiles/${clerkUserId}`;
@@ -2306,14 +2307,14 @@ export const getUpdateProfileUrl = (clerkUserId: string) => {
 
 export const updateProfile = async (
   clerkUserId: string,
-  updateUserProfileBody: UpdateUserProfileBody,
+  adminUpdateProfileBody: AdminUpdateProfileBody,
   options?: RequestInit,
 ): Promise<UserProfile> => {
   return customFetch<UserProfile>(getUpdateProfileUrl(clerkUserId), {
     ...options,
     method: "PUT",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(updateUserProfileBody),
+    body: JSON.stringify(adminUpdateProfileBody),
   });
 };
 
@@ -2324,14 +2325,14 @@ export const getUpdateProfileMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateProfile>>,
     TError,
-    { clerkUserId: string; data: BodyType<UpdateUserProfileBody> },
+    { clerkUserId: string; data: BodyType<AdminUpdateProfileBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof updateProfile>>,
   TError,
-  { clerkUserId: string; data: BodyType<UpdateUserProfileBody> },
+  { clerkUserId: string; data: BodyType<AdminUpdateProfileBody> },
   TContext
 > => {
   const mutationKey = ["updateProfile"];
@@ -2345,7 +2346,7 @@ export const getUpdateProfileMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof updateProfile>>,
-    { clerkUserId: string; data: BodyType<UpdateUserProfileBody> }
+    { clerkUserId: string; data: BodyType<AdminUpdateProfileBody> }
   > = (props) => {
     const { clerkUserId, data } = props ?? {};
 
@@ -2358,11 +2359,11 @@ export const getUpdateProfileMutationOptions = <
 export type UpdateProfileMutationResult = NonNullable<
   Awaited<ReturnType<typeof updateProfile>>
 >;
-export type UpdateProfileMutationBody = BodyType<UpdateUserProfileBody>;
+export type UpdateProfileMutationBody = BodyType<AdminUpdateProfileBody>;
 export type UpdateProfileMutationError = ErrorType<void>;
 
 /**
- * @summary Update a user profile (admin only)
+ * @summary Admin override — set teamId and verified status for any profile
  */
 export const useUpdateProfile = <
   TError = ErrorType<void>,
@@ -2371,14 +2372,14 @@ export const useUpdateProfile = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateProfile>>,
     TError,
-    { clerkUserId: string; data: BodyType<UpdateUserProfileBody> },
+    { clerkUserId: string; data: BodyType<AdminUpdateProfileBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof updateProfile>>,
   TError,
-  { clerkUserId: string; data: BodyType<UpdateUserProfileBody> },
+  { clerkUserId: string; data: BodyType<AdminUpdateProfileBody> },
   TContext
 > => {
   return useMutation(getUpdateProfileMutationOptions(options));

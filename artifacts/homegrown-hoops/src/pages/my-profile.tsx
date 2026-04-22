@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
-import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile } from "@workspace/api-client-react";
+import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
@@ -16,6 +16,7 @@ type FormData = {
   position: string;
   graduationYear: string;
   bio: string;
+  teamId: string;
 };
 
 const empty: FormData = {
@@ -25,6 +26,7 @@ const empty: FormData = {
   position: "",
   graduationYear: "",
   bio: "",
+  teamId: "",
 };
 
 export function MyProfilePage() {
@@ -32,7 +34,10 @@ export function MyProfilePage() {
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
 
-  const { data: profile, isLoading, error } = useGetMyProfile({ query: { enabled: isSignedIn === true, retry: false } });
+  const { data: profile, isLoading, error } = useGetMyProfile({
+    query: { enabled: isSignedIn === true, retry: false },
+  });
+  const { data: teams } = useListTeams();
 
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -52,14 +57,13 @@ export function MyProfilePage() {
         position: profile.position ?? "",
         graduationYear: profile.graduationYear?.toString() ?? "",
         bio: profile.bio ?? "",
+        teamId: profile.teamId?.toString() ?? "",
       });
     }
   }, [profile]);
 
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      setLocation("/sign-in");
-    }
+    if (isLoaded && !isSignedIn) setLocation("/sign-in");
   }, [isLoaded, isSignedIn, setLocation]);
 
   useEffect(() => {
@@ -69,7 +73,9 @@ export function MyProfilePage() {
     }
   }, [isNew, user]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
 
@@ -82,6 +88,7 @@ export function MyProfilePage() {
       position: form.position || null,
       graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
       bio: form.bio || null,
+      teamId: form.teamId ? parseInt(form.teamId) : null,
     };
 
     if (isNew) {
@@ -102,13 +109,16 @@ export function MyProfilePage() {
         <div className="h-6 w-32 bg-muted rounded" />
         <div className="h-48 bg-muted rounded-2xl" />
         <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-12 bg-muted rounded-lg" />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-12 bg-muted rounded-lg" />
+          ))}
         </div>
       </div>
     );
   }
 
   const showForm = editing || isNew;
+  const currentTeam = teams?.find((t) => t.id === profile?.teamId);
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
@@ -117,7 +127,9 @@ export function MyProfilePage() {
         <p className="label-upper mb-1">Account</p>
         <h1 className="font-display text-4xl text-secondary">MY PROFILE</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {isNew ? "Create your player profile to appear in the league directory." : "Manage your public player profile."}
+          {isNew
+            ? "Create your player profile to appear in the league directory."
+            : "Manage your public player profile."}
         </p>
       </div>
 
@@ -129,7 +141,7 @@ export function MyProfilePage() {
         </div>
       )}
 
-      {/* Profile card */}
+      {/* Profile card / form */}
       {!showForm && profile ? (
         <div className="card-base overflow-hidden">
           <div className="bg-secondary px-6 py-8 flex items-center gap-5">
@@ -151,6 +163,14 @@ export function MyProfilePage() {
                     Class of {profile.graduationYear}
                   </span>
                 )}
+                {currentTeam && (
+                  <span
+                    className="text-white text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: currentTeam.primaryColor ?? "#F97316" }}
+                  >
+                    {currentTeam.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -167,10 +187,7 @@ export function MyProfilePage() {
                 <p className="text-muted-foreground text-sm leading-relaxed">{profile.bio}</p>
               </div>
             )}
-            <button
-              onClick={() => setEditing(true)}
-              className="btn-primary mt-2"
-            >
+            <button onClick={() => setEditing(true)} className="btn-primary mt-2">
               <Pencil className="h-4 w-4" /> Edit Profile
             </button>
           </div>
@@ -223,7 +240,9 @@ export function MyProfilePage() {
                 className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
               >
                 <option value="">Select position</option>
-                {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                {POSITIONS.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -235,9 +254,32 @@ export function MyProfilePage() {
                 className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
               >
                 <option value="">Select year</option>
-                {GRAD_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                {GRAD_YEARS.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
               </select>
             </div>
+          </div>
+
+          {/* Team selection */}
+          <div>
+            <label className="label-upper block mb-1.5">Team</label>
+            <select
+              name="teamId"
+              value={form.teamId}
+              onChange={handleChange}
+              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+            >
+              <option value="">No team / select later</option>
+              {teams?.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} — {t.city}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Not sure? An admin can assign or correct your team at any time.
+            </p>
           </div>
 
           <div>
@@ -259,7 +301,11 @@ export function MyProfilePage() {
               className="btn-primary"
             >
               <Save className="h-4 w-4" />
-              {create.isPending || update.isPending ? "Saving..." : isNew ? "Create Profile" : "Save Changes"}
+              {create.isPending || update.isPending
+                ? "Saving..."
+                : isNew
+                ? "Create Profile"
+                : "Save Changes"}
             </button>
             {!isNew && (
               <button
@@ -280,7 +326,7 @@ export function MyProfilePage() {
         </form>
       )}
 
-      {/* ── Recognition — visible in view mode when profile exists ─────────── */}
+      {/* Recognition — visible in view mode when profile exists */}
       {!showForm && profile && (
         <RecognitionBlock
           stamps={profile.stamps ?? []}
@@ -290,30 +336,32 @@ export function MyProfilePage() {
         />
       )}
 
-      {/* ── Account Info — only the signed-in owner ever sees this ────────── */}
+      {/* Account Info */}
       <div className="card-base p-6 space-y-4">
         <h3 className="label-upper text-xs text-muted-foreground">Account Info</h3>
 
-        {/* Email */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
             <Mail className="h-4 w-4 text-primary" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Email Address</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
+              Email Address
+            </p>
             <p className="text-sm font-semibold text-foreground truncate">
               {user?.primaryEmailAddress?.emailAddress ?? "—"}
             </p>
           </div>
         </div>
 
-        {/* Role */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
             <ShieldCheck className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">Role</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
+              Role
+            </p>
             {profile?.role ? (
               <RoleBadge role={profile.role} />
             ) : (
@@ -328,19 +376,21 @@ export function MyProfilePage() {
 
 function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
-    admin:  "bg-primary/15 text-primary border border-primary/30",
-    coach:  "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+    admin: "bg-primary/15 text-primary border border-primary/30",
+    coach: "bg-blue-500/15 text-blue-300 border border-blue-500/30",
     player: "bg-white/8 text-foreground/70 border border-white/10",
   };
   const labels: Record<string, string> = {
-    admin:  "Admin",
-    coach:  "Coach",
+    admin: "Admin",
+    coach: "Coach",
     player: "Player",
   };
   const cls = styles[role] ?? styles.player;
   const label = labels[role] ?? role.charAt(0).toUpperCase() + role.slice(1);
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${cls}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${cls}`}
+    >
       {label}
     </span>
   );

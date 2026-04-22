@@ -21,6 +21,9 @@ export interface UserProfile {
   graduationYear?: number | null;
   /** @nullable */
   bio?: string | null;
+  /** @nullable */
+  teamId?: number | null;
+  verified: boolean;
   isAdmin: boolean;
   role: UserRole;
   stamps: RecognitionEntry[];

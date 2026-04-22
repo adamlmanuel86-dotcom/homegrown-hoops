@@ -296,6 +296,9 @@ export interface UserProfile {
   graduationYear?: number | null;
   /** @nullable */
   bio?: string | null;
+  /** @nullable */
+  teamId?: number | null;
+  verified: boolean;
   isAdmin: boolean;
   role: UserRole;
   stamps: RecognitionEntry[];
@@ -331,6 +334,8 @@ export interface CreateUserProfileBody {
   graduationYear?: number | null;
   /** @nullable */
   bio?: string | null;
+  /** @nullable */
+  teamId?: number | null;
 }
 
 export interface UpdateUserProfileBody {
@@ -344,6 +349,14 @@ export interface UpdateUserProfileBody {
   graduationYear?: number | null;
   /** @nullable */
   bio?: string | null;
+  /** @nullable */
+  teamId?: number | null;
+}
+
+export interface AdminUpdateProfileBody {
+  /** @nullable */
+  teamId?: number | null;
+  verified?: boolean;
 }
 
 export interface UploadUrlRequest {

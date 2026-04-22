@@ -7,6 +7,7 @@ import { isProtectedAdmin } from "../lib/adminGuard";
 import {
   CreateMyProfileBody,
   UpdateMyProfileBody,
+  UpdateProfileBody,
   GetMyProfileResponse,
   GetProfileResponse,
 } from "@workspace/api-zod";
@@ -47,9 +48,6 @@ router.get("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
-  // If this user is a protected admin but their stored role isn't "admin"
-  // (e.g. the second admin email was added after their profile was created),
-  // silently upgrade the record now.
   if (profile.role !== "admin") {
     const protected_ = await isProtectedAdmin(userId);
     if (protected_) {
@@ -86,13 +84,9 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
-  // Protected admin email always gets admin role, regardless of registration order
   const protected_ = await isProtectedAdmin(userId);
-
-  // If not the protected admin, first profile ever created also becomes admin
   const [{ total }] = await db.select({ total: count() }).from(userProfilesTable);
   const isFirstUser = Number(total) === 0;
-
   const shouldBeAdmin = protected_ || isFirstUser;
   const role = shouldBeAdmin ? "admin" : "player";
 
@@ -143,26 +137,24 @@ router.get("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   res.json(GetProfileResponse.parse(serializeRow(profile)));
 });
 
+// Admin-only: override teamId and verified status for any profile
 router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   const requesterId = requireAuth(req, res);
   if (!requesterId) return;
-
-  const { clerkUserId } = req.params;
 
   const [requesterProfile] = await db
     .select()
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, requesterId));
 
-  const isAdmin = requesterProfile?.isAdmin === true;
-  const isOwner = requesterId === clerkUserId;
-
-  if (!isAdmin && !isOwner) {
-    res.status(403).json({ error: "Forbidden" });
+  if (!requesterProfile?.isAdmin) {
+    res.status(403).json({ error: "Forbidden — admin only" });
     return;
   }
 
-  const parsed = UpdateMyProfileBody.safeParse(req.body);
+  const { clerkUserId } = req.params;
+
+  const parsed = UpdateProfileBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;

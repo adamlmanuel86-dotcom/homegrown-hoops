@@ -552,7 +552,7 @@ paths:
     put:
       operationId: updateProfile
       tags: [profiles]
-      summary: Update a user profile (admin only)
+      summary: Admin override — set teamId and verified status for any profile
       parameters:
         - name: clerkUserId
           in: path
@@ -564,7 +564,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateUserProfileBody"
+              $ref: "#/components/schemas/AdminUpdateProfileBody"
       responses:
         "200":
           description: Profile updated
@@ -1206,6 +1206,10 @@ components:
           type: ["integer", "null"]
         bio:
           type: ["string", "null"]
+        teamId:
+          type: ["integer", "null"]
+        verified:
+          type: boolean
         isAdmin:
           type: boolean
         role:
@@ -1229,6 +1233,7 @@ components:
         - clerkUserId
         - firstName
         - lastName
+        - verified
         - isAdmin
         - role
         - stamps
@@ -1285,6 +1290,8 @@ components:
           type: ["integer", "null"]
         bio:
           type: ["string", "null"]
+        teamId:
+          type: ["integer", "null"]
       required:
         - firstName
         - lastName
@@ -1304,6 +1311,16 @@ components:
           type: ["integer", "null"]
         bio:
           type: ["string", "null"]
+        teamId:
+          type: ["integer", "null"]
+
+    AdminUpdateProfileBody:
+      type: object
+      properties:
+        teamId:
+          type: ["integer", "null"]
+        verified:
+          type: boolean
 
     UploadUrlRequest:
       type: object
