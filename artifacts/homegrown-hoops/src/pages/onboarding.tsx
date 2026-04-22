@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import {
@@ -68,6 +68,8 @@ export function OnboardingPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Ref mirror of isSubmitting — avoids stale closure in touch handlers
+  const isSubmittingRef = useRef(false);
 
   // Reveal animation phases
   const [revealPhase, setRevealPhase] = useState(0);
@@ -125,7 +127,12 @@ export function OnboardingPage() {
   }
 
   async function advanceFromPhoto(skip: boolean) {
-    if (isSubmitting) return;
+    console.log("[HH] advanceFromPhoto called — skip:", skip, "isSubmittingRef:", isSubmittingRef.current);
+    if (isSubmittingRef.current) {
+      console.log("[HH] advanceFromPhoto — already submitting, ignoring");
+      return;
+    }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setUploadError(null);
     setSubmitError(null);
@@ -156,11 +163,14 @@ export function OnboardingPage() {
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       setStep("reveal");
       triggerReveal();
-    } catch {
+    } catch (err) {
+      console.log("[HH] advanceFromPhoto error:", err);
       setSubmitError("Something went wrong. Please try again.");
       setStep("photo");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
+      console.log("[HH] advanceFromPhoto done, isSubmitting reset to false");
     }
   }
 
@@ -582,25 +592,76 @@ export function OnboardingPage() {
                 <p className="text-red-400 text-sm font-medium">{submitError}</p>
               )}
 
-              <div className="flex gap-3">
+              <div style={{ display: "flex", gap: 12 }}>
+                {/* SKIP button */}
                 <button
                   type="button"
-                  onClick={() => advanceFromPhoto(true)}
-                  disabled={isSubmitting}
-                  style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-colors disabled:opacity-40"
+                  onTouchEnd={(e) => {
+                    console.log("[HH] Skip onTouchEnd fired, isSubmitting:", isSubmittingRef.current);
+                    e.preventDefault();
+                    advanceFromPhoto(true);
+                  }}
+                  onClick={() => {
+                    console.log("[HH] Skip onClick fired, isSubmitting:", isSubmittingRef.current);
+                    advanceFromPhoto(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "14px 12px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    background: "transparent",
+                    color: isSubmitting ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.6)",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                  }}
                 >
                   {isSubmitting ? "…" : "Skip"}
                 </button>
+
+                {/* CREATE MY CARD button — no btn-primary, pure inline styles */}
                 <button
                   type="button"
-                  onClick={() => advanceFromPhoto(false)}
-                  disabled={isSubmitting}
-                  style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-                  className="flex-[2] btn-primary justify-center py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                  onTouchEnd={(e) => {
+                    console.log("[HH] CreateMyCard onTouchEnd fired, isSubmitting:", isSubmittingRef.current, "avatarFile:", !!avatarFile);
+                    e.preventDefault();
+                    advanceFromPhoto(false);
+                  }}
+                  onClick={() => {
+                    console.log("[HH] CreateMyCard onClick fired, isSubmitting:", isSubmittingRef.current, "avatarFile:", !!avatarFile);
+                    advanceFromPhoto(false);
+                  }}
+                  style={{
+                    flex: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "14px 12px",
+                    borderRadius: 12,
+                    border: "none",
+                    background: isSubmitting ? "hsl(22, 60%, 36%)" : "hsl(22, 78%, 46%)",
+                    color: "#ffffff",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.04em",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "transparent",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    opacity: isSubmitting ? 0.7 : 1,
+                    transition: "background 0.2s, opacity 0.2s",
+                  }}
                 >
                   {isSubmitting ? "Creating…" : "Create My Card"}
-                  {!isSubmitting && <ArrowRight className="h-5 w-5" />}
+                  {!isSubmitting && <ArrowRight style={{ width: 18, height: 18, flexShrink: 0 }} />}
                 </button>
               </div>
             </div>
@@ -653,49 +714,99 @@ function PhotoPicker({
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
 }) {
-  if (preview) {
-    return (
-      <div className="relative w-40 h-40 mx-auto">
-        <img
-          src={preview}
-          alt="Preview"
-          className="w-40 h-40 rounded-2xl object-cover border-2 border-primary"
-        />
-        <button
-          type="button"
-          onClick={onClear}
-          style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-          className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg hover:bg-red-600 transition-colors"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    );
-  }
-
+  // The <input> stays in the DOM at ALL times — never unmounted.
+  // On iOS Safari, unmounting a file input after the picker closes leaves
+  // residual touch state that swallows subsequent taps on nearby elements.
   return (
-    <label
-      htmlFor="hh-avatar-upload"
-      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent", cursor: "pointer" }}
-      className="w-full flex flex-col items-center justify-center gap-3 py-10 rounded-2xl border border-dashed border-white/20 text-white/40 hover:text-white/70 hover:border-white/40 transition-colors select-none"
-    >
-      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
-        <Camera className="h-6 w-6" />
-      </div>
-      <div className="text-center">
-        <p className="text-sm font-semibold">Tap to add a photo</p>
-        <p className="text-xs mt-0.5 opacity-60">JPG, PNG up to 10MB</p>
-      </div>
-      <div className="flex items-center gap-1.5 text-primary text-xs font-bold">
-        <Upload className="h-3.5 w-3.5" /> Choose File
-      </div>
+    <div style={{ position: "relative" }}>
+      {/* Always-present hidden file input */}
       <input
         id="hh-avatar-upload"
         type="file"
         accept="image/*"
-        className="sr-only"
-        onChange={onFileChange}
+        onChange={(e) => {
+          console.log("[HH] PhotoPicker file input onChange, files:", e.target.files?.length);
+          onFileChange(e);
+          // Reset so the same file can be re-selected
+          e.target.value = "";
+        }}
+        style={{ position: "absolute", width: 1, height: 1, opacity: 0, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}
+        tabIndex={-1}
       />
-    </label>
+
+      {preview ? (
+        /* Preview state */
+        <div style={{ position: "relative", width: 160, height: 160, margin: "0 auto" }}>
+          <img
+            src={preview}
+            alt="Preview"
+            style={{ width: 160, height: 160, borderRadius: 16, objectFit: "cover", border: "2px solid hsl(22, 78%, 46%)", display: "block" }}
+          />
+          <button
+            type="button"
+            onTouchEnd={(e) => {
+              console.log("[HH] PhotoPicker clear onTouchEnd");
+              e.preventDefault();
+              onClear();
+            }}
+            onClick={() => {
+              console.log("[HH] PhotoPicker clear onClick");
+              onClear();
+            }}
+            style={{
+              position: "absolute",
+              top: -8,
+              right: -8,
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "#ef4444",
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              cursor: "pointer",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <X style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+      ) : (
+        /* Upload label — triggers the always-present input above */
+        <label
+          htmlFor="hh-avatar-upload"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            padding: "40px 16px",
+            borderRadius: 16,
+            border: "1.5px dashed rgba(255,255,255,0.2)",
+            color: "rgba(255,255,255,0.4)",
+            cursor: "pointer",
+            touchAction: "manipulation",
+            WebkitTapHighlightColor: "transparent",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+          }}
+        >
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Camera style={{ width: 24, height: 24 }} />
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>Tap to add a photo</p>
+            <p style={{ fontSize: 12, marginTop: 4, opacity: 0.6, marginBottom: 0 }}>JPG, PNG up to 10MB</p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "hsl(22, 78%, 52%)", fontSize: 12, fontWeight: 700 }}>
+            <Upload style={{ width: 14, height: 14 }} /> Choose File
+          </div>
+        </label>
+      )}
+    </div>
   );
 }
