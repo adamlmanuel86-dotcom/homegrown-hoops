@@ -1,10 +1,17 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Show, UserButton, useUser, useClerk } from "@clerk/react";
+import { Show, useUser, useClerk } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers, HelpCircle } from "lucide-react";
+import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers, HelpCircle, ChevronDown } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
 import { Walkthrough } from "@/components/walkthrough";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,42 +82,50 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               </Show>
 
-              {/* ── Signed-in: profile links + avatar + Sign Out ── */}
+              {/* ── Signed-in: account dropdown ── */}
               <Show when="signed-in">
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      location === "/admin"
-                        ? "bg-primary/20 text-primary"
-                        : "text-white/70 hover:text-white hover:bg-white/10"
-                    }`}
-                  >
-                    <Shield className="h-4 w-4" />
-                    Admin
-                  </Link>
-                )}
-                <Link
-                  href="/my-profile"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    location === "/my-profile"
-                      ? "bg-white/10 text-white"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <User className="h-4 w-4" />
-                  {user?.firstName ?? "Profile"}
-                </Link>
-
-                <UserButton />
-
-                <button
-                  onClick={() => signOut({ redirectUrl: "/" })}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-white/8 text-white/80 border border-white/15 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-colors focus:outline-none">
+                      <User className="h-4 w-4" />
+                      {user?.firstName ?? "Account"}
+                      <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52 bg-secondary border-white/10 text-white">
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-2 cursor-pointer text-primary font-bold focus:bg-primary/10 focus:text-primary"
+                          >
+                            <Shield className="h-4 w-4" />
+                            Admin Panel
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-white/10" />
+                      </>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/my-profile"
+                        className="flex items-center gap-2 cursor-pointer text-white/80 hover:text-white focus:bg-white/10 focus:text-white"
+                      >
+                        <User className="h-4 w-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem
+                      onClick={() => signOut({ redirectUrl: "/" })}
+                      className="flex items-center gap-2 cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-500/10 focus:text-red-300"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </Show>
             </div>
           </nav>
@@ -169,7 +184,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   <Link
                     href="/admin"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
                   >
                     <Shield className="h-4 w-4" />
                     Admin Panel
