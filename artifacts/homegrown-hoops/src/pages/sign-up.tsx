@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function CustomSignUpPage() {
-  const { signUp, setActive } = useSignUp();
+  const { signUp } = useSignUp();
   const [, setLocation] = useLocation();
 
   const [step, setStep] = useState<"form" | "verify">("form");
@@ -25,8 +25,16 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      await signUp.create({ emailAddress: email, password });
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      const { error: createErr } = await signUp.create({ emailAddress: email, password });
+      if (createErr) {
+        setError(createErr.longMessage ?? createErr.message ?? "Could not create account.");
+        return;
+      }
+      const { error: sendErr } = await signUp.verifications.sendEmailCode();
+      if (sendErr) {
+        setError(sendErr.longMessage ?? sendErr.message ?? "Could not send verification code.");
+        return;
+      }
       setStep("verify");
     } catch (err: unknown) {
       const e2 = err as { errors?: { longMessage?: string }[]; message?: string };
@@ -46,9 +54,17 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await signUp.attemptEmailAddressVerification({ code });
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+      const { error: verifyErr } = await signUp.verifications.verifyEmailCode({ code });
+      if (verifyErr) {
+        setError(verifyErr.longMessage ?? verifyErr.message ?? "Invalid code.");
+        return;
+      }
+      if (signUp.status === "complete") {
+        const { error: finalErr } = await signUp.finalize();
+        if (finalErr) {
+          setError(finalErr.longMessage ?? finalErr.message ?? "Could not finalize sign-up.");
+          return;
+        }
         setLocation("/onboarding");
       } else {
         setError("Verification incomplete — please try again.");
@@ -65,7 +81,10 @@ export function CustomSignUpPage() {
     if (!signUp || loading) return;
     setError("");
     try {
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      const { error: sendErr } = await signUp.verifications.sendEmailCode();
+      if (sendErr) {
+        setError(sendErr.longMessage ?? sendErr.message ?? "Could not resend — please try again.");
+      }
     } catch {
       setError("Could not resend — please try again.");
     }
@@ -432,7 +451,8 @@ export function CustomSignUpPage() {
 
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  if (signUp) await signUp.reset();
                   setStep("form");
                   setCode("");
                   setError("");
