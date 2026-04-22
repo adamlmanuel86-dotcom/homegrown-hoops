@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Hash, Square, Eye, Droplets, Target, RotateCcw, Zap, Clock,
   Waves, TrendingUp, Shield, Lightbulb, Activity, MapPin, Sparkles, Mountain,
-  Anchor, Wind, Flame, Lock, X, Calendar, BarChart2, Compass, ChevronRight,
+  Anchor, Wind, Flame, Lock, X, Calendar, Compass, ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "wouter";
@@ -377,28 +377,6 @@ function AchievementPopup({
           <p className="text-sm leading-relaxed" style={{ color: "hsl(215 16% 70%)" }}>
             {meta.description}
           </p>
-
-          {/* Threshold */}
-          <div
-            className="rounded-xl p-3.5 flex gap-3"
-            style={{ background: "hsl(220 28% 12%)", border: "1px solid hsl(220 28% 17%)" }}
-          >
-            <BarChart2
-              className="h-4 w-4 flex-shrink-0 mt-0.5"
-              style={{ color: isEarned ? color : "hsl(215 16% 40%)" }}
-            />
-            <div>
-              <p
-                className="font-bold uppercase mb-0.5"
-                style={{ fontSize: "9px", letterSpacing: "0.14em", color: "hsl(215 16% 45%)" }}
-              >
-                Requirement
-              </p>
-              <p className="text-xs font-semibold" style={{ color: isEarned ? color : "hsl(215 16% 55%)" }}>
-                {meta.threshold}
-              </p>
-            </div>
-          </div>
 
           {/* Earned / How to earn */}
           {isEarned ? (
