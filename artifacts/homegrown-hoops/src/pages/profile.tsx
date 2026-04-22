@@ -1,15 +1,32 @@
 import { useRoute, Link } from "wouter";
 import { useUser } from "@clerk/react";
-import { useGetProfile } from "@workspace/api-client-react";
+import { useGetProfile, useListPlayers, useGetPlayerStats, useListTeams } from "@workspace/api-client-react";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
+import { PlayerCard } from "@/components/player-card";
 
 export function ProfilePage() {
   const [, params] = useRoute("/profiles/:clerkUserId");
   const clerkUserId = params?.clerkUserId ?? "";
   const { user, isSignedIn } = useUser();
 
-  const { data: profile, isLoading } = useGetProfile(clerkUserId, { query: { enabled: !!clerkUserId } });
+  const { data: profile, isLoading } = useGetProfile(clerkUserId, {
+    query: { enabled: !!clerkUserId },
+  });
+
+  const { data: players } = useListPlayers();
+  const matchedPlayer = players?.find(
+    (p) =>
+      p.firstName.toLowerCase() === (profile?.firstName ?? "").toLowerCase() &&
+      p.lastName.toLowerCase() === (profile?.lastName ?? "").toLowerCase()
+  );
+
+  const { data: playerStats } = useGetPlayerStats(matchedPlayer?.id ?? 0, {
+    query: { enabled: !!matchedPlayer?.id },
+  });
+
+  const { data: teams } = useListTeams();
+  const team = teams?.find((t) => t.id === matchedPlayer?.teamId);
 
   const isOwner = isSignedIn && user?.id === clerkUserId;
 
@@ -17,7 +34,7 @@ export function ProfilePage() {
     return (
       <div className="max-w-xl mx-auto space-y-6 animate-pulse">
         <div className="h-4 w-20 bg-muted rounded" />
-        <div className="h-52 bg-muted rounded-2xl" />
+        <div className="h-[568px] bg-muted rounded-[22px] max-w-[320px] mx-auto" />
         <div className="h-32 bg-muted rounded-xl" />
       </div>
     );
@@ -33,16 +50,38 @@ export function ProfilePage() {
     );
   }
 
+  const cardStats =
+    playerStats && playerStats.gamesPlayed > 0
+      ? {
+          avgPoints: playerStats.avgPoints,
+          avgRebounds: playerStats.avgRebounds,
+          avgAssists: playerStats.avgAssists,
+        }
+      : undefined;
+
   return (
     <div className="max-w-xl mx-auto space-y-8">
-      <Link href="/players" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors">
+      <Link
+        href="/players"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors"
+      >
         <ChevronLeft className="h-4 w-4" /> Back
       </Link>
 
-      {/* Banner */}
+      {/* ── Player Card (first thing visible) ── */}
+      <div className="flex justify-center">
+        <PlayerCard
+          profile={profile}
+          stats={cardStats}
+          primaryColor={team?.primaryColor ?? "#B45309"}
+          secondaryColor={team?.secondaryColor ?? "#1E3A5F"}
+        />
+      </div>
+
+      {/* ── Banner ── */}
       <div className="rounded-2xl overflow-hidden bg-secondary text-white">
         <div className="px-8 py-10 flex items-center gap-5">
-          <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0 flex-shrink-0">
+          <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
             <User className="h-10 w-10 text-primary" />
           </div>
           <div className="flex-1">
@@ -67,7 +106,7 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* Details */}
+      {/* ── Details ── */}
       <div className="card-base p-6 space-y-5">
         {profile.school && (
           <div className="flex items-start gap-3">
@@ -89,7 +128,9 @@ export function ProfilePage() {
         )}
 
         {!profile.school && !profile.bio && (
-          <p className="text-muted-foreground text-sm text-center py-4">No additional info provided.</p>
+          <p className="text-muted-foreground text-sm text-center py-4">
+            No additional info provided.
+          </p>
         )}
 
         {isOwner && (
@@ -107,7 +148,7 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* Recognition */}
+      {/* ── Recognition ── */}
       <RecognitionBlock
         stamps={profile.stamps ?? []}
         tides={profile.tides ?? []}
