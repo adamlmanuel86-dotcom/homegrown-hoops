@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Hash, Square, Eye, Droplets, Target, Zap, Clock, Layers, Crown,
+  Hash, Square, Eye, Droplets, Target, Zap, Layers, Crown,
   Waves, TrendingUp, Shield, Lightbulb, Activity, MapPin, Sparkles, Mountain,
   Anchor, Wind, Flame, Lock, X, Calendar, Compass, ChevronRight,
 } from "lucide-react";
@@ -71,15 +71,6 @@ export const STAMPS: {
     description: "Points, assists, and rebounds — all in one game. The complete package.",
     howToEarn: "Record at least one point, one assist, and one rebound all in the same game.",
     threshold: "Points, assists and rebounds in one game",
-  },
-  {
-    id: "shift_worker",
-    label: "Shift Worker",
-    icon: Clock,
-    color: "#60A5FA",
-    description: "Didn't miss a single game all season. Every shift, every time, no excuses. Awarded at season end to players who showed up for every game.",
-    howToEarn: "Tracked and awarded by the league admin at the end of the season — an honour reserved for players who never missed a game.",
-    threshold: "Every game in a season — admin tracked",
   },
   {
     id: "the_double",
