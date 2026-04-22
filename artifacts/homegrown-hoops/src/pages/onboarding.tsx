@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import {
@@ -67,6 +67,7 @@ export function OnboardingPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reveal animation phases
   const [revealPhase, setRevealPhase] = useState(0);
@@ -124,20 +125,23 @@ export function OnboardingPage() {
   }
 
   async function advanceFromPhoto(skip: boolean) {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setUploadError(null);
+    setSubmitError(null);
     let finalAvatarUrl = "";
 
-    if (!skip && avatarFile) {
-      const url = await uploadPhoto();
-      if (url) {
-        finalAvatarUrl = url;
-        setForm((f) => ({ ...f, avatarUrl: url }));
-      }
-    }
-
-    // Submit profile
-    setStep("submitting");
     try {
+      if (!skip && avatarFile) {
+        const url = await uploadPhoto();
+        if (url) {
+          finalAvatarUrl = url;
+          setForm((f) => ({ ...f, avatarUrl: url }));
+        }
+      }
+
+      // Submit profile
+      setStep("submitting");
       await createProfile.mutateAsync({
         data: {
           firstName: form.firstName,
@@ -155,6 +159,8 @@ export function OnboardingPage() {
     } catch {
       setSubmitError("Something went wrong. Please try again.");
       setStep("photo");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -578,18 +584,23 @@ export function OnboardingPage() {
 
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => advanceFromPhoto(true)}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-colors"
+                  disabled={isSubmitting}
+                  style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-colors disabled:opacity-40"
                 >
-                  Skip
+                  {isSubmitting ? "…" : "Skip"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => advanceFromPhoto(false)}
-                  disabled={step === ("submitting" as Step)}
-                  className="flex-[2] btn-primary justify-center py-3.5 text-base"
+                  disabled={isSubmitting}
+                  style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                  className="flex-[2] btn-primary justify-center py-3.5 text-base disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {step === ("submitting" as Step) ? "Creating..." : "Create My Card"}
-                  <ArrowRight className="h-5 w-5" />
+                  {isSubmitting ? "Creating…" : "Create My Card"}
+                  {!isSubmitting && <ArrowRight className="h-5 w-5" />}
                 </button>
               </div>
             </div>
@@ -642,8 +653,6 @@ function PhotoPicker({
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
   if (preview) {
     return (
       <div className="relative w-40 h-40 mx-auto">
@@ -653,7 +662,9 @@ function PhotoPicker({
           className="w-40 h-40 rounded-2xl object-cover border-2 border-primary"
         />
         <button
+          type="button"
           onClick={onClear}
+          style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
           className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg hover:bg-red-600 transition-colors"
         >
           <X className="h-3.5 w-3.5" />
@@ -663,9 +674,10 @@ function PhotoPicker({
   }
 
   return (
-    <button
-      onClick={() => inputRef.current?.click()}
-      className="w-full flex flex-col items-center justify-center gap-3 py-10 rounded-2xl border border-dashed border-white/20 text-white/40 hover:text-white/70 hover:border-white/40 transition-colors"
+    <label
+      htmlFor="hh-avatar-upload"
+      style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent", cursor: "pointer" }}
+      className="w-full flex flex-col items-center justify-center gap-3 py-10 rounded-2xl border border-dashed border-white/20 text-white/40 hover:text-white/70 hover:border-white/40 transition-colors select-none"
     >
       <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
         <Camera className="h-6 w-6" />
@@ -678,12 +690,12 @@ function PhotoPicker({
         <Upload className="h-3.5 w-3.5" /> Choose File
       </div>
       <input
-        ref={inputRef}
+        id="hh-avatar-upload"
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
         onChange={onFileChange}
       />
-    </button>
+    </label>
   );
 }
