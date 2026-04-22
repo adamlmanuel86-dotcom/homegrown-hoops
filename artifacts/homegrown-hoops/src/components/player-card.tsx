@@ -27,6 +27,7 @@ export type CardProfile = {
   lastName: string;
   school?: string | null;
   archetype?: string | null;
+  avatarUrl?: string | null;
   stamps?: { id: string; earnedAt: string }[] | null;
   tides?: { id: string; earnedAt: string }[] | null;
 };
@@ -151,14 +152,25 @@ export function PlayerCard({
                   height: 90,
                   borderRadius: "50%",
                   background: "hsl(220,36%,13%)",
-                  border: `2px solid ${archetypeColor}44`,
+                  border: `2px solid ${archetypeColor}55`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: `0 0 20px ${archetypeColor}22`,
+                  boxShadow: `0 0 24px ${archetypeColor}33`,
+                  overflow: "hidden",
+                  flexShrink: 0,
                 }}
               >
-                <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
+                {profile.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={`${profile.firstName} ${profile.lastName}`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
+                )}
               </div>
               <div
                 style={{

@@ -48,10 +48,11 @@ export function OnboardingPage() {
     if (isLoaded && !isSignedIn) setLocation("/sign-in");
   }, [isLoaded, isSignedIn, setLocation]);
 
-  // Redirect if already has a profile (onboarding already done)
+  // Redirect if already has a profile (onboarding already done).
+  // Skip redirect when justCreated=true — we want to show the reveal instead.
   useEffect(() => {
-    if (!profileLoading && profile) setLocation("/");
-  }, [profileLoading, profile, setLocation]);
+    if (!profileLoading && profile && !justCreated) setLocation("/");
+  }, [profileLoading, profile, justCreated, setLocation]);
 
   const [step, setStep] = useState<Step>("welcome");
   const [form, setForm] = useState({
@@ -73,6 +74,8 @@ export function OnboardingPage() {
 
   // Reveal animation phases
   const [revealPhase, setRevealPhase] = useState(0);
+  // Prevents redirect-on-profile-load from firing right after we just created the profile
+  const [justCreated, setJustCreated] = useState(false);
 
   // Populate name from Clerk
   useEffect(() => {
@@ -147,6 +150,8 @@ export function OnboardingPage() {
         }
       }
 
+      // Lock in — prevent the "already has profile" redirect from firing
+      setJustCreated(true);
       // Submit profile
       setStep("submitting");
       await createProfile.mutateAsync({
@@ -176,9 +181,9 @@ export function OnboardingPage() {
 
   function triggerReveal() {
     setRevealPhase(0);
-    setTimeout(() => setRevealPhase(1), 600);
-    setTimeout(() => setRevealPhase(2), 2200);
-    setTimeout(() => setRevealPhase(3), 3800);
+    setTimeout(() => setRevealPhase(1), 300);   // text fades in quickly
+    setTimeout(() => setRevealPhase(2), 1400);  // UNCHARTED appears
+    setTimeout(() => setRevealPhase(3), 2600);  // card slides up
   }
 
   function enterLeague() {
@@ -223,7 +228,63 @@ export function OnboardingPage() {
   }
 
   // ──────────────────────────────────────────────────
-  // CARD REVEAL
+  // SUBMITTING — full-screen cinematic loading
+  // ──────────────────────────────────────────────────
+  if (step === "submitting") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "hsl(222, 42%, 4%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 24,
+          zIndex: 50,
+        }}
+      >
+        {/* Orange ring spinner */}
+        <div
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: "50%",
+            border: "3px solid rgba(249,115,22,0.15)",
+            borderTopColor: "#F97316",
+            animation: "spinCard 0.9s linear infinite",
+          }}
+        />
+        <div style={{ textAlign: "center" }}>
+          <p
+            style={{
+              fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              color: "rgba(255,255,255,0.85)",
+              margin: 0,
+              textTransform: "uppercase",
+            }}
+          >
+            Building your card…
+          </p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginTop: 6 }}>
+            One moment
+          </p>
+        </div>
+        <style>{`
+          @keyframes spinCard {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
+  // CARD REVEAL — cinematic 4-phase sequence
   // ──────────────────────────────────────────────────
   if (step === "reveal") {
     const cardProfile = {
@@ -231,55 +292,104 @@ export function OnboardingPage() {
       lastName: form.lastName,
       school: form.school || null,
       archetype: "Uncharted",
-      stamps: [],
-      tides: [],
+      avatarUrl: form.avatarUrl || null,
+      stamps: [] as { id: string; earnedAt: string }[],
+      tides: [] as { id: string; earnedAt: string }[],
     };
     const teamData = teams?.find((t) => t.id.toString() === form.teamId);
 
     return (
       <div
-        className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-12 overflow-hidden"
-        style={{ background: "radial-gradient(ellipse at 50% 100%, hsl(22 78% 12% / 0.6), hsl(222 42% 5%) 70%)" }}
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 16px",
+          overflow: "hidden",
+          background: "hsl(222, 42%, 4%)",
+          position: "relative",
+        }}
       >
-        {/* Phase 1 — opening text */}
+        {/* Background glow — fades in with phase 1 */}
         <div
-          className="text-center mb-6 transition-all duration-1000"
-          style={{ opacity: revealPhase >= 1 ? 1 : 0, transform: revealPhase >= 1 ? "translateY(0)" : "translateY(12px)" }}
-        >
-          <p className="text-white/50 text-lg font-medium tracking-wide">
-            Every player starts the same way.
-          </p>
-        </div>
-
-        {/* Phase 2 — Uncharted badge */}
-        <div
-          className="flex items-center gap-3 mb-10 transition-all duration-1000"
           style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(ellipse at 50% 80%, hsl(22 78% 12% / 0.7), transparent 65%)",
+            opacity: revealPhase >= 1 ? 1 : 0,
+            transition: "opacity 1.6s ease",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Phase 1 — opening text */}
+        <p
+          style={{
+            color: "rgba(255,255,255,0.45)",
+            fontSize: 17,
+            fontWeight: 500,
+            letterSpacing: "0.04em",
+            textAlign: "center",
+            marginBottom: 20,
+            opacity: revealPhase >= 1 ? 1 : 0,
+            transform: revealPhase >= 1 ? "translateY(0)" : "translateY(14px)",
+            transition: "opacity 1s ease, transform 1s ease",
+          }}
+        >
+          Every player starts the same way.
+        </p>
+
+        {/* Phase 2 — UNCHARTED badge */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            marginBottom: 40,
             opacity: revealPhase >= 2 ? 1 : 0,
-            transform: revealPhase >= 2 ? "translateY(0) scale(1)" : "translateY(8px) scale(0.95)",
-            transitionDelay: "0s",
+            transform: revealPhase >= 2 ? "translateY(0) scale(1)" : "translateY(10px) scale(0.93)",
+            transition: "opacity 1s ease, transform 1s ease",
           }}
         >
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: "#94A3B820", boxShadow: "0 0 30px #94A3B830" }}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: "#94A3B812",
+              border: "1.5px solid #94A3B840",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 36px #94A3B830",
+            }}
           >
-            <Compass className="h-6 w-6 text-slate-400" />
+            <Compass style={{ width: 26, height: 26, color: "#94A3B8" }} />
           </div>
           <span
-            className="font-display text-4xl text-slate-300"
-            style={{ letterSpacing: "0.04em" }}
+            style={{
+              fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+              fontSize: 42,
+              fontWeight: 800,
+              color: "#CBD5E1",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
           >
-            UNCHARTED.
+            Uncharted.
           </span>
         </div>
 
-        {/* Phase 3 — Player card */}
+        {/* Phase 3 — Player card sliding up */}
         <div
-          className="w-full max-w-xs transition-all duration-1000"
           style={{
+            width: "100%",
+            maxWidth: 320,
             opacity: revealPhase >= 3 ? 1 : 0,
-            transform: revealPhase >= 3 ? "translateY(0)" : "translateY(60px)",
+            transform: revealPhase >= 3 ? "translateY(0)" : "translateY(80px)",
+            transition: "opacity 0.9s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <PlayerCard
@@ -290,33 +400,80 @@ export function OnboardingPage() {
           />
         </div>
 
-        {/* Phase 3 — caption + buttons */}
+        {/* Phase 3 — caption + CTA buttons */}
         <div
-          className="mt-8 flex flex-col items-center gap-5 transition-all duration-700"
-          style={{ opacity: revealPhase >= 3 ? 1 : 0 }}
+          style={{
+            marginTop: 32,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 20,
+            width: "100%",
+            maxWidth: 320,
+            opacity: revealPhase >= 3 ? 1 : 0,
+            transition: "opacity 0.9s ease 0.2s",
+          }}
         >
-          <p className="text-white/50 text-sm text-center max-w-xs leading-relaxed">
-            Your card will update after every game. Earn Stamps. Earn your Archetype. Build your Legacy.
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", lineHeight: 1.6, margin: 0 }}>
+            Your card updates after every game. Earn Stamps, claim your Archetype, build your Legacy.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-            <button
-              onClick={shareCard}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border border-white/15 text-white/70 hover:text-white hover:border-white/30 transition-colors"
-            >
-              Share My Card
-            </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
             <button
               onClick={enterLeague}
-              className="flex-1 btn-primary justify-center"
+              style={{
+                width: "100%",
+                padding: "15px 20px",
+                borderRadius: 14,
+                background: "linear-gradient(135deg, #F97316, #B45309)",
+                border: "none",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
             >
-              Enter the League <ArrowRight className="h-4 w-4" />
+              Enter the League <ArrowRight style={{ width: 18, height: 18 }} />
+            </button>
+            <button
+              onClick={shareCard}
+              style={{
+                width: "100%",
+                padding: "13px 20px",
+                borderRadius: 14,
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "rgba(255,255,255,0.6)",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              Share My Card
             </button>
           </div>
 
           <button
             onClick={() => setStep("walkthrough")}
-            className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-2 mt-1"
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.25)",
+              fontSize: 12,
+              cursor: "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              touchAction: "manipulation",
+            }}
           >
             How It Works →
           </button>
@@ -667,13 +824,6 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* ── SUBMITTING ── */}
-          {step === "submitting" && (
-            <div className="flex flex-col items-center gap-6 py-12">
-              <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-white/50 text-sm font-medium">Building your card…</p>
-            </div>
-          )}
         </div>
       </div>
 
