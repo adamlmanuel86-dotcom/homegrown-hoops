@@ -43,17 +43,11 @@ export function OnboardingPage() {
   const { data: teams } = useListTeams({ query: { enabled: isSignedIn === true } });
   const createProfile = useCreateMyProfile();
 
-  // Redirect if not signed in
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) setLocation("/sign-in");
-  }, [isLoaded, isSignedIn, setLocation]);
-
-  // Redirect if already has a profile (onboarding already done).
-  // Skip redirect when justCreated=true — we want to show the reveal instead.
-  useEffect(() => {
-    if (!profileLoading && profile && !justCreated) setLocation("/");
-  }, [profileLoading, profile, justCreated, setLocation]);
-
+  // ── ALL useState / useRef declarations come first ──────────────────────────
+  // This order is required: const/let bindings are in TDZ until their
+  // declaration runs, so any useEffect that references them in its dependency
+  // array would throw "Cannot access uninitialized variable" (fatal on Safari)
+  // if those declarations appeared AFTER the useEffect call.
   const [step, setStep] = useState<Step>("welcome");
   const [form, setForm] = useState({
     firstName: "",
@@ -71,11 +65,24 @@ export function OnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Ref mirror of isSubmitting — avoids stale closure in touch handlers
   const isSubmittingRef = useRef(false);
-
   // Reveal animation phases
   const [revealPhase, setRevealPhase] = useState(0);
-  // Prevents redirect-on-profile-load from firing right after we just created the profile
+  // Prevents redirect-on-profile-load from firing right after we just created
+  // the profile (must be declared before the useEffect that references it)
   const [justCreated, setJustCreated] = useState(false);
+
+  // ── Effects ────────────────────────────────────────────────────────────────
+
+  // Redirect if not signed in
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) setLocation("/sign-in");
+  }, [isLoaded, isSignedIn, setLocation]);
+
+  // Redirect if already has a profile (onboarding already done).
+  // Skip redirect when justCreated=true — we want to show the reveal instead.
+  useEffect(() => {
+    if (!profileLoading && profile && !justCreated) setLocation("/");
+  }, [profileLoading, profile, justCreated, setLocation]);
 
   // Populate name from Clerk
   useEffect(() => {

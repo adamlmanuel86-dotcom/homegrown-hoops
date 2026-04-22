@@ -64,7 +64,7 @@ export function CustomSignUpPage() {
 
     // Even if Clerk state is gone, show the "Already have a code?" hint
     setHasSavedState(!!saved);
-  }, [signUp]);
+  }, [signUp, step]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
