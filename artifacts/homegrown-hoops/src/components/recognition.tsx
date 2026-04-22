@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Hash, Square, Eye, Droplets, Target, RotateCcw, Zap, Clock,
+  Hash, Square, Eye, Droplets, Target, Zap, Clock, Layers, Crown,
   Waves, TrendingUp, Shield, Lightbulb, Activity, MapPin, Sparkles, Mountain,
   Anchor, Wind, Flame, Lock, X, Calendar, Compass, ChevronRight,
 } from "lucide-react";
@@ -50,9 +50,9 @@ export const STAMPS: {
     label: "Wet",
     icon: Droplets,
     color: "#38BDF8",
-    description: "Shot selection was surgical. Everything off the glass or pure.",
-    howToEarn: "Shoot 50% or better from the field on at least 6 attempts in one game.",
-    threshold: "50%+ FG on ≥6 attempts in one game",
+    description: "Pure buckets. Put up 25 or more points in a single game.",
+    howToEarn: "Score 25 or more points in a single game.",
+    threshold: "25+ points in one game",
   },
   {
     id: "the_distance",
@@ -64,22 +64,13 @@ export const STAMPS: {
     threshold: "3+ three-pointers in one game",
   },
   {
-    id: "second_chance",
-    label: "Second Chance",
-    icon: RotateCcw,
-    color: "#34D399",
-    description: "Made a living on the offensive glass — kept possessions alive.",
-    howToEarn: "Grab 5 or more offensive rebounds in a single game.",
-    threshold: "5+ offensive rebounds in one game",
-  },
-  {
     id: "full_send",
     label: "Full Send",
     icon: Zap,
     color: "#F472B6",
-    description: "Patrolled the paint and protected the rim without apology.",
-    howToEarn: "Block 3 or more shots in a single game.",
-    threshold: "3+ blocks in one game",
+    description: "Points, assists, and rebounds — all in one game. The complete package.",
+    howToEarn: "Record at least one point, one assist, and one rebound all in the same game.",
+    threshold: "Points, assists and rebounds in one game",
   },
   {
     id: "shift_worker",
@@ -89,6 +80,24 @@ export const STAMPS: {
     description: "Never missed a shift. Present every game, every night.",
     howToEarn: "Record stats in every game throughout an entire regular season.",
     threshold: "Full attendance with stats for the season",
+  },
+  {
+    id: "the_double",
+    label: "The Double",
+    icon: Layers,
+    color: "#2DD4BF",
+    description: "Double figures in two stat categories in a single game. Elite all-around performance.",
+    howToEarn: "Record 10 or more in any two of: points, rebounds, or assists in the same game.",
+    threshold: "Double figures in 2 of: points, rebounds, assists",
+  },
+  {
+    id: "full_flood",
+    label: "Full Flood",
+    icon: Crown,
+    color: "#F59E0B",
+    description: "The triple-double. Double figures in points, rebounds, and assists all in the same game. The rarest and most prestigious Stamp on the platform.",
+    howToEarn: "Record 10 or more points, 10 or more rebounds, AND 10 or more assists all in a single game.",
+    threshold: "10+ points, 10+ rebounds AND 10+ assists in one game",
   },
 ];
 
