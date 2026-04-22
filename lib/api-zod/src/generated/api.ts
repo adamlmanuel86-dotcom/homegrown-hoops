@@ -533,8 +533,18 @@ export const ListProfilesResponseItem = zod.object({
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
-  stamps: zod.array(zod.string()),
-  tides: zod.array(zod.string()),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -555,8 +565,18 @@ export const GetMyProfileResponse = zod.object({
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
-  stamps: zod.array(zod.string()),
-  tides: zod.array(zod.string()),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -597,8 +617,18 @@ export const UpdateMyProfileResponse = zod.object({
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
-  stamps: zod.array(zod.string()),
-  tides: zod.array(zod.string()),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -622,8 +652,18 @@ export const GetProfileResponse = zod.object({
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
-  stamps: zod.array(zod.string()),
-  tides: zod.array(zod.string()),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -656,8 +696,18 @@ export const UpdateProfileResponse = zod.object({
   bio: zod.string().nullish(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
-  stamps: zod.array(zod.string()),
-  tides: zod.array(zod.string()),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+    }),
+  ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),

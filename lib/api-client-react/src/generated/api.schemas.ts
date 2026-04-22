@@ -278,6 +278,11 @@ export const UserRole = {
   player: "player",
 } as const;
 
+export interface RecognitionEntry {
+  id: string;
+  earnedAt: string;
+}
+
 export interface UserProfile {
   id: number;
   clerkUserId: string;
@@ -293,8 +298,8 @@ export interface UserProfile {
   bio?: string | null;
   isAdmin: boolean;
   role: UserRole;
-  stamps: string[];
-  tides: string[];
+  stamps: RecognitionEntry[];
+  tides: RecognitionEntry[];
   /** @nullable */
   archetype?: string | null;
   createdAt: string;

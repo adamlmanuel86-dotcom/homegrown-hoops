@@ -1176,6 +1176,17 @@ components:
       type: string
       enum: [admin, coach, player]
 
+    RecognitionEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        earnedAt:
+          type: string
+      required:
+        - id
+        - earnedAt
+
     UserProfile:
       type: object
       properties:
@@ -1202,11 +1213,11 @@ components:
         stamps:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/RecognitionEntry"
         tides:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/RecognitionEntry"
         archetype:
           type: ["string", "null"]
         createdAt:

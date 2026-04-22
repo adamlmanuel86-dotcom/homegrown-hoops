@@ -5,6 +5,7 @@
  * Homegrown Hoops Basketball Stats Tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { RecognitionEntry } from "./recognitionEntry";
 import type { UserRole } from "./userRole";
 
 export interface UserProfile {
@@ -22,8 +23,8 @@ export interface UserProfile {
   bio?: string | null;
   isAdmin: boolean;
   role: UserRole;
-  stamps: string[];
-  tides: string[];
+  stamps: RecognitionEntry[];
+  tides: RecognitionEntry[];
   /** @nullable */
   archetype?: string | null;
   createdAt: string;

@@ -23,6 +23,7 @@ export * from "./listPlayersParams";
 export * from "./player";
 export * from "./playerLeaderEntry";
 export * from "./playerStats";
+export * from "./recognitionEntry";
 export * from "./statLeaders";
 export * from "./statsSummary";
 export * from "./team";
