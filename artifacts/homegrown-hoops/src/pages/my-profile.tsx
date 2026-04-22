@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck } from "lucide-react";
+import { RecognitionBlock } from "@/components/recognition";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 2);
@@ -277,6 +278,15 @@ export function MyProfilePage() {
             </p>
           )}
         </form>
+      )}
+
+      {/* ── Recognition — visible in view mode when profile exists ─────────── */}
+      {!showForm && profile && (
+        <RecognitionBlock
+          stamps={profile.stamps ?? []}
+          tides={profile.tides ?? []}
+          archetype={profile.archetype}
+        />
       )}
 
       {/* ── Account Info — only the signed-in owner ever sees this ────────── */}

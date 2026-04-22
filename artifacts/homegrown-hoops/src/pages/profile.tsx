@@ -2,6 +2,7 @@ import { useRoute, Link } from "wouter";
 import { useUser } from "@clerk/react";
 import { useGetProfile } from "@workspace/api-client-react";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy } from "lucide-react";
+import { RecognitionBlock } from "@/components/recognition";
 
 export function ProfilePage() {
   const [, params] = useRoute("/profiles/:clerkUserId");
@@ -105,6 +106,13 @@ export function ProfilePage() {
           <Trophy className="h-3.5 w-3.5" /> League Admin
         </div>
       )}
+
+      {/* Recognition */}
+      <RecognitionBlock
+        stamps={profile.stamps ?? []}
+        tides={profile.tides ?? []}
+        archetype={profile.archetype}
+      />
     </div>
   );
 }

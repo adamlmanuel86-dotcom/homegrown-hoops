@@ -293,6 +293,10 @@ export interface UserProfile {
   bio?: string | null;
   isAdmin: boolean;
   role: UserRole;
+  stamps: string[];
+  tides: string[];
+  /** @nullable */
+  archetype?: string | null;
   createdAt: string;
   updatedAt: string;
 }

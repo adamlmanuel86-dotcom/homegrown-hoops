@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -16,6 +16,9 @@ export const userProfilesTable = pgTable("user_profiles", {
   bio: text("bio"),
   isAdmin: boolean("is_admin").notNull().default(false),
   role: text("role").notNull().default("player"),
+  stamps: json("stamps").$type<string[]>().notNull().default([]),
+  tides: json("tides").$type<string[]>().notNull().default([]),
+  archetype: text("archetype").default("The Climb"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -1199,6 +1199,16 @@ components:
           type: boolean
         role:
           $ref: "#/components/schemas/UserRole"
+        stamps:
+          type: array
+          items:
+            type: string
+        tides:
+          type: array
+          items:
+            type: string
+        archetype:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -1210,6 +1220,8 @@ components:
         - lastName
         - isAdmin
         - role
+        - stamps
+        - tides
         - createdAt
         - updatedAt
 
