@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSignUp, useAuth } from "@clerk/react";
+import { useSignUp } from "@clerk/react";
 import { useLocation } from "wouter";
 import {
   Mail,
@@ -15,7 +15,6 @@ import {
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function CustomSignUpPage() {
-  const { isLoaded: authLoaded } = useAuth();
   const { signUp, setActive, isLoaded } = useSignUp();
   const [, setLocation] = useLocation();
 
@@ -108,8 +107,6 @@ export function CustomSignUpPage() {
     }
   }
 
-  const clerkReady = authLoaded && isLoaded;
-
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-5">
@@ -194,7 +191,7 @@ export function CustomSignUpPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || !clerkReady}
+                  disabled={loading}
                   className="btn-primary w-full py-3 text-sm justify-center disabled:opacity-60"
                 >
                   {loading ? (
@@ -290,7 +287,7 @@ export function CustomSignUpPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || code.length < 6 || !clerkReady}
+                  disabled={loading || code.length < 6}
                   className="btn-primary w-full py-3 text-sm justify-center disabled:opacity-60"
                 >
                   {loading ? (
@@ -308,7 +305,7 @@ export function CustomSignUpPage() {
                 <button
                   type="button"
                   onClick={handleResend}
-                  disabled={resendLoading || !clerkReady}
+                  disabled={resendLoading}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-primary/35 text-primary font-semibold text-sm hover:bg-primary/10 active:bg-primary/15 transition-colors disabled:opacity-60"
                 >
                   <RefreshCw
