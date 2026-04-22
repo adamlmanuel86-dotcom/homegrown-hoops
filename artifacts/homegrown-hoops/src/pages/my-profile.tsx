@@ -286,6 +286,7 @@ export function MyProfilePage() {
           stamps={profile.stamps ?? []}
           tides={profile.tides ?? []}
           archetype={profile.archetype}
+          showArchetypeLink
         />
       )}
 

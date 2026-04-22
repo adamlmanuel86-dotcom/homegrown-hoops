@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, UserButton, useUser, useClerk } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn } from "lucide-react";
+import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -22,6 +22,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/teams", label: "Teams", icon: Users },
     { href: "/players", label: "Players", icon: Trophy },
     { href: "/games", label: "Games", icon: CalendarDays },
+    { href: "/archetypes", label: "Archetypes", icon: Layers },
     { href: "/our-story", label: "Our Story", icon: BookOpen },
   ];
 

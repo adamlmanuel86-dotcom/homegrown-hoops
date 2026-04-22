@@ -18,7 +18,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   role: text("role").notNull().default("player"),
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
   tides: json("tides").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
-  archetype: text("archetype").default("The Climb"),
+  archetype: text("archetype").default("Uncharted"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

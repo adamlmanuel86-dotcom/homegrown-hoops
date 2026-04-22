@@ -2,9 +2,10 @@ import { useState } from "react";
 import {
   Hash, Square, Eye, Droplets, Target, RotateCcw, Zap, Clock,
   Waves, TrendingUp, Shield, Lightbulb, Activity, MapPin, Sparkles, Mountain,
-  Anchor, Wind, Flame, Lock, X, Calendar, BarChart2,
+  Anchor, Wind, Flame, Lock, X, Calendar, BarChart2, Compass, ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Link } from "wouter";
 import type { RecognitionEntry } from "@workspace/api-client-react";
 
 // ─── Stamp metadata ────────────────────────────────────────────────────────────
@@ -193,6 +194,14 @@ export const ARCHETYPES: {
   gradient: string;
   accent: string;
 }[] = [
+  {
+    id: "Uncharted",
+    label: "Uncharted",
+    icon: Compass,
+    tagline: "Your story hasn't been written yet.",
+    gradient: "from-slate-900/90 via-slate-800/70 to-slate-900/90",
+    accent: "#94A3B8",
+  },
   {
     id: "The Mainstay",
     label: "The Mainstay",
@@ -648,9 +657,15 @@ export function TidesSection({ earned }: { earned: RecognitionEntry[] }) {
 }
 
 // ─── Archetype Section ─────────────────────────────────────────────────────────
-export function ArchetypeSection({ archetype }: { archetype: string | null | undefined }) {
-  const resolved = archetype ?? "The Climb";
-  const arch = ARCHETYPES.find((a) => a.id === resolved) ?? ARCHETYPES.find((a) => a.id === "The Climb")!;
+export function ArchetypeSection({
+  archetype,
+  showArchetypeLink = false,
+}: {
+  archetype: string | null | undefined;
+  showArchetypeLink?: boolean;
+}) {
+  const resolved = archetype ?? "Uncharted";
+  const arch = ARCHETYPES.find((a) => a.id === resolved) ?? ARCHETYPES.find((a) => a.id === "Uncharted")!;
   const Icon = arch.icon;
 
   return (
@@ -739,6 +754,18 @@ export function ArchetypeSection({ archetype }: { archetype: string | null | und
           </div>
         </div>
       </div>
+
+      {/* See All Archetypes link — shown on own profile */}
+      {showArchetypeLink && (
+        <Link
+          href="/archetypes"
+          className="flex items-center justify-center gap-1.5 w-full text-xs font-bold transition-colors"
+          style={{ color: `${arch.accent}99` }}
+        >
+          <span className="hover:underline underline-offset-2">See All Archetypes</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
+      )}
     </div>
   );
 }
@@ -748,16 +775,18 @@ export function RecognitionBlock({
   stamps,
   tides,
   archetype,
+  showArchetypeLink = false,
 }: {
   stamps: RecognitionEntry[];
   tides: RecognitionEntry[];
   archetype?: string | null;
+  showArchetypeLink?: boolean;
 }) {
   return (
     <div className="space-y-8">
       <StampsSection earned={stamps} />
       <TidesSection earned={tides} />
-      <ArchetypeSection archetype={archetype} />
+      <ArchetypeSection archetype={archetype} showArchetypeLink={showArchetypeLink} />
     </div>
   );
 }
