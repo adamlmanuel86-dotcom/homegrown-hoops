@@ -191,6 +191,20 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
 
   const { clerkUserId } = req.params;
 
+  // Prevent deletion of protected admin accounts — admin role is tied to
+  // the Clerk account, not the profile, so deleting it would strip privileges.
+  const targetIsProtected = await isProtectedAdmin(clerkUserId);
+  if (targetIsProtected) {
+    res.status(403).json({ error: "Cannot delete a protected admin account." });
+    return;
+  }
+
+  // Also prevent any admin from deleting their own profile
+  if (clerkUserId === requesterId) {
+    res.status(403).json({ error: "Admins cannot delete their own profile." });
+    return;
+  }
+
   const [deleted] = await db
     .delete(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, clerkUserId))
