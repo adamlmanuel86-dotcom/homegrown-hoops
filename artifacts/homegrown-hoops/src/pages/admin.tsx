@@ -6,11 +6,12 @@ import {
   useListAdminUsers,
   useUpdateUserRole,
   useListTeams,
+  useCreateTeam,
   useUpdateTeam,
   useDeleteTeam,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus } from "lucide-react";
 
 const ROLES = ["admin", "coach", "player"] as const;
 type Role = typeof ROLES[number];
@@ -62,6 +63,7 @@ export function AdminPage() {
   });
 
   const updateRole = useUpdateUserRole();
+  const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
 
@@ -70,9 +72,37 @@ export function AdminPage() {
   const [teamSaveError, setTeamSaveError] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
 
+  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [newTeam, setNewTeam] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
+  const [addTeamError, setAddTeamError] = useState<string | null>(null);
+
   async function handleRoleChange(clerkUserId: string, newRole: Role) {
     await updateRole.mutateAsync({ clerkUserId, data: { role: newRole } });
     await qc.invalidateQueries({ queryKey: ["/api/admin/users"] });
+  }
+
+  async function handleCreateTeam() {
+    if (!newTeam.name.trim() || !newTeam.city.trim() || !newTeam.abbreviation.trim()) {
+      setAddTeamError("Name, city, and abbreviation are required.");
+      return;
+    }
+    try {
+      await createTeam.mutateAsync({
+        data: {
+          name: newTeam.name.trim(),
+          city: newTeam.city.trim(),
+          abbreviation: newTeam.abbreviation.trim().toUpperCase().slice(0, 4),
+          primaryColor: newTeam.primaryColor,
+          secondaryColor: newTeam.secondaryColor,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["/api/teams"] });
+      setShowAddTeam(false);
+      setNewTeam({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
+      setAddTeamError(null);
+    } catch {
+      setAddTeamError("Failed to create team. Please try again.");
+    }
   }
 
   function startEditTeam(team: NonNullable<typeof teams>[number]) {
@@ -147,11 +177,99 @@ export function AdminPage() {
           <Users className="h-5 w-5 text-primary" />
           <h2 className="font-bold text-secondary">Teams</h2>
           {teams && (
-            <span className="ml-auto text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground">
               {teams.length} {teams.length === 1 ? "team" : "teams"}
             </span>
           )}
+          <button
+            onClick={() => { setShowAddTeam((v) => !v); setAddTeamError(null); }}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Team
+          </button>
         </div>
+
+        {/* Add Team form */}
+        {showAddTeam && (
+          <div className="px-6 py-5 border-b border-border bg-primary/5">
+            <p className="label-upper text-primary mb-4">New Team</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="label-upper block mb-1.5">Team Name</label>
+                <input
+                  type="text"
+                  value={newTeam.name}
+                  onChange={(e) => setNewTeam((s) => ({ ...s, name: e.target.value }))}
+                  placeholder="e.g. Harbour View"
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="label-upper block mb-1.5">City</label>
+                <input
+                  type="text"
+                  value={newTeam.city}
+                  onChange={(e) => setNewTeam((s) => ({ ...s, city: e.target.value }))}
+                  placeholder="e.g. Saint John"
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="label-upper block mb-1.5">Abbreviation (max 4)</label>
+                <input
+                  type="text"
+                  value={newTeam.abbreviation}
+                  onChange={(e) => setNewTeam((s) => ({ ...s, abbreviation: e.target.value.toUpperCase().slice(0, 4) }))}
+                  placeholder="e.g. HV"
+                  maxLength={4}
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="label-upper block mb-1.5">Primary Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={newTeam.primaryColor}
+                    onChange={(e) => setNewTeam((s) => ({ ...s, primaryColor: e.target.value }))}
+                    className="h-10 w-14 rounded-lg border border-border cursor-pointer p-0.5 bg-white"
+                  />
+                  <span className="text-sm font-mono text-muted-foreground">{newTeam.primaryColor.toUpperCase()}</span>
+                </div>
+              </div>
+              <div>
+                <label className="label-upper block mb-1.5">Secondary Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={newTeam.secondaryColor}
+                    onChange={(e) => setNewTeam((s) => ({ ...s, secondaryColor: e.target.value }))}
+                    className="h-10 w-14 rounded-lg border border-border cursor-pointer p-0.5 bg-white"
+                  />
+                  <span className="text-sm font-mono text-muted-foreground">{newTeam.secondaryColor.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+            {addTeamError && <p className="text-red-500 text-sm font-medium mt-3">{addTeamError}</p>}
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleCreateTeam}
+                disabled={createTeam.isPending}
+                className="btn-primary text-sm py-2"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {createTeam.isPending ? "Creating…" : "Create Team"}
+              </button>
+              <button
+                onClick={() => { setShowAddTeam(false); setAddTeamError(null); }}
+                className="px-3 py-2 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {teamsLoading ? (
           <div className="divide-y divide-border">
