@@ -223,6 +223,7 @@ function Router() {
     <Switch>
       {/* Full-screen routes — no nav layout */}
       <Route path="/onboarding" component={OnboardingPage} />
+      <Route path="/sign-up/*?" component={SignUpPage} />
 
       {/* Standard routes — inside nav layout */}
       <Route>
@@ -230,7 +231,6 @@ function Router() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/sign-in/*?" component={SignInPage} />
-            <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/teams" component={TeamsPage} />
             <Route path="/teams/:id" component={TeamDetailPage} />
             <Route path="/players" component={PlayersPage} />
