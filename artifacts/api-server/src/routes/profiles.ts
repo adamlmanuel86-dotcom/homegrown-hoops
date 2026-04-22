@@ -43,11 +43,32 @@ router.get("/profiles/me", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
+  // If no profile exists yet, check if this is a protected admin email.
+  // If so, auto-create a stub admin profile so they never get locked out.
   if (!profile) {
+    const protected_ = await isProtectedAdmin(userId);
+    if (protected_) {
+      let firstName = "Admin";
+      let lastName = "";
+      try {
+        const user = await (await import("@clerk/express")).clerkClient.users.getUser(userId);
+        firstName = user.firstName ?? "Admin";
+        lastName = user.lastName ?? "";
+      } catch {
+        // keep defaults
+      }
+      const [created] = await db
+        .insert(userProfilesTable)
+        .values({ clerkUserId: userId, firstName, lastName, isAdmin: true, role: "admin" })
+        .returning();
+      res.json(GetMyProfileResponse.parse(serializeRow(created)));
+      return;
+    }
     res.status(404).json({ error: "Profile not found" });
     return;
   }
 
+  // Profile exists — ensure protected admin emails are always admin
   if (profile.role !== "admin") {
     const protected_ = await isProtectedAdmin(userId);
     if (protected_) {
