@@ -103,6 +103,7 @@ export function CustomSignUpPage() {
         boxSizing: "border-box",
       }}
     >
+      <style>{`@keyframes su-spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ width: "100%", maxWidth: 420 }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
@@ -247,7 +248,10 @@ export function CustomSignUpPage() {
                   type="submit"
                   disabled={loading}
                   style={{
-                    display: "block",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
                     width: "100%",
                     padding: "14px",
                     borderRadius: 10,
@@ -264,9 +268,20 @@ export function CustomSignUpPage() {
                     boxSizing: "border-box",
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
+                    opacity: loading ? 0.85 : 1,
                   }}
                 >
-                  {loading ? "Creating account…" : "Continue →"}
+                  {loading && (
+                    <svg
+                      style={{ width: 18, height: 18, animation: "su-spin 0.8s linear infinite", flexShrink: 0 }}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  )}
+                  {loading ? "Creating your account…" : "Continue →"}
                 </button>
               </form>
 
@@ -401,7 +416,10 @@ export function CustomSignUpPage() {
                   type="submit"
                   disabled={loading}
                   style={{
-                    display: "block",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
                     width: "100%",
                     padding: "14px",
                     borderRadius: 10,
@@ -419,9 +437,20 @@ export function CustomSignUpPage() {
                     marginBottom: 12,
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
+                    opacity: loading ? 0.85 : 1,
                   }}
                 >
-                  {loading ? "Verifying…" : "Verify & Continue"}
+                  {loading && (
+                    <svg
+                      style={{ width: 18, height: 18, animation: "su-spin 0.8s linear infinite", flexShrink: 0 }}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  )}
+                  {loading ? "Verifying your code…" : "Verify & Continue"}
                 </button>
               </form>
 

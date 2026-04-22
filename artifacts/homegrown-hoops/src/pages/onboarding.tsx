@@ -229,8 +229,10 @@ export function OnboardingPage() {
 
   // ──────────────────────────────────────────────────
   // SUBMITTING — full-screen cinematic loading
+  // Triggers immediately on tap (isSubmitting=true) so the photo-upload phase
+  // is also covered — not just the API call phase.
   // ──────────────────────────────────────────────────
-  if (step === "submitting") {
+  if (isSubmitting || step === "submitting") {
     return (
       <div
         style={{
