@@ -15,13 +15,17 @@ Mobile-friendly basketball stats tracking website for community/neighborhood lea
 
 ## Features
 
-- Homepage with league stats summary and stat leaders
+- Homepage with league stats summary and stat leaders (PPG / RPG / APG only — steals/blocks removed)
 - Teams list + team detail (roster, W/L record, team stats)
 - Players list (search + filter by team) + player detail (career averages, shooting %)
 - Games log (filter by team/season) + game detail with full box score
+- Admin stat entry: admins see "Player Stats" panel on game detail pages with inline PTS/REB/AST inputs per player. Saving triggers the recognition engine (stamps, tides, archetypes).
+- Recognition engine (`artifacts/api-server/src/recognition.ts`): recalculates stamps (all-time per-game badges), tides (current season leader titles), and archetypes (team-based roles) after every stat save.
+- Recognition frontend (`artifacts/homegrown-hoops/src/components/recognition.tsx`): 8 stamps, 6 tides, 7 archetypes with icons, descriptions, and rarity colors. "Shift Worker" stamp removed.
 - Clerk authentication (sign in / sign up)
 - User profile system: signed-in users can create/edit their profile (name, school, position, graduation year, bio); profiles are publicly viewable at `/profiles/:clerkUserId`; only the owner or an admin can edit
 - Three-tier role system: admin, coach, player (default). First account to register is auto-promoted to admin. Admins see an "Admin" link in the nav leading to `/admin` panel where they can change any user's role.
+- Cloudinary video upload for game highlights (manual upload only — no auto highlight generation).
 
 ## Database Schema
 

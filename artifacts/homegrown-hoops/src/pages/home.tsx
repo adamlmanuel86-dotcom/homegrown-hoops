@@ -1,7 +1,7 @@
 import { useGetStatsSummary, useGetStatLeaders, useListTeams } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
-import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, ShieldCheck } from "lucide-react";
+import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2 } from "lucide-react";
 
 function CourtTexture() {
   return (
@@ -177,8 +177,6 @@ export function Home() {
               { key: "points"   as const, label: "Points",   abbr: "PPG", icon: Trophy },
               { key: "rebounds" as const, label: "Rebounds",  abbr: "RPG", icon: Target },
               { key: "assists"  as const, label: "Assists",   abbr: "APG", icon: Share2 },
-              { key: "steals"   as const, label: "Steals",    abbr: "SPG", icon: Zap },
-              { key: "blocks"   as const, label: "Blocks",    abbr: "BPG", icon: ShieldCheck },
             ] as const).map(({ key, label, abbr, icon: Icon }) => {
               const top = leaders?.[key]?.[0];
               return (

@@ -3,6 +3,7 @@ import { eq, and, desc, or } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, gamesTable, gamePlayerStatsTable, teamsTable, userProfilesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
+import { runFullRecognition } from "../recognition";
 import {
   CreateGameBody,
   UpdateGameBody,
@@ -172,6 +173,22 @@ router.get("/games/:id/player-stats", async (req, res): Promise<void> => {
 });
 
 router.post("/games/:id/player-stats", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (profile?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
   const params = UpsertGamePlayerStatsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -204,6 +221,13 @@ router.post("/games/:id/player-stats", async (req, res): Promise<void> => {
       results.push(inserted);
     }
   }
+
+  // Fire recognition in the background — do not await so the response is immediate
+  const playerIds = parsed.data.map((s) => s.playerId);
+  runFullRecognition(gameId, playerIds).catch((err) =>
+    console.error("[recognition] runFullRecognition failed:", err)
+  );
+
   res.json(UpsertGamePlayerStatsResponse.parse(results));
 });
 

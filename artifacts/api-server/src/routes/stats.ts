@@ -8,7 +8,7 @@ import {
 
 const router: IRouter = Router();
 
-async function getLeaders(field: "points" | "rebounds" | "assists" | "steals" | "blocks", limit = 5) {
+async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
   const rows = await db
     .select({
       playerId: playersTable.id,
@@ -31,15 +31,13 @@ async function getLeaders(field: "points" | "rebounds" | "assists" | "steals" | 
 }
 
 router.get("/stats/leaders", async (_req, res): Promise<void> => {
-  const [points, rebounds, assists, steals, blocks] = await Promise.all([
+  const [points, rebounds, assists] = await Promise.all([
     getLeaders("points"),
     getLeaders("rebounds"),
     getLeaders("assists"),
-    getLeaders("steals"),
-    getLeaders("blocks"),
   ]);
 
-  res.json(GetStatLeadersResponse.parse({ points, rebounds, assists, steals, blocks }));
+  res.json(GetStatLeadersResponse.parse({ points, rebounds, assists }));
 });
 
 router.get("/stats/summary", async (_req, res): Promise<void> => {

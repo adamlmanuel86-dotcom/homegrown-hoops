@@ -437,26 +437,6 @@ export const GetStatLeadersResponse = zod.object({
       value: zod.number(),
     }),
   ),
-  steals: zod.array(
-    zod.object({
-      playerId: zod.number(),
-      firstName: zod.string(),
-      lastName: zod.string(),
-      teamName: zod.string().nullish(),
-      teamAbbreviation: zod.string().nullish(),
-      value: zod.number(),
-    }),
-  ),
-  blocks: zod.array(
-    zod.object({
-      playerId: zod.number(),
-      firstName: zod.string(),
-      lastName: zod.string(),
-      teamName: zod.string().nullish(),
-      teamAbbreviation: zod.string().nullish(),
-      value: zod.number(),
-    }),
-  ),
 });
 
 /**

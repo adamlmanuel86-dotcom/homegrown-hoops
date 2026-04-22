@@ -11,9 +11,10 @@ import {
   useListGameVideos,
   useAddGameVideo,
   useDeleteGameVideo,
+  useUpsertGamePlayerStats,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2 } from "lucide-react";
+import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2, BarChart3 } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -45,8 +46,17 @@ export function GameDetailPage() {
   const updateGame = useUpdateGame();
   const addGameVideo = useAddGameVideo();
   const deleteGameVideo = useDeleteGameVideo();
+  const upsertGamePlayerStats = useUpsertGamePlayerStats();
 
   const [editingScore, setEditingScore] = useState(false);
+
+  // ── Stat entry ──────────────────────────────────────────────────────────────
+  type StatRow = { points: string; rebounds: string; assists: string };
+  const [showStatEntry, setShowStatEntry] = useState(false);
+  const [statInputs, setStatInputs] = useState<Record<number, StatRow>>({});
+  const [savingStats, setSavingStats] = useState(false);
+  const [statSaveError, setStatSaveError] = useState<string | null>(null);
+  const [statSaveSuccess, setStatSaveSuccess] = useState(false);
   const [homeScoreInput, setHomeScoreInput] = useState("");
   const [awayScoreInput, setAwayScoreInput] = useState("");
   const [scoreError, setScoreError] = useState<string | null>(null);
@@ -68,6 +78,76 @@ export function GameDetailPage() {
 
   const homeStats = playerStats?.filter((s) => players?.find((p) => p.id === s.playerId)?.teamId === game?.homeTeamId) ?? [];
   const awayStats = playerStats?.filter((s) => players?.find((p) => p.id === s.playerId)?.teamId === game?.awayTeamId) ?? [];
+
+  function openStatEntry() {
+    const initial: Record<number, StatRow> = {};
+    if (playerStats) {
+      for (const s of playerStats) {
+        initial[s.playerId] = {
+          points:   s.points   > 0 ? String(s.points)   : "",
+          rebounds: s.rebounds > 0 ? String(s.rebounds) : "",
+          assists:  s.assists  > 0 ? String(s.assists)  : "",
+        };
+      }
+    }
+    setStatInputs(initial);
+    setStatSaveError(null);
+    setStatSaveSuccess(false);
+    setShowStatEntry(true);
+  }
+
+  function updateStatInput(playerId: number, field: keyof StatRow, value: string) {
+    setStatInputs((prev) => ({
+      ...prev,
+      [playerId]: { ...(prev[playerId] ?? { points: "", rebounds: "", assists: "" }), [field]: value },
+    }));
+  }
+
+  async function handleStatSave() {
+    setSavingStats(true);
+    setStatSaveError(null);
+    setStatSaveSuccess(false);
+    try {
+      const teamPlayerIds = new Set(
+        [...(players?.filter((p) => p.teamId === game?.homeTeamId || p.teamId === game?.awayTeamId) ?? [])].map((p) => p.id)
+      );
+      const stats = [...teamPlayerIds]
+        .map((pid) => {
+          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "" };
+          return {
+            playerId:              pid,
+            points:                parseInt(row.points)   || 0,
+            rebounds:              parseInt(row.rebounds) || 0,
+            assists:               parseInt(row.assists)  || 0,
+            steals:                0,
+            blocks:                0,
+            turnovers:             0,
+            minutesPlayed:         0,
+            fieldGoalsMade:        0,
+            fieldGoalsAttempted:   0,
+            threesMade:            0,
+            threesAttempted:       0,
+            freeThrowsMade:        0,
+            freeThrowsAttempted:   0,
+          };
+        })
+        .filter((s) => s.points > 0 || s.rebounds > 0 || s.assists > 0);
+
+      if (stats.length === 0) {
+        setStatSaveError("Enter stats for at least one player before saving.");
+        return;
+      }
+
+      await upsertGamePlayerStats.mutateAsync({ id, data: stats });
+      await qc.invalidateQueries({ queryKey: [`/api/games/${id}/player-stats`] });
+      setStatSaveSuccess(true);
+      setTimeout(() => setStatSaveSuccess(false), 3000);
+    } catch {
+      setStatSaveError("Failed to save stats. Please try again.");
+    } finally {
+      setSavingStats(false);
+    }
+  }
 
   function openScoreEditor() {
     setHomeScoreInput(game?.homeScore != null ? String(game.homeScore) : "");
@@ -422,6 +502,118 @@ export function GameDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Admin: Stat Entry */}
+      {isAdmin && (
+        <div className="card-base overflow-hidden">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h2 className="font-bold text-secondary">Player Stats</h2>
+            {!showStatEntry && (
+              <button
+                onClick={openStatEntry}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:opacity-90 transition-opacity"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                {playerStats && playerStats.length > 0 ? "Edit Stats" : "Enter Stats"}
+              </button>
+            )}
+          </div>
+
+          {showStatEntry && (
+            <div className="p-6 space-y-6">
+              {[
+                { label: awayTeam?.name ?? "Away", teamId: game.awayTeamId, color: awayTeam?.primaryColor ?? "#555" },
+                { label: homeTeam?.name ?? "Home", teamId: game.homeTeamId, color: homeTeam?.primaryColor ?? "#555" },
+              ].map(({ label, teamId, color }) => {
+                const teamPlayers = players?.filter((p) => p.teamId === teamId) ?? [];
+                return (
+                  <div key={teamId}>
+                    <div
+                      className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg"
+                      style={{ background: `${color}22`, borderLeft: `3px solid ${color}` }}
+                    >
+                      <p className="font-bold text-sm uppercase tracking-wide text-secondary">{label}</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[340px] text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground">Player</th>
+                            {["PTS", "REB", "AST"].map((h) => (
+                              <th key={h} className="px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground text-center w-20">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {teamPlayers.map((player) => {
+                            const row = statInputs[player.id] ?? { points: "", rebounds: "", assists: "" };
+                            return (
+                              <tr key={player.id} className="border-b border-border last:border-0">
+                                <td className="px-3 py-2 font-semibold text-secondary">
+                                  {player.firstName} {player.lastName}
+                                </td>
+                                {(["points", "rebounds", "assists"] as const).map((field) => (
+                                  <td key={field} className="px-2 py-1.5 text-center">
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      placeholder="–"
+                                      value={row[field]}
+                                      onChange={(e) => updateStatInput(player.id, field, e.target.value)}
+                                      className="w-16 border border-border rounded-md px-2 py-1.5 text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-background text-foreground"
+                                    />
+                                  </td>
+                                ))}
+                              </tr>
+                            );
+                          })}
+                          {teamPlayers.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="px-3 py-4 text-sm text-muted-foreground text-center">
+                                No players registered for this team.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {statSaveError && (
+                <p className="text-red-500 text-sm font-medium">{statSaveError}</p>
+              )}
+              {statSaveSuccess && (
+                <p className="text-green-400 text-sm font-medium">
+                  Stats saved — recognition system updated.
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={handleStatSave}
+                  disabled={savingStats}
+                  className="btn-primary"
+                >
+                  {savingStats ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
+                  ) : (
+                    <><Save className="h-4 w-4" /> Save Stats</>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowStatEntry(false)}
+                  className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Box Score */}
       {playerStats && playerStats.length > 0 ? (

@@ -258,8 +258,6 @@ export interface StatLeaders {
   points: PlayerLeaderEntry[];
   rebounds: PlayerLeaderEntry[];
   assists: PlayerLeaderEntry[];
-  steals: PlayerLeaderEntry[];
-  blocks: PlayerLeaderEntry[];
 }
 
 export interface StatsSummary {
