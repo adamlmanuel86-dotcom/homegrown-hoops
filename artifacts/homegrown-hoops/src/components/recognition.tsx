@@ -77,8 +77,8 @@ export const STAMPS: {
     label: "Shift Worker",
     icon: Clock,
     color: "#60A5FA",
-    description: "Never missed a shift. Present every game, every night.",
-    howToEarn: "Play every game in a season. Manually tracked and awarded by the admin.",
+    description: "Didn't miss a single game all season. Every shift, every time, no excuses. Awarded at season end to players who showed up for every game.",
+    howToEarn: "Tracked and awarded by the league admin at the end of the season — an honour reserved for players who never missed a game.",
     threshold: "Every game in a season — admin tracked",
   },
   {
