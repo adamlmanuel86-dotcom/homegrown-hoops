@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
+import { ClerkProvider, SignIn, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -19,6 +19,7 @@ import { AdminPage } from "@/pages/admin";
 import { OurStoryPage } from "@/pages/our-story";
 import { ArchetypesPage } from "@/pages/archetypes";
 import { OnboardingPage } from "@/pages/onboarding";
+import { CustomSignUpPage } from "@/pages/sign-up";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -195,20 +196,7 @@ function SignInPage() {
 }
 
 function SignUpPage() {
-  // To update login providers, app branding, or OAuth settings use the Auth pane in the workspace toolbar.
-  return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12 gap-5">
-      <SignUp
-        routing="path"
-        path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-        afterSignUpUrl={`${basePath}/onboarding`}
-      />
-      <p className="text-sm text-muted-foreground font-medium text-center">
-        Free for the 2026 pilot season. No credit card required.
-      </p>
-    </div>
-  );
+  return <CustomSignUpPage />;
 }
 
 function ClerkQueryClientCacheInvalidator() {
