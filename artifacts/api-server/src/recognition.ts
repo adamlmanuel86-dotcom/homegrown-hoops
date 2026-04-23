@@ -44,8 +44,10 @@ const AUTO_TIDE_IDS = [
   "high_tide",
   "the_keeper",
   "the_source",
+  "the_swell",
   "lighthouse",
   "rising_tide",
+  "shoreline",
   "the_crest",
 ] as const;
 type AutoTideId = (typeof AUTO_TIDE_IDS)[number];
@@ -190,11 +192,14 @@ export async function recalculateTides(season: string): Promise<void> {
     firstName: string;
     lastName: string;
     avgPoints: number;
+  totalPoints: number;
     totalRebounds: number;
     totalAssists: number;
+  highestGamePoints: number;
     stdDevPoints: number;
     improvement: number;
     composite: number;
+  gamesPlayed: number;
   };
 
   const metrics: Metrics[] = playerStats.map((p) => {
@@ -209,11 +214,14 @@ export async function recalculateTides(season: string): Promise<void> {
       firstName: p.firstName,
       lastName: p.lastName,
       avgPoints: avgPts,
+      totalPoints: pts.reduce((s, n) => s + n, 0),
       totalRebounds: reb.reduce((s, n) => s + n, 0),
       totalAssists: ast.reduce((s, n) => s + n, 0),
+      highestGamePoints: pts.length ? Math.max(...pts) : 0,
       stdDevPoints: stdDev(pts),
       improvement: halfImprovement(dates, pts),
       composite: avgPts + avgReb + avgAst,
+      gamesPlayed: p.games.length,
     };
   });
 
@@ -223,11 +231,13 @@ export async function recalculateTides(season: string): Promise<void> {
   }
 
   const winners: Record<AutoTideId, Metrics | null> = {
-    high_tide:   topOf((m) => m.avgPoints),
+    high_tide:   topOf((m) => m.totalPoints),
     the_keeper:  topOf((m) => m.totalRebounds),
     the_source:  topOf((m) => m.totalAssists),
-    lighthouse:  topOf((m) => m.stdDevPoints),
+    the_swell:   topOf((m) => m.highestGamePoints),
+    lighthouse:  topOf((m) => -m.stdDevPoints),
     rising_tide: topOf((m) => m.improvement),
+    shoreline:   topOf((m) => m.gamesPlayed),
     the_crest:   topOf((m) => m.composite),
   };
 
