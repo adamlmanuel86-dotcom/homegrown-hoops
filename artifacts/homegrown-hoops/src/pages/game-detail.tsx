@@ -15,13 +15,20 @@ import {
   useDeleteGamePlayerStat,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2, BarChart3, AlertTriangle } from "lucide-react";
+import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 function videoUrl(objectPath: string) {
   if (objectPath.startsWith("http")) return objectPath;
   return `${BASE_URL}/api/storage${objectPath}`;
+}
+
+function cloudinaryThumbnail(url: string): string | null {
+  if (!url.includes("res.cloudinary.com")) return null;
+  return url
+    .replace("/video/upload/", "/video/upload/w_480,h_270,c_fill,so_2,f_jpg/")
+    .replace(/\.[^.]+$/, ".jpg");
 }
 
 export function GameDetailPage() {
@@ -66,6 +73,7 @@ export function GameDetailPage() {
   const [awayScoreInput, setAwayScoreInput] = useState("");
   const [scoreError, setScoreError] = useState<string | null>(null);
 
+  const [selectedVideoId, setSelectedVideoId] = useState<number | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
   const [pendingObjectPath, setPendingObjectPath] = useState<string | null>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -479,145 +487,60 @@ export function GameDetailPage() {
         </form>
       )}
 
-      {/* Game Videos */}
-      <div className="card-base overflow-hidden">
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
-          <Video className="h-5 w-5 text-primary" />
-          <h2 className="font-bold text-secondary">Game Videos</h2>
-          {videos && videos.length > 0 && (
-            <span className="ml-auto text-sm text-muted-foreground">{videos.length} {videos.length === 1 ? "video" : "videos"}</span>
-          )}
-          {canUpload && !showUploadForm && (
-            <button
-              onClick={() => { setShowUploadForm(true); setPendingObjectPath(null); setVideoTitle(""); setTitleError(null); }}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:opacity-90 transition-opacity"
-            >
-              <Upload className="h-3.5 w-3.5" /> Attach Video
-            </button>
-          )}
-        </div>
-
-        {/* Upload Form */}
-        {canUpload && showUploadForm && (
-          <div className="px-6 py-5 border-b border-border bg-primary/5 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-secondary text-sm">Attach a Video</p>
-              <button onClick={() => { setShowUploadForm(false); setPendingObjectPath(null); }} className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground">
-                <X className="h-4 w-4" />
-              </button>
+      {/* ── Game Film ─────────────────────────────────────────────────── */}
+      {loadingVideos ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="h-7 w-48 bg-muted rounded" />
+          <div className="card-base overflow-hidden">
+            <div className="w-full aspect-video bg-muted" />
+            <div className="px-6 py-4 space-y-2">
+              <div className="h-4 bg-muted rounded w-48" />
+              <div className="h-3 bg-muted rounded w-32" />
             </div>
-
-            {!pendingObjectPath ? (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">Select a video file (MP4, MOV, MKV, etc.)</p>
-                <label className={`flex flex-col items-center justify-center gap-3 w-full border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer transition-colors ${uploading ? "border-primary/40 bg-primary/5 cursor-default" : "border-border hover:border-primary/40 hover:bg-primary/5"}`}>
-                  {uploading ? (
-                    <div className="w-full space-y-3 pointer-events-none select-none">
-                      <Loader2 className="h-7 w-7 text-primary animate-spin mx-auto" />
-                      <p className="text-sm font-semibold text-secondary text-center">
-                        {uploadProgress > 0 ? `Uploading… ${uploadProgress}%` : "Preparing upload…"}
-                      </p>
-                      <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className="bg-primary h-2.5 rounded-full transition-all duration-150"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Uploading in chunks — large videos may take several minutes. Keep this page open.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="h-7 w-7 text-muted-foreground/50" />
-                      <span className="text-sm font-medium text-secondary">Click to choose a video file</span>
-                      <span className="text-xs text-muted-foreground">MP4, MOV, MKV — up to 2 GB supported</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="sr-only"
-                    disabled={uploading}
-                    onChange={handleFileUpload}
-                  />
-                </label>
-                {uploadError && (
-                  <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2.5">
-                    <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-red-400 text-xs font-medium leading-relaxed">{uploadError}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-400 bg-green-900/30 rounded-lg px-3 py-2 text-sm font-medium">
-                  <Video className="h-4 w-4" /> Video uploaded — add a title to save it
-                </div>
-                <div>
-                  <label className="label-upper block mb-1.5">Video Title *</label>
-                  <input
-                    type="text"
-                    value={videoTitle}
-                    onChange={(e) => { setVideoTitle(e.target.value); setTitleError(null); }}
-                    placeholder="e.g. Full game highlights"
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  />
-                  {titleError && <p className="text-red-600 text-xs mt-1">{titleError}</p>}
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handleVideoSave} disabled={savingVideo} className="btn-primary text-sm py-2">
-                    <Save className="h-3.5 w-3.5" />
-                    {savingVideo ? "Saving..." : "Save Video"}
-                  </button>
-                  <button onClick={() => setPendingObjectPath(null)} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors">
-                    Re-upload
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-        )}
-
-        {/* Video List */}
-        {loadingVideos ? (
-          <div className="divide-y divide-border">
-            {[1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
-                <div className="w-10 h-10 rounded-xl bg-muted flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-48" />
-                  <div className="h-3 bg-muted rounded w-32" />
-                </div>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Section heading */}
+          {(videos && videos.length > 0 || canUpload) && (
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Highlights</p>
+                <h2 className="font-display text-5xl text-primary leading-none tracking-tight">GAME FILM</h2>
               </div>
-            ))}
-          </div>
-        ) : videos && videos.length > 0 ? (
-          <div className="divide-y divide-border">
-            {videos.map((v) => {
-              const canDelete = isAdmin || (myProfile?.clerkUserId === v.uploaderClerkUserId);
-              return (
-                <div key={v.id} className="flex items-center gap-4 px-6 py-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Video className="h-5 w-5 text-primary" />
-                  </div>
+              {canUpload && !showUploadForm && (
+                <button
+                  onClick={() => { setShowUploadForm(true); setPendingObjectPath(null); setVideoTitle(""); setTitleError(null); }}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:opacity-90 transition-opacity"
+                >
+                  <Upload className="h-3.5 w-3.5" /> Attach Video
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Main player — shown when at least one video exists */}
+          {videos && videos.length > 0 && (() => {
+            const active = videos.find(v => v.id === selectedVideoId) ?? videos[0];
+            const canDeleteActive = isAdmin || myProfile?.clerkUserId === active.uploaderClerkUserId;
+            return (
+              <div className="card-base overflow-hidden shadow-[6px_6px_0_0_rgba(0,0,0,1)]">
+                <video
+                  key={active.id}
+                  src={videoUrl(active.objectPath)}
+                  controls
+                  className="w-full aspect-video bg-black"
+                />
+                <div className="px-5 py-4 flex items-center gap-4 border-t border-border">
                   <div className="flex-1 min-w-0">
-                    <a
-                      href={videoUrl(v.objectPath)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-secondary hover:text-primary transition-colors flex items-center gap-1.5 truncate"
-                    >
-                      {v.title}
-                      <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 opacity-50" />
-                    </a>
+                    <p className="font-bold text-secondary text-base truncate">{active.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Uploaded by {v.uploaderName} · {new Date(v.createdAt).toLocaleDateString()}
+                      Uploaded by {active.uploaderName} · {new Date(active.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  {canDelete && (
+                  {canDeleteActive && (
                     <button
-                      onClick={() => handleDeleteVideo(v.id)}
+                      onClick={() => handleDeleteVideo(active.id)}
                       className="p-2 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-900/30 transition-colors flex-shrink-0"
                       title="Delete video"
                     >
@@ -625,19 +548,161 @@ export function GameDetailPage() {
                     </button>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="px-6 py-10 text-center">
-            <Video className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm font-medium text-secondary mb-1">No videos yet</p>
-            <p className="text-xs text-muted-foreground">
-              {canUpload ? 'Click "Attach Video" above to add game footage.' : "Game footage will appear here once videos are attached."}
-            </p>
-          </div>
-        )}
-      </div>
+              </div>
+            );
+          })()}
+
+          {/* Playlist — shown when 2+ videos */}
+          {videos && videos.length > 1 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                All Footage · {videos.length} Videos
+              </p>
+              <div className="card-base overflow-hidden divide-y divide-border">
+                {videos.map((v) => {
+                  const thumb = cloudinaryThumbnail(videoUrl(v.objectPath));
+                  const isActive = v.id === (selectedVideoId ?? videos[0]?.id);
+                  const canDelete = isAdmin || myProfile?.clerkUserId === v.uploaderClerkUserId;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVideoId(v.id)}
+                      className={`relative w-full flex items-center gap-4 px-4 py-3 text-left transition-colors border-l-4 ${isActive ? "bg-primary/5 border-primary" : "border-transparent hover:bg-muted/50"}`}
+                    >
+                      <div className="relative w-24 h-14 rounded-lg overflow-hidden bg-black flex-shrink-0">
+                        {thumb ? (
+                          <img src={thumb} alt={v.title} className="w-full h-full object-cover opacity-80" />
+                        ) : (
+                          <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+                            <Video className="h-5 w-5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md ${isActive ? "bg-primary" : "bg-white/90"}`}>
+                            <Play className={`h-4 w-4 ml-0.5 ${isActive ? "text-white" : "text-black"}`} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold text-sm truncate ${isActive ? "text-primary" : "text-secondary"}`}>{v.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{v.uploaderName}</p>
+                      </div>
+                      {canDelete && (
+                        <span
+                          role="button"
+                          tabIndex={-1}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteVideo(v.id); }}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-900/30 transition-colors flex-shrink-0"
+                          title="Delete video"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Upload form */}
+          {canUpload && showUploadForm && (
+            <div className="card-base overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-primary/5">
+                <p className="font-semibold text-secondary text-sm">Attach a Video</p>
+                <button
+                  onClick={() => { setShowUploadForm(false); setPendingObjectPath(null); }}
+                  className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                {!pendingObjectPath ? (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground">Select a video file (MP4, MOV, MKV, etc.)</p>
+                    <label className={`flex flex-col items-center justify-center gap-3 w-full border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer transition-colors ${uploading ? "border-primary/40 bg-primary/5 cursor-default" : "border-border hover:border-primary/40 hover:bg-primary/5"}`}>
+                      {uploading ? (
+                        <div className="w-full space-y-3 pointer-events-none select-none">
+                          <Loader2 className="h-7 w-7 text-primary animate-spin mx-auto" />
+                          <p className="text-sm font-semibold text-secondary text-center">
+                            {uploadProgress > 0 ? `Uploading… ${uploadProgress}%` : "Preparing upload…"}
+                          </p>
+                          <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                            <div
+                              className="bg-primary h-2.5 rounded-full transition-all duration-150"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground text-center">
+                            Uploading in chunks — large videos may take several minutes. Keep this page open.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="h-7 w-7 text-muted-foreground/50" />
+                          <span className="text-sm font-medium text-secondary">Click to choose a video file</span>
+                          <span className="text-xs text-muted-foreground">MP4, MOV, MKV — up to 2 GB supported</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="sr-only"
+                        disabled={uploading}
+                        onChange={handleFileUpload}
+                      />
+                    </label>
+                    {uploadError && (
+                      <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2.5">
+                        <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-red-400 text-xs font-medium leading-relaxed">{uploadError}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-400 bg-green-900/30 rounded-lg px-3 py-2 text-sm font-medium">
+                      <Video className="h-4 w-4" /> Video uploaded — add a title to save it
+                    </div>
+                    <div>
+                      <label className="label-upper block mb-1.5">Video Title *</label>
+                      <input
+                        type="text"
+                        value={videoTitle}
+                        onChange={(e) => { setVideoTitle(e.target.value); setTitleError(null); }}
+                        placeholder="e.g. Full game highlights"
+                        className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      />
+                      {titleError && <p className="text-red-600 text-xs mt-1">{titleError}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={handleVideoSave} disabled={savingVideo} className="btn-primary text-sm py-2">
+                        <Save className="h-3.5 w-3.5" />
+                        {savingVideo ? "Saving..." : "Save Video"}
+                      </button>
+                      <button onClick={() => setPendingObjectPath(null)} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors">
+                        Re-upload
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {(!videos || videos.length === 0) && !showUploadForm && (
+            <div className="card-base px-6 py-12 text-center">
+              <Video className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-secondary mb-1">No footage yet</p>
+              <p className="text-xs text-muted-foreground">
+                {canUpload ? 'Click "Attach Video" above to add game footage.' : "Game footage will appear here once videos are attached."}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Admin: Stat Entry */}
       {isAdmin && (
