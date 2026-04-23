@@ -207,6 +207,7 @@ export function GameDetailPage() {
       await deleteGamePlayerStat.mutateAsync({ id, playerId });
       await qc.invalidateQueries({ queryKey: [`/api/games/${id}/player-stats`] });
       setConfirmingDeleteStatPlayerId(null);
+      setStatInputs((prev) => { const next = { ...prev }; delete next[playerId]; return next; });
     } finally {
       setDeletingStatPlayerId(null);
     }
@@ -629,7 +630,7 @@ export function GameDetailPage() {
             <Video className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-sm font-medium text-secondary mb-1">No videos yet</p>
             <p className="text-xs text-muted-foreground">
-              {canUpload ? 'Click "Attach Video" above to add game footage.' : "Sign in to attach video footage to this game."}
+              {canUpload ? 'Click "Attach Video" above to add game footage.' : "Game footage will appear here once videos are attached."}
             </p>
           </div>
         )}
@@ -668,18 +669,53 @@ export function GameDetailPage() {
                       <p className="font-bold text-sm uppercase tracking-wide text-secondary">{label}</p>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[340px] text-sm">
+                      <table className="w-full min-w-[400px] text-sm">
                         <thead>
                           <tr className="border-b border-border">
                             <th className="text-left px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground">Player</th>
                             {["PTS", "REB", "AST"].map((h) => (
                               <th key={h} className="px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground text-center w-20">{h}</th>
                             ))}
+                            <th className="px-2 py-2 w-10" />
                           </tr>
                         </thead>
                         <tbody>
                           {teamPlayers.map((player) => {
                             const row = statInputs[player.id] ?? { points: "", rebounds: "", assists: "" };
+                            const hasExistingStats = !!playerStats?.find((s) => s.playerId === player.id);
+                            const isConfirmingDelete = confirmingDeleteStatPlayerId === player.id;
+                            const isDeletingThis = deletingStatPlayerId === player.id;
+
+                            if (isConfirmingDelete) {
+                              return (
+                                <tr key={player.id} className="border-b border-border last:border-0 bg-red-900/10">
+                                  <td colSpan={5} className="px-3 py-3">
+                                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                                      <p className="text-sm text-red-400 font-medium">
+                                        Are you sure you want to delete these stats?
+                                      </p>
+                                      <div className="flex gap-2 flex-shrink-0">
+                                        <button
+                                          onClick={() => handleDeleteStat(player.id)}
+                                          disabled={isDeletingThis}
+                                          className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                        >
+                                          {isDeletingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                          Delete
+                                        </button>
+                                        <button
+                                          onClick={() => setConfirmingDeleteStatPlayerId(null)}
+                                          className="px-2.5 py-1 rounded text-xs font-semibold border border-border hover:bg-muted transition-colors"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
                             return (
                               <tr key={player.id} className="border-b border-border last:border-0">
                                 <td className="px-3 py-2 font-semibold text-secondary">
@@ -697,12 +733,23 @@ export function GameDetailPage() {
                                     />
                                   </td>
                                 ))}
+                                <td className="px-2 py-1.5 text-right">
+                                  {hasExistingStats && (
+                                    <button
+                                      onClick={() => setConfirmingDeleteStatPlayerId(player.id)}
+                                      className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                                      title="Delete stat entry"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                </td>
                               </tr>
                             );
                           })}
                           {teamPlayers.length === 0 && (
                             <tr>
-                              <td colSpan={4} className="px-3 py-4 text-sm text-muted-foreground text-center">
+                              <td colSpan={5} className="px-3 py-4 text-sm text-muted-foreground text-center">
                                 No players registered for this team.
                               </td>
                             </tr>
