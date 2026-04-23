@@ -132,9 +132,9 @@ async function getSeasonPlayerStats(season: string) {
     }
     map.get(row.playerId)!.games.push({
       gameDate: row.gameDate,
-      points: row.points,
-      rebounds: row.rebounds,
-      assists: row.assists,
+      points: row.points ?? 0,
+      rebounds: row.rebounds ?? 0,
+      assists: row.assists ?? 0,
       threesMade: row.threesMade,
       minutesPlayed: row.minutesPlayed,
     });
@@ -169,8 +169,16 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
 
   const newStamps: RecEntry[] = [];
   for (const row of rows) {
+    const gameStat: GameStat = {
+      gameDate: row.gameDate,
+      points: row.points ?? 0,
+      rebounds: row.rebounds ?? 0,
+      assists: row.assists ?? 0,
+      threesMade: row.threesMade,
+      minutesPlayed: row.minutesPlayed,
+    };
     for (const { id, passes } of STAMP_CHECKS) {
-      if (passes(row)) {
+      if (passes(gameStat)) {
         newStamps.push({ id, earnedAt: row.gameDate });
       }
     }

@@ -87,9 +87,9 @@ export function GameDetailPage() {
     if (playerStats) {
       for (const s of playerStats) {
         initial[s.playerId] = {
-          points:   String(s.points),
-          rebounds: String(s.rebounds),
-          assists:  String(s.assists),
+          points:   s.points   !== null ? String(s.points)   : "",
+          rebounds: s.rebounds !== null ? String(s.rebounds) : "",
+          assists:  s.assists  !== null ? String(s.assists)  : "",
         };
       }
     }
@@ -123,11 +123,12 @@ export function GameDetailPage() {
         })
         .map((pid) => {
           const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "" };
+          const parseField = (s: string): number | null => s === "" ? null : (parseInt(s) || 0);
           return {
             playerId:              pid,
-            points:                parseInt(row.points)   || 0,
-            rebounds:              parseInt(row.rebounds) || 0,
-            assists:               parseInt(row.assists)  || 0,
+            points:                parseField(row.points),
+            rebounds:              parseField(row.rebounds),
+            assists:               parseField(row.assists),
             steals:                0,
             blocks:                0,
             turnovers:             0,
@@ -754,13 +755,17 @@ export function GameDetailPage() {
             { label: homeTeam?.name ?? "Home", team: homeTeam, teamId: game.homeTeamId },
           ].map(({ label, team, teamId }) => {
             const teamPlayers = players?.filter((p) => p.teamId === teamId) ?? [];
-            // Players with stats sort first by points desc; players without stats go below
+            // Sort: recorded points first (desc), then null-points rows, then no-row players
             const sorted = [...teamPlayers].sort((a, b) => {
               const sa = playerStats?.find((s) => s.playerId === a.id);
               const sb = playerStats?.find((s) => s.playerId === b.id);
-              if (sa && sb) return sb.points - sa.points;
-              if (sa) return -1;
-              if (sb) return 1;
+              const aHasPoints = sa != null && sa.points !== null;
+              const bHasPoints = sb != null && sb.points !== null;
+              if (aHasPoints && bHasPoints) return sb!.points! - sa!.points!;
+              if (aHasPoints) return -1;
+              if (bHasPoints) return 1;
+              if (sa && !sb) return -1;
+              if (!sa && sb) return 1;
               return 0;
             });
             return (
@@ -796,13 +801,13 @@ export function GameDetailPage() {
                               </Link>
                             </td>
                             <td className="px-3 py-3 text-center font-bold text-primary">
-                              {hasStats ? statsRow!.points : <span className="text-muted-foreground font-normal">—</span>}
+                              {hasStats && statsRow!.points !== null ? statsRow!.points : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             <td className="px-3 py-3 text-center text-secondary font-medium">
-                              {hasStats ? statsRow!.rebounds : <span className="text-muted-foreground font-normal">—</span>}
+                              {hasStats && statsRow!.rebounds !== null ? statsRow!.rebounds : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             <td className="px-3 py-3 text-center text-secondary font-medium">
-                              {hasStats ? statsRow!.assists : <span className="text-muted-foreground font-normal">—</span>}
+                              {hasStats && statsRow!.assists !== null ? statsRow!.assists : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             {isAdmin && (
                               <td className="px-3 py-3 text-right">

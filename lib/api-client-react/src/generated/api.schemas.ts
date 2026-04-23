@@ -211,9 +211,12 @@ export interface GamePlayerStat {
   id: number;
   gameId: number;
   playerId: number;
-  points: number;
-  rebounds: number;
-  assists: number;
+  /** @nullable */
+  points: number | null;
+  /** @nullable */
+  rebounds: number | null;
+  /** @nullable */
+  assists: number | null;
   steals: number;
   blocks: number;
   turnovers: number;
@@ -228,9 +231,12 @@ export interface GamePlayerStat {
 
 export interface UpsertGamePlayerStatBody {
   playerId: number;
-  points: number;
-  rebounds: number;
-  assists: number;
+  /** @nullable */
+  points: number | null;
+  /** @nullable */
+  rebounds: number | null;
+  /** @nullable */
+  assists: number | null;
   steals: number;
   blocks: number;
   turnovers: number;
