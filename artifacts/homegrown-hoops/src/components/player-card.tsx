@@ -137,7 +137,6 @@ function LegacyScorePopup({
     ast: number; astLP: number;
     stamps: number; stampLP: number;
     tides: number; tideLP: number;
-    archetypeBonus: number;
   };
   onClose: () => void;
 }) {
@@ -147,9 +146,6 @@ function LegacyScorePopup({
     { label: `${breakdown.ast} Career Assists`, value: "×20", lp: breakdown.astLP, color: "#34D399" },
     { label: `${breakdown.stamps} Stamps Earned`, value: "×200", lp: breakdown.stampLP, color: "#FBBF24" },
     { label: `${breakdown.tides} Tides Earned`, value: "×1,000", lp: breakdown.tideLP, color: "#A78BFA" },
-    ...(breakdown.archetypeBonus > 0
-      ? [{ label: "Archetype Unlocked", value: "+500", lp: breakdown.archetypeBonus, color: "#60A5FA" }]
-      : []),
   ];
 
   return (
@@ -254,12 +250,11 @@ export function PlayerCard({
     );
   }
 
-  // Legacy Score formula — exact spec:
-  //   pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000 + 500 if archetype≠Uncharted
+  // Legacy Score formula:
+  //   pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000
   const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
   const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
-  const archetypeBonus = archetypeKey !== "Uncharted" ? 500 : 0;
 
   const ptLP    = (stats?.totalPoints   ?? 0) * 10;
   const rebLP   = (stats?.totalRebounds ?? 0) * 15;
@@ -267,7 +262,7 @@ export function PlayerCard({
   const stampLP = uniqueStampCount * 200;
   const tideLP  = totalTides * 1000;
 
-  const legacyScore = ptLP + rebLP + astLP + stampLP + tideLP + archetypeBonus;
+  const legacyScore = ptLP + rebLP + astLP + stampLP + tideLP;
 
   const legacyBreakdown = {
     pts: stats?.totalPoints   ?? 0, ptLP,
@@ -275,7 +270,6 @@ export function PlayerCard({
     ast: stats?.totalAssists  ?? 0, astLP,
     stamps: uniqueStampCount, stampLP,
     tides: totalTides, tideLP,
-    archetypeBonus,
   };
 
   const meta = ARCHETYPE_META[archetypeKey] ?? ARCHETYPE_META["Uncharted"];

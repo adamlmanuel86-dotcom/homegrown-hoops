@@ -325,13 +325,17 @@ export async function recalculateArchetypesForTeam(
     return pool.reduce((best, s) => (key(s) > key(best) ? s : best));
   }
 
+  // Only players with at least one meaningful stat are eligible for archetypes
+  const hasStats = (s: ArchStats) =>
+    s.avgPoints > 0 || s.totalRebounds > 0 || s.totalAssists > 0 || s.totalThrees > 0;
+
   const candidates: Array<{ archetype: string; winner: ArchStats | null }> = [
-    { archetype: "The Mainstay", winner: topOf((s) => s.avgPoints) },
-    { archetype: "The Vortex",   winner: topOf((s) => s.totalRebounds) },
-    { archetype: "The Current",  winner: topOf((s) => s.totalAssists) },
-    { archetype: "The Deep",     winner: topOf((s) => s.totalThrees) },
-    { archetype: "The Spark",    winner: topOf((s) => s.pointsPerMin, (s) => s.avgMinutes < 15) },
-    { archetype: "The Climb",    winner: topOf((s) => s.improvement) },
+    { archetype: "The Mainstay", winner: topOf((s) => s.avgPoints,     hasStats) },
+    { archetype: "The Vortex",   winner: topOf((s) => s.totalRebounds, hasStats) },
+    { archetype: "The Current",  winner: topOf((s) => s.totalAssists,  hasStats) },
+    { archetype: "The Deep",     winner: topOf((s) => s.totalThrees,   hasStats) },
+    { archetype: "The Spark",    winner: topOf((s) => s.pointsPerMin,  (s) => hasStats(s) && s.avgMinutes < 15) },
+    { archetype: "The Climb",    winner: topOf((s) => s.improvement,   hasStats) },
   ];
 
   const assignments = new Map<string, string>();
