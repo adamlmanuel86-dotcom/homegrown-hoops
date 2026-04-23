@@ -469,31 +469,32 @@ export function PlayerCard({
                 {profile.school}
               </p>
             )}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                marginTop: 9,
-                padding: "4px 12px",
-                borderRadius: 20,
-                background: `${archetypeColor}18`,
-                border: `1px solid ${archetypeColor}44`,
-              }}
-            >
-              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
-              <span
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 9 }}>
+              <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: archetypeColor,
-                  textShadow: `0 0 14px ${archetypeColor}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  background: `${archetypeColor}18`,
+                  border: `1px solid ${archetypeColor}44`,
                 }}
               >
-                {archetypeLabel}
-              </span>
+                <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: archetypeColor,
+                    textShadow: `0 0 14px ${archetypeColor}`,
+                  }}
+                >
+                  {archetypeLabel}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -647,7 +648,7 @@ export function PlayerCard({
                   marginTop: 3,
                 }}
               >
-                Legacy Score · Tap for details
+                Legacy Score{!saving && " · Tap for details"}
               </p>
             </div>
 
