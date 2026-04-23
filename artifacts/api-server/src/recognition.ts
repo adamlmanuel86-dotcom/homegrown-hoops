@@ -288,7 +288,6 @@ export async function recalculateArchetypesForTeam(
 ): Promise<void> {
   const seasonStats = await getSeasonPlayerStats(season);
   const teamStats = seasonStats.filter((p) => p.teamId === teamId);
-  if (teamStats.length === 0) return;
 
   type ArchStats = {
     firstName: string;
