@@ -143,4 +143,9 @@
   .hover\:text-secondary:hover {
     color: hsl(var(--primary));
   }
+
+  /* Player card capture mode — hide interactive-only elements from saved image */
+  .card-capturing .hide-on-save {
+    display: none !important;
+  }
 }

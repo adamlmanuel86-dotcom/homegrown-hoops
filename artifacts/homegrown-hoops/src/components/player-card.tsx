@@ -223,7 +223,6 @@ export function PlayerCard({
   secondaryColor = "#1E3A5F",
 }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const tapTextRef = useRef<HTMLSpanElement>(null);
   const [showStampsPopup, setShowStampsPopup] = useState(false);
   const [showLegacyPopup, setShowLegacyPopup] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -288,10 +287,11 @@ export function PlayerCard({
       const el = cardRef.current;
       const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
 
-      // Synchronously hide interactive-only elements before capture.
-      // React state updates are batched and won't flush until after html2canvas
-      // runs, so we mutate the DOM directly — this is guaranteed to happen first.
-      if (tapTextRef.current) tapTextRef.current.style.display = "none";
+      // Add .card-capturing to the card element before html2canvas reads it.
+      // CSS rule `.card-capturing .hide-on-save { display: none }` then hides
+      // any interactive-only elements from the captured image.
+      // This is a synchronous DOM mutation — guaranteed to apply before capture.
+      el.classList.add("card-capturing");
 
       // html2canvas re-renders the live DOM element directly onto a canvas,
       // reading real computed styles and positions from the browser's layout engine.
@@ -304,8 +304,8 @@ export function PlayerCard({
         logging: false,
       });
 
-      // Restore hidden elements immediately after capture.
-      if (tapTextRef.current) tapTextRef.current.style.display = "";
+      // Remove capture class immediately so the card returns to normal.
+      el.classList.remove("card-capturing");
 
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
@@ -340,8 +340,8 @@ export function PlayerCard({
       console.error("Card export failed:", err);
       setSaveError("Couldn't save the card automatically. Long-press the card image and choose Save Image.");
     } finally {
-      // Ensure tap text is always restored even if capture errored mid-way
-      if (tapTextRef.current) tapTextRef.current.style.display = "";
+      // Always remove capture class — covers errors that happen mid-capture
+      cardRef.current?.classList.remove("card-capturing");
       setSaving(false);
     }
   }, [profile.firstName, profile.lastName, saving]);
@@ -493,7 +493,7 @@ export function PlayerCard({
                 margin: "9px auto 0",
               }}
             >
-              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
+              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor, verticalAlign: "middle" }} />
               <span
                 style={{
                   fontSize: 10,
@@ -502,6 +502,7 @@ export function PlayerCard({
                   letterSpacing: "0.1em",
                   color: archetypeColor,
                   textShadow: `0 0 14px ${archetypeColor}`,
+                  verticalAlign: "middle",
                 }}
               >
                 {archetypeLabel}
@@ -659,7 +660,7 @@ export function PlayerCard({
                   marginTop: 3,
                 }}
               >
-                Legacy Score<span ref={tapTextRef}> · Tap for details</span>
+                Legacy Score<span className="hide-on-save"> · Tap for details</span>
               </p>
             </div>
 
