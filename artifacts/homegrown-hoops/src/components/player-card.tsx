@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState } from "react";
-import { toBlob } from "html-to-image";
+import html2canvas from "html2canvas";
 import {
-  Download, Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
+  Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { STAMPS } from "@/components/recognition";
@@ -285,19 +285,23 @@ export function PlayerCard({
     setSaveError(null);
     try {
       const el = cardRef.current;
-      const opts = {
-        pixelRatio: 3,
-        cacheBust: true,
-        width: el.offsetWidth,
-        height: el.offsetHeight,
-      };
       const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
 
-      // html-to-image sometimes misses embedded resources on the first pass —
-      // rendering twice ensures fonts/images are fully loaded before the real capture.
-      await toBlob(el, opts);
-      const blob = await toBlob(el, opts);
-      if (!blob) throw new Error("Image rendering returned empty result.");
+      // html2canvas re-renders the live DOM element directly onto a canvas,
+      // reading real computed styles and positions from the browser's layout engine.
+      // This produces a pixel-accurate match to what the user sees on screen.
+      const canvas = await html2canvas(el, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      if (!blob) throw new Error("Image generation failed.");
 
       const file = new File([blob], filename, { type: "image/png" });
 
@@ -378,8 +382,6 @@ export function PlayerCard({
             <div
               style={{
                 position: "absolute",
-                top: 15,
-                left: 78,
                 width: 160,
                 height: 160,
                 borderRadius: "50%",
@@ -394,7 +396,9 @@ export function PlayerCard({
                   borderRadius: "50%",
                   background: "hsl(220,36%,13%)",
                   border: `2px solid ${archetypeColor}55`,
-                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   boxShadow: `0 0 24px ${archetypeColor}33`,
                   overflow: "hidden",
                   flexShrink: 0,
@@ -408,7 +412,7 @@ export function PlayerCard({
                     crossOrigin="anonymous"
                   />
                 ) : (
-                  <User style={{ position: "absolute", top: 25, left: 25, width: 40, height: 40, display: "block", color: "hsl(220,20%,28%)" }} />
+                  <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
                 )}
               </div>
               <div
@@ -418,11 +422,13 @@ export function PlayerCard({
                   borderRadius: "50%",
                   background: `${archetypeColor}1a`,
                   border: `1.5px solid ${archetypeColor}55`,
-                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   boxShadow: `0 0 10px ${archetypeColor}33`,
                 }}
               >
-                <ArchetypeIcon style={{ position: "absolute", top: 8, left: 8, width: 14, height: 14, display: "block", color: archetypeColor }} />
+                <ArchetypeIcon style={{ width: 14, height: 14, color: archetypeColor }} />
               </div>
             </div>
           </div>
@@ -475,7 +481,7 @@ export function PlayerCard({
                 border: `1px solid ${archetypeColor}44`,
               }}
             >
-              <ArchetypeIcon style={{ width: 11, height: 11, display: "block", color: archetypeColor }} />
+              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
               <span
                 style={{
                   fontSize: 10,
@@ -562,12 +568,14 @@ export function PlayerCard({
                       borderRadius: "50%",
                       background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
                       border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
-                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       opacity: earned ? 1 : 0.3,
                       boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
                     }}
                   >
-                    <Icon style={{ position: "absolute", top: 9, left: 9, width: 14, height: 14, display: "block", color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                    <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
                   </div>
                 );
               })}
