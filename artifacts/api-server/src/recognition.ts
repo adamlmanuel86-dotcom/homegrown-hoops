@@ -360,7 +360,7 @@ export async function recalculateArchetypesForTeam(
   }
 }
 
-// ─── 4. Full recognition run ──────────────────────────────────────────────────
+// ─── 4. Full recognition run (stamps + archetypes only — tides are season-end admin action) ─────
 export async function runFullRecognition(
   gameId: number,
   playerIds: number[]
@@ -373,7 +373,8 @@ export async function runFullRecognition(
 
   await Promise.all(playerIds.map((id) => recalculateStampsForPlayer(id)));
 
-  await recalculateTides(game.season);
+  // NOTE: Tides are intentionally NOT calculated here.
+  // Tides are awarded only at season end via the admin season-tides endpoint.
 
   const teamIdSet = new Set<number>();
   const playerRows = await db

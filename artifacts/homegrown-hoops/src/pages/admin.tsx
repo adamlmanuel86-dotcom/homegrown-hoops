@@ -15,7 +15,8 @@ import {
   useListGames,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp } from "lucide-react";
+import { TIDES } from "@/components/recognition";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -88,6 +89,86 @@ export function AdminPage() {
       if (!res.ok) throw new Error("Failed to delete game");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
+  });
+
+  // ── Tide management state ──
+  const [tidesSeasonInput, setTidesSeasonInput] = useState("");
+  const [tidesSeasonMsg, setTidesSeasonMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [expandedTidePlayerId, setExpandedTidePlayerId] = useState<number | null>(null);
+  const [tideProfiles, setTideProfiles] = useState<{ id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] }[]>([]);
+  const [tideProfilesLoading, setTideProfilesLoading] = useState(false);
+  const [tideProfilesLoaded, setTideProfilesLoaded] = useState(false);
+
+  async function loadTideProfiles() {
+    setTideProfilesLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/admin/profiles-tides`);
+      if (res.ok) {
+        const data = await res.json();
+        setTideProfiles(data.map((p: { id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] | null }) => ({
+          ...p,
+          tides: p.tides ?? [],
+        })));
+        setTideProfilesLoaded(true);
+      }
+    } finally {
+      setTideProfilesLoading(false);
+    }
+  }
+
+  const calculateSeasonTides = useMutation({
+    mutationFn: async (season: string) => {
+      const res = await fetch(`${BASE_URL}/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to calculate tides");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setTidesSeasonMsg({ ok: true, text: "Season tides calculated and awarded successfully." });
+      loadTideProfiles();
+      qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+    },
+    onError: (err: Error) => {
+      setTidesSeasonMsg({ ok: false, text: err.message });
+    },
+  });
+
+  const awardTide = useMutation({
+    mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
+      const res = await fetch(`${BASE_URL}/api/admin/profiles/${profileId}/tides`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tideId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to award tide");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      loadTideProfiles();
+      qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+    },
+  });
+
+  const removeTide = useMutation({
+    mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
+      const res = await fetch(`${BASE_URL}/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to remove tide");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      loadTideProfiles();
+      qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+    },
   });
 
   const [confirmingDeleteGameId, setConfirmingDeleteGameId] = useState<number | null>(null);
@@ -797,6 +878,154 @@ export function AdminPage() {
             No player profiles registered yet.
           </div>
         )}
+      </div>
+
+      {/* Tides Management */}
+      <div className="card-base overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+          <Waves className="h-5 w-5 text-primary" />
+          <h2 className="font-bold text-secondary">Tides</h2>
+          <span className="text-sm text-muted-foreground">Season-end awards · admin override only</span>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Season-end automatic calculation */}
+          <div>
+            <p className="font-semibold text-secondary text-sm mb-1">Award Season Tides</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Run this at the end of the season. Calculates and awards all Tides (High Tide, The Keeper, The Source, etc.) automatically based on final cumulative season stats.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Season e.g. 2025-26"
+                value={tidesSeasonInput}
+                onChange={(e) => { setTidesSeasonInput(e.target.value); setTidesSeasonMsg(null); }}
+                className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+              <button
+                disabled={!tidesSeasonInput.trim() || calculateSeasonTides.isPending}
+                onClick={() => calculateSeasonTides.mutate(tidesSeasonInput.trim())}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white disabled:opacity-40 hover:bg-primary/90 transition-colors"
+              >
+                {calculateSeasonTides.isPending ? "Calculating…" : "Calculate & Award"}
+              </button>
+            </div>
+            {tidesSeasonMsg && (
+              <p className={`text-xs mt-2 font-medium ${tidesSeasonMsg.ok ? "text-green-400" : "text-red-400"}`}>
+                {tidesSeasonMsg.text}
+              </p>
+            )}
+          </div>
+
+          {/* Per-player manual override */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="font-semibold text-secondary text-sm">Manual Override</p>
+                <p className="text-xs text-muted-foreground">Award or remove a specific Tide from any player for exceptional circumstances.</p>
+              </div>
+              <button
+                onClick={() => { if (!tideProfilesLoaded) loadTideProfiles(); }}
+                className="text-xs text-primary font-semibold hover:underline"
+              >
+                {tideProfilesLoaded ? "Loaded" : "Load Players"}
+              </button>
+            </div>
+
+            {tideProfilesLoading && (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {tideProfilesLoaded && (
+              <div className="space-y-2">
+                {tideProfiles.map((player) => {
+                  const isExpanded = expandedTidePlayerId === player.id;
+                  const earnedIds = new Set(player.tides.map((t) => t.id));
+                  return (
+                    <div
+                      key={player.id}
+                      className="border border-border rounded-xl overflow-hidden"
+                    >
+                      <button
+                        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/30 transition-colors"
+                        onClick={() => setExpandedTidePlayerId(isExpanded ? null : player.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-secondary text-sm">
+                            {player.firstName} {player.lastName}
+                          </span>
+                          {player.tides.length > 0 && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                              {player.tides.length} tide{player.tides.length !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="border-t border-border px-4 py-3 space-y-2 bg-muted/10">
+                          {TIDES.map((tide) => {
+                            const TideIcon = tide.icon;
+                            const has = earnedIds.has(tide.id);
+                            const isPending =
+                              (awardTide.isPending || removeTide.isPending);
+                            return (
+                              <div
+                                key={tide.id}
+                                className="flex items-center gap-3 py-1"
+                              >
+                                <div
+                                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                                  style={{
+                                    background: has ? `${tide.color}22` : "hsl(220 28% 14%)",
+                                    border: `1.5px solid ${has ? tide.color + "66" : "hsl(220 28% 20%)"}`,
+                                  }}
+                                >
+                                  <TideIcon className="h-3.5 w-3.5" style={{ color: has ? tide.color : "hsl(215 16% 40%)" }} strokeWidth={2} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-secondary leading-tight">{tide.label}</p>
+                                  <p className="text-xs text-muted-foreground leading-tight">{tide.threshold}</p>
+                                </div>
+                                {has ? (
+                                  <button
+                                    disabled={isPending}
+                                    onClick={() => removeTide.mutate({ profileId: player.id, tideId: tide.id })}
+                                    className="text-xs px-3 py-1 rounded-lg font-semibold text-red-400 border border-red-400/30 hover:bg-red-400/10 transition-colors disabled:opacity-40"
+                                  >
+                                    Remove
+                                  </button>
+                                ) : (
+                                  <button
+                                    disabled={isPending}
+                                    onClick={() => awardTide.mutate({ profileId: player.id, tideId: tide.id })}
+                                    className="text-xs px-3 py-1 rounded-lg font-semibold text-primary border border-primary/30 hover:bg-primary/10 transition-colors disabled:opacity-40"
+                                  >
+                                    Award
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* User Management */}
