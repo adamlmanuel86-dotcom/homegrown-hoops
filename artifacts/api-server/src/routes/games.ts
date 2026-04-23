@@ -303,8 +303,8 @@ router.delete("/games/:id/player-stats/:playerId", async (req, res): Promise<voi
     return;
   }
 
-  // Re-run recognition without this player's stats
-  runFullRecognition(gameId, []).catch((err) =>
+  // Re-run recognition with the deleted player so their stamps/tides/archetype are recalculated
+  runFullRecognition(gameId, [playerId]).catch((err) =>
     console.error("[recognition] runFullRecognition after delete failed:", err)
   );
 

@@ -89,9 +89,9 @@ export function GameDetailPage() {
     if (playerStats) {
       for (const s of playerStats) {
         initial[s.playerId] = {
-          points:   s.points   > 0 ? String(s.points)   : "",
-          rebounds: s.rebounds > 0 ? String(s.rebounds) : "",
-          assists:  s.assists  > 0 ? String(s.assists)  : "",
+          points:   String(s.points),
+          rebounds: String(s.rebounds),
+          assists:  String(s.assists),
         };
       }
     }
@@ -116,7 +116,13 @@ export function GameDetailPage() {
       const teamPlayerIds = new Set(
         [...(players?.filter((p) => p.teamId === game?.homeTeamId || p.teamId === game?.awayTeamId) ?? [])].map((p) => p.id)
       );
+      // Include a player if they have at least one field explicitly typed (even "0")
+      // An all-blank row means "not entered" and is excluded
       const stats = [...teamPlayerIds]
+        .filter((pid) => {
+          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "" };
+          return row.points !== "" || row.rebounds !== "" || row.assists !== "";
+        })
         .map((pid) => {
           const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "" };
           return {
@@ -135,8 +141,7 @@ export function GameDetailPage() {
             freeThrowsMade:        0,
             freeThrowsAttempted:   0,
           };
-        })
-        .filter((s) => s.points > 0 || s.rebounds > 0 || s.assists > 0);
+        });
 
       if (stats.length === 0) {
         setStatSaveError("Enter stats for at least one player before saving.");

@@ -254,16 +254,17 @@ export function PlayerCard({
     );
   }
 
-  // Legacy Score formula
-  const totalStampEarnings = (profile.stamps ?? []).length;
+  // Legacy Score formula — exact spec:
+  //   pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000 + 500 if archetype≠Uncharted
+  const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
   const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
   const archetypeBonus = archetypeKey !== "Uncharted" ? 500 : 0;
 
-  const ptLP  = (stats?.totalPoints   ?? 0) * 10;
-  const rebLP = (stats?.totalRebounds ?? 0) * 15;
-  const astLP = (stats?.totalAssists  ?? 0) * 20;
-  const stampLP = totalStampEarnings * 200;
+  const ptLP    = (stats?.totalPoints   ?? 0) * 10;
+  const rebLP   = (stats?.totalRebounds ?? 0) * 15;
+  const astLP   = (stats?.totalAssists  ?? 0) * 20;
+  const stampLP = uniqueStampCount * 200;
   const tideLP  = totalTides * 1000;
 
   const legacyScore = ptLP + rebLP + astLP + stampLP + tideLP + archetypeBonus;
@@ -272,7 +273,7 @@ export function PlayerCard({
     pts: stats?.totalPoints   ?? 0, ptLP,
     reb: stats?.totalRebounds ?? 0, rebLP,
     ast: stats?.totalAssists  ?? 0, astLP,
-    stamps: totalStampEarnings, stampLP,
+    stamps: uniqueStampCount, stampLP,
     tides: totalTides, tideLP,
     archetypeBonus,
   };
