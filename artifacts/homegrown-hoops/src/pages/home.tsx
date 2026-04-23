@@ -206,7 +206,10 @@ export function Home() {
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{top.teamName || "Free Agent"}</p>
                     </Link>
                   ) : (
-                    <div className="flex-1 p-4 text-xs text-muted-foreground">No data yet</div>
+                    <div className="flex-1 p-4 flex flex-col justify-center gap-1">
+                      <p className="text-xs font-semibold text-muted-foreground">No stats yet</p>
+                      <p className="text-xs text-muted-foreground/60 leading-snug">Check back after the first game.</p>
+                    </div>
                   )}
                 </div>
               );

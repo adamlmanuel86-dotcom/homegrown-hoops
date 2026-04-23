@@ -23,11 +23,12 @@ async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
     .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
     .groupBy(playersTable.id, playersTable.firstName, playersTable.lastName, teamsTable.name, teamsTable.abbreviation)
     .orderBy(desc(sql<number>`AVG(${gamePlayerStatsTable[field]})`))
-    .limit(limit);
-  return rows.map(r => ({
-    ...r,
-    value: Math.round(Number(r.value) * 10) / 10,
-  }));
+    .limit(limit * 5); // fetch extra so we can filter zeros and still have enough
+
+  return rows
+    .map(r => ({ ...r, value: Math.round(Number(r.value) * 10) / 10 }))
+    .filter(r => r.value > 0)  // only players with at least one non-zero game
+    .slice(0, limit);
 }
 
 router.get("/stats/leaders", async (_req, res): Promise<void> => {
