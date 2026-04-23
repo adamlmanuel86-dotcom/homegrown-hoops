@@ -223,6 +223,7 @@ export function PlayerCard({
   secondaryColor = "#1E3A5F",
 }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const tapTextRef = useRef<HTMLSpanElement>(null);
   const [showStampsPopup, setShowStampsPopup] = useState(false);
   const [showLegacyPopup, setShowLegacyPopup] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -287,6 +288,11 @@ export function PlayerCard({
       const el = cardRef.current;
       const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
 
+      // Synchronously hide interactive-only elements before capture.
+      // React state updates are batched and won't flush until after html2canvas
+      // runs, so we mutate the DOM directly — this is guaranteed to happen first.
+      if (tapTextRef.current) tapTextRef.current.style.display = "none";
+
       // html2canvas re-renders the live DOM element directly onto a canvas,
       // reading real computed styles and positions from the browser's layout engine.
       // This produces a pixel-accurate match to what the user sees on screen.
@@ -297,6 +303,9 @@ export function PlayerCard({
         backgroundColor: null,
         logging: false,
       });
+
+      // Restore hidden elements immediately after capture.
+      if (tapTextRef.current) tapTextRef.current.style.display = "";
 
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
@@ -331,6 +340,8 @@ export function PlayerCard({
       console.error("Card export failed:", err);
       setSaveError("Couldn't save the card automatically. Long-press the card image and choose Save Image.");
     } finally {
+      // Ensure tap text is always restored even if capture errored mid-way
+      if (tapTextRef.current) tapTextRef.current.style.display = "";
       setSaving(false);
     }
   }, [profile.firstName, profile.lastName, saving]);
@@ -469,32 +480,32 @@ export function PlayerCard({
                 {profile.school}
               </p>
             )}
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 9 }}>
-              <div
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "4px 12px",
+                borderRadius: 20,
+                background: `${archetypeColor}18`,
+                border: `1px solid ${archetypeColor}44`,
+                width: "fit-content",
+                margin: "9px auto 0",
+              }}
+            >
+              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
+              <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "4px 12px",
-                  borderRadius: 20,
-                  background: `${archetypeColor}18`,
-                  border: `1px solid ${archetypeColor}44`,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: archetypeColor,
+                  textShadow: `0 0 14px ${archetypeColor}`,
                 }}
               >
-                <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    color: archetypeColor,
-                    textShadow: `0 0 14px ${archetypeColor}`,
-                  }}
-                >
-                  {archetypeLabel}
-                </span>
-              </div>
+                {archetypeLabel}
+              </span>
             </div>
           </div>
 
@@ -648,7 +659,7 @@ export function PlayerCard({
                   marginTop: 3,
                 }}
               >
-                Legacy Score{!saving && " · Tap for details"}
+                Legacy Score<span ref={tapTextRef}> · Tap for details</span>
               </p>
             </div>
 
