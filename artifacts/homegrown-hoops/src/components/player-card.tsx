@@ -1,7 +1,7 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { toPng } from "html-to-image";
 import {
-  Download, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame,
+  Download, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { STAMPS } from "@/components/recognition";
@@ -20,6 +20,9 @@ export type CardStats = {
   avgPoints: number | string;
   avgRebounds: number | string;
   avgAssists: number | string;
+  totalPoints?: number;
+  totalRebounds?: number;
+  totalAssists?: number;
 };
 
 export type CardProfile = {
@@ -39,6 +42,184 @@ type Props = {
   secondaryColor?: string;
 };
 
+// ─── Stamps overflow popup ────────────────────────────────────────────────────
+function StampsOverflowPopup({
+  earnedStamps,
+  profile,
+  onClose,
+}: {
+  earnedStamps: (typeof STAMPS)[number][];
+  profile: CardProfile;
+  onClose: () => void;
+}) {
+  const countMap = new Map<string, number>();
+  for (const s of profile.stamps ?? []) {
+    countMap.set(s.id, (countMap.get(s.id) ?? 0) + 1);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.80)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{ background: "hsl(222 42% 9%)", border: "1px solid #F9731633" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="h-1 w-full" style={{ background: "linear-gradient(to right, #F97316, #F9731655)" }} />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+          <p className="font-bold text-white text-base">All Earned Stamps</p>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: "hsl(220 28% 14%)" }}
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="p-5 space-y-2 max-h-[70vh] overflow-y-auto">
+          {earnedStamps.map((stamp) => {
+            const Icon = stamp.icon;
+            const count = countMap.get(stamp.id) ?? 1;
+            return (
+              <div
+                key={stamp.id}
+                className="flex items-center gap-3 rounded-xl px-3.5 py-3"
+                style={{ background: `${stamp.color}10`, border: `1px solid ${stamp.color}30` }}
+              >
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: `radial-gradient(circle at 35% 35%, ${stamp.color}cc, ${stamp.color}55)`,
+                    border: `1.5px solid ${stamp.color}88`,
+                  }}
+                >
+                  <Icon className="h-4 w-4" style={{ color: stamp.color }} strokeWidth={2} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white text-sm leading-tight">
+                    {stamp.label}
+                    {count >= 2 && (
+                      <span style={{ color: "#F97316", marginLeft: 5 }}>×{count}</span>
+                    )}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "hsl(215 16% 58%)" }}>
+                    {stamp.threshold}
+                  </p>
+                </div>
+                <div
+                  className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                  style={{ color: "#F97316", background: "#F9731618" }}
+                >
+                  +{count * 200} LP
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Legacy Score explanation popup ──────────────────────────────────────────
+function LegacyScorePopup({
+  score,
+  breakdown,
+  onClose,
+}: {
+  score: number;
+  breakdown: {
+    pts: number; ptLP: number;
+    reb: number; rebLP: number;
+    ast: number; astLP: number;
+    stamps: number; stampLP: number;
+    tides: number; tideLP: number;
+    archetypeBonus: number;
+  };
+  onClose: () => void;
+}) {
+  const rows: { label: string; value: string; lp: number; color: string }[] = [
+    { label: `${breakdown.pts} Career Points`, value: "×10", lp: breakdown.ptLP, color: "#F97316" },
+    { label: `${breakdown.reb} Career Rebounds`, value: "×15", lp: breakdown.rebLP, color: "#38BDF8" },
+    { label: `${breakdown.ast} Career Assists`, value: "×20", lp: breakdown.astLP, color: "#34D399" },
+    { label: `${breakdown.stamps} Stamps Earned`, value: "×200", lp: breakdown.stampLP, color: "#FBBF24" },
+    { label: `${breakdown.tides} Tides Earned`, value: "×1,000", lp: breakdown.tideLP, color: "#A78BFA" },
+    ...(breakdown.archetypeBonus > 0
+      ? [{ label: "Archetype Unlocked", value: "+500", lp: breakdown.archetypeBonus, color: "#60A5FA" }]
+      : []),
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.80)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{ background: "hsl(222 42% 9%)", border: "1px solid rgba(255,255,255,0.1)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="h-1 w-full" style={{ background: "linear-gradient(to right, #F97316, #A78BFA)" }} />
+
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+          <div>
+            <p className="font-bold text-white text-base">Legacy Score</p>
+            <p className="text-xs mt-0.5" style={{ color: "hsl(215 16% 55%)" }}>How your score is calculated</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: "hsl(220 28% 14%)" }}
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <div
+            className="rounded-xl p-4 text-center"
+            style={{ background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)" }}
+          >
+            <p className="font-display text-4xl font-black text-white">{score.toLocaleString()}</p>
+            <p className="text-xs font-bold uppercase tracking-widest mt-1" style={{ color: "#F97316" }}>
+              Legacy Points
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {rows.map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5"
+                style={{ background: "hsl(220 28% 12%)", border: "1px solid hsl(220 28% 17%)" }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white/70">{row.label}</p>
+                </div>
+                <p className="text-xs font-bold" style={{ color: row.color }}>{row.value}</p>
+                <p className="text-xs font-bold text-white/90 w-16 text-right">+{row.lp.toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="rounded-xl p-4 text-sm leading-relaxed"
+            style={{ background: "hsl(220 28% 11%)", border: "1px solid hsl(220 28% 16%)" }}
+          >
+            <p style={{ color: "hsl(215 16% 65%)" }}>
+              Your Legacy Score grows every game and never resets. Every point, rebound and assist adds to it. Earn Stamps and Tides for big bonus points. Your Legacy Score is yours forever.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlayerCard({
   profile,
   stats,
@@ -46,6 +227,8 @@ export function PlayerCard({
   secondaryColor = "#1E3A5F",
 }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [showStampsPopup, setShowStampsPopup] = useState(false);
+  const [showLegacyPopup, setShowLegacyPopup] = useState(false);
 
   const earnedIds = new Set((profile.stamps ?? []).map((s) => s.id));
   const earnedStamps = STAMPS.filter((s) => earnedIds.has(s.id));
@@ -57,23 +240,43 @@ export function PlayerCard({
     return bDate.localeCompare(aDate);
   });
 
+  const MAX_VISIBLE = 6;
   const displayStamps: { stamp: (typeof STAMPS)[0]; earned: boolean }[] = [];
   let overflowCount = 0;
 
-  if (sortedEarned.length > 5) {
-    sortedEarned.slice(0, 5).forEach((s) => displayStamps.push({ stamp: s, earned: true }));
-    overflowCount = sortedEarned.length - 5;
+  if (sortedEarned.length > MAX_VISIBLE) {
+    sortedEarned.slice(0, MAX_VISIBLE).forEach((s) => displayStamps.push({ stamp: s, earned: true }));
+    overflowCount = sortedEarned.length - MAX_VISIBLE;
   } else {
     sortedEarned.forEach((s) => displayStamps.push({ stamp: s, earned: true }));
-    unearnedStamps.slice(0, 5 - sortedEarned.length).forEach((s) =>
+    unearnedStamps.slice(0, MAX_VISIBLE - sortedEarned.length).forEach((s) =>
       displayStamps.push({ stamp: s, earned: false })
     );
   }
 
-  const legacyScore =
-    (earnedStamps.length * 100) + ((profile.tides ?? []).length * 500);
-
+  // Legacy Score formula
+  const totalStampEarnings = (profile.stamps ?? []).length;
+  const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
+  const archetypeBonus = archetypeKey !== "Uncharted" ? 500 : 0;
+
+  const ptLP  = (stats?.totalPoints   ?? 0) * 10;
+  const rebLP = (stats?.totalRebounds ?? 0) * 15;
+  const astLP = (stats?.totalAssists  ?? 0) * 20;
+  const stampLP = totalStampEarnings * 200;
+  const tideLP  = totalTides * 1000;
+
+  const legacyScore = ptLP + rebLP + astLP + stampLP + tideLP + archetypeBonus;
+
+  const legacyBreakdown = {
+    pts: stats?.totalPoints   ?? 0, ptLP,
+    reb: stats?.totalRebounds ?? 0, rebLP,
+    ast: stats?.totalAssists  ?? 0, astLP,
+    stamps: totalStampEarnings, stampLP,
+    tides: totalTides, tideLP,
+    archetypeBonus,
+  };
+
   const meta = ARCHETYPE_META[archetypeKey] ?? ARCHETYPE_META["Uncharted"];
   const ArchetypeIcon = meta.icon;
   const archetypeColor = meta.color;
@@ -313,15 +516,15 @@ export function PlayerCard({
             >
               Stamps
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
               {displayStamps.map(({ stamp, earned }) => {
                 const Icon = stamp.icon;
                 return (
                   <div
                     key={stamp.id}
                     style={{
-                      width: 34,
-                      height: 34,
+                      width: 32,
+                      height: 32,
                       borderRadius: "50%",
                       background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
                       border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
@@ -332,24 +535,26 @@ export function PlayerCard({
                       boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
                     }}
                   >
-                    <Icon style={{ width: 15, height: 15, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                    <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
                   </div>
                 );
               })}
               {overflowCount > 0 && (
                 <div
+                  onClick={() => setShowStampsPopup(true)}
                   style={{
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     borderRadius: "50%",
-                    background: "hsl(220,36%,12%)",
-                    border: "1.5px solid hsl(220,36%,18%)",
+                    background: "#F9731618",
+                    border: "1.5px solid #F9731655",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    cursor: "pointer",
                   }}
                 >
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#F97316" }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#F97316" }}>
                     +{overflowCount}
                   </span>
                 </div>
@@ -373,8 +578,12 @@ export function PlayerCard({
               />
             </svg>
 
-            {/* Legacy Score */}
-            <div style={{ textAlign: "center", marginBottom: 12 }}>
+            {/* Legacy Score — clickable */}
+            <div
+              style={{ textAlign: "center", marginBottom: 12, cursor: "pointer" }}
+              onClick={() => setShowLegacyPopup(true)}
+              title="Tap to see how Legacy Score is calculated"
+            >
               <p
                 style={{
                   fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
@@ -398,7 +607,7 @@ export function PlayerCard({
                   marginTop: 3,
                 }}
               >
-                Legacy Score
+                Legacy Score · Tap for details
               </p>
             </div>
 
@@ -456,6 +665,22 @@ export function PlayerCard({
         <Download className="h-4 w-4" />
         Save Card to Device
       </button>
+
+      {/* ── Popups (outside card ref so they don't appear in download) ── */}
+      {showStampsPopup && (
+        <StampsOverflowPopup
+          earnedStamps={sortedEarned}
+          profile={profile}
+          onClose={() => setShowStampsPopup(false)}
+        />
+      )}
+      {showLegacyPopup && (
+        <LegacyScorePopup
+          score={legacyScore}
+          breakdown={legacyBreakdown}
+          onClose={() => setShowLegacyPopup(false)}
+        />
+      )}
     </div>
   );
 }

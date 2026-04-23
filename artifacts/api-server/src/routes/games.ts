@@ -264,4 +264,51 @@ router.post("/games/:id/player-stats", async (req, res): Promise<void> => {
   res.json(UpsertGamePlayerStatsResponse.parse(results));
 });
 
+router.delete("/games/:id/player-stats/:playerId", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (profile?.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  const gameId = parseInt(req.params.id);
+  const playerId = parseInt(req.params.playerId);
+  if (isNaN(gameId) || isNaN(playerId)) {
+    res.status(400).json({ error: "Invalid game or player id" });
+    return;
+  }
+
+  const [deleted] = await db
+    .delete(gamePlayerStatsTable)
+    .where(
+      and(
+        eq(gamePlayerStatsTable.gameId, gameId),
+        eq(gamePlayerStatsTable.playerId, playerId)
+      )
+    )
+    .returning();
+
+  if (!deleted) {
+    res.status(404).json({ error: "Stat entry not found" });
+    return;
+  }
+
+  // Re-run recognition without this player's stats
+  runFullRecognition(gameId, []).catch((err) =>
+    console.error("[recognition] runFullRecognition after delete failed:", err)
+  );
+
+  res.status(204).send();
+});
+
 export default router;

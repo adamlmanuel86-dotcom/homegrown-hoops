@@ -2902,3 +2902,76 @@ export const useDeleteGameVideo = <
 > => {
   return useMutation(getDeleteGameVideoMutationOptions(options));
 };
+
+// ─── Delete game player stat (admin only) ─────────────────────────────────────
+
+export const getDeleteGamePlayerStatUrl = (id: number, playerId: number) => {
+  return `/api/games/${id}/player-stats/${playerId}`;
+};
+
+export const deleteGamePlayerStat = async (
+  id: number,
+  playerId: number,
+  options?: SecondParameter<typeof customFetch>,
+) => {
+  return customFetch<void>(getDeleteGamePlayerStatUrl(id, playerId), {
+    method: "DELETE",
+    ...options,
+  });
+};
+
+export const getDeleteGamePlayerStatMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteGamePlayerStat>>,
+    TError,
+    { id: number; playerId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteGamePlayerStat>>,
+  TError,
+  { id: number; playerId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteGamePlayerStat"];
+  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteGamePlayerStat>>,
+    { id: number; playerId: number }
+  > = ({ id, playerId }) => {
+    return deleteGamePlayerStat(id, playerId, requestOptions);
+  };
+  return { mutationKey, mutationFn, ...mutationOptions };
+};
+
+export type DeleteGamePlayerStatMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteGamePlayerStat>>
+>;
+export type DeleteGamePlayerStatMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a single player's stat entry from a game (admin only)
+ */
+export const useDeleteGamePlayerStat = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteGamePlayerStat>>,
+    TError,
+    { id: number; playerId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteGamePlayerStat>>,
+  TError,
+  { id: number; playerId: number },
+  TContext
+> => {
+  return useMutation(getDeleteGamePlayerStatMutationOptions(options));
+};

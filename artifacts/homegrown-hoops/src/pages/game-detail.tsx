@@ -12,6 +12,7 @@ import {
   useAddGameVideo,
   useDeleteGameVideo,
   useUpsertGamePlayerStats,
+  useDeleteGamePlayerStat,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2, BarChart3, AlertTriangle } from "lucide-react";
@@ -47,8 +48,11 @@ export function GameDetailPage() {
   const addGameVideo = useAddGameVideo();
   const deleteGameVideo = useDeleteGameVideo();
   const upsertGamePlayerStats = useUpsertGamePlayerStats();
+  const deleteGamePlayerStat = useDeleteGamePlayerStat();
 
   const [editingScore, setEditingScore] = useState(false);
+  const [confirmingDeleteStatPlayerId, setConfirmingDeleteStatPlayerId] = useState<number | null>(null);
+  const [deletingStatPlayerId, setDeletingStatPlayerId] = useState<number | null>(null);
 
   // ── Stat entry ──────────────────────────────────────────────────────────────
   type StatRow = { points: string; rebounds: string; assists: string };
@@ -191,6 +195,17 @@ export function GameDetailPage() {
   async function handleDeleteVideo(videoId: number) {
     await deleteGameVideo.mutateAsync({ id, videoId });
     await qc.invalidateQueries({ queryKey: [`/api/games/${id}/videos`] });
+  }
+
+  async function handleDeleteStat(playerId: number) {
+    setDeletingStatPlayerId(playerId);
+    try {
+      await deleteGamePlayerStat.mutateAsync({ id, playerId });
+      await qc.invalidateQueries({ queryKey: [`/api/games/${id}/player-stats`] });
+      setConfirmingDeleteStatPlayerId(null);
+    } finally {
+      setDeletingStatPlayerId(null);
+    }
   }
 
   function friendlyUploadError(raw: string): string {
@@ -750,13 +765,16 @@ export function GameDetailPage() {
                       {["PTS", "REB", "AST"].map((col) => (
                         <th key={col} className="px-3 py-3 label-upper text-[10px]">{col}</th>
                       ))}
+                      {isAdmin && <th className="px-3 py-3 w-10" />}
                     </tr>
                   </thead>
                   <tbody>
                     {stats.sort((a, b) => b.points - a.points).map((s) => {
                       const player = players?.find((p) => p.id === s.playerId);
+                      const isConfirming = confirmingDeleteStatPlayerId === s.playerId;
+                      const isDeleting = deletingStatPlayerId === s.playerId;
                       return (
-                        <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                        <tr key={s.id} className="group border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3">
                             {player ? (
                               <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
@@ -767,6 +785,36 @@ export function GameDetailPage() {
                           <td className="px-3 py-3 text-center font-bold text-primary">{s.points}</td>
                           <td className="px-3 py-3 text-center text-secondary font-medium">{s.rebounds}</td>
                           <td className="px-3 py-3 text-center text-secondary font-medium">{s.assists}</td>
+                          {isAdmin && (
+                            <td className="px-3 py-3 text-right">
+                              {isConfirming ? (
+                                <div className="flex items-center gap-1.5 justify-end">
+                                  <button
+                                    onClick={() => handleDeleteStat(s.playerId)}
+                                    disabled={isDeleting}
+                                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                  >
+                                    {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                    Delete
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmingDeleteStatPlayerId(null)}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmingDeleteStatPlayerId(s.playerId)}
+                                  className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                  title="Delete stat entry"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}

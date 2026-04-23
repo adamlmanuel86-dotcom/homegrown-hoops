@@ -223,6 +223,8 @@ export const GetPlayerStatsResponse = zod.object({
   playerId: zod.number(),
   gamesPlayed: zod.number(),
   totalPoints: zod.number(),
+  totalRebounds: zod.number(),
+  totalAssists: zod.number(),
   avgPoints: zod.number(),
   avgRebounds: zod.number(),
   avgAssists: zod.number(),
