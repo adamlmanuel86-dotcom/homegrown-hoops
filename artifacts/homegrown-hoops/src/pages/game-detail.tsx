@@ -81,8 +81,6 @@ export function GameDetailPage() {
   const homeWon = isFinal && game?.homeScore != null && game?.awayScore != null && game.homeScore > game.awayScore;
   const awayWon = isFinal && game?.homeScore != null && game?.awayScore != null && game.awayScore > game.homeScore;
 
-  const homeStats = playerStats?.filter((s) => players?.find((p) => p.id === s.playerId)?.teamId === game?.homeTeamId) ?? [];
-  const awayStats = playerStats?.filter((s) => players?.find((p) => p.id === s.playerId)?.teamId === game?.awayTeamId) ?? [];
 
   function openStatEntry() {
     const initial: Record<number, StatRow> = {};
@@ -749,92 +747,111 @@ export function GameDetailPage() {
       )}
 
       {/* Box Score */}
-      {playerStats && playerStats.length > 0 ? (
+      {game && (
         <div className="space-y-6">
           {[
-            { label: awayTeam?.name ?? "Away", team: awayTeam, stats: awayStats },
-            { label: homeTeam?.name ?? "Home", team: homeTeam, stats: homeStats },
-          ].map(({ label, team, stats }) => (
-            <div key={label} className="card-base overflow-hidden">
-              <div className="px-5 py-3 flex items-center gap-3" style={{ background: `linear-gradient(to right, ${team?.secondaryColor ?? "#132237"}, ${team?.primaryColor ?? "#C85A1B"})` }}>
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-display text-sm text-white">
-                  {team?.abbreviation ?? "?"}
+            { label: awayTeam?.name ?? "Away", team: awayTeam, teamId: game.awayTeamId },
+            { label: homeTeam?.name ?? "Home", team: homeTeam, teamId: game.homeTeamId },
+          ].map(({ label, team, teamId }) => {
+            const teamPlayers = players?.filter((p) => p.teamId === teamId) ?? [];
+            // Players with stats sort first by points desc; players without stats go below
+            const sorted = [...teamPlayers].sort((a, b) => {
+              const sa = playerStats?.find((s) => s.playerId === a.id);
+              const sb = playerStats?.find((s) => s.playerId === b.id);
+              if (sa && sb) return sb.points - sa.points;
+              if (sa) return -1;
+              if (sb) return 1;
+              return 0;
+            });
+            return (
+              <div key={label} className="card-base overflow-hidden">
+                <div className="px-5 py-3 flex items-center gap-3" style={{ background: `linear-gradient(to right, ${team?.secondaryColor ?? "#132237"}, ${team?.primaryColor ?? "#C85A1B"})` }}>
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-display text-sm text-white">
+                    {team?.abbreviation ?? "?"}
+                  </div>
+                  <p className="font-bold text-white text-sm uppercase tracking-wide">{label}</p>
                 </div>
-                <p className="font-bold text-white text-sm uppercase tracking-wide">{label}</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[280px] text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="text-left px-4 py-3 label-upper text-[10px]">Player</th>
-                      {["PTS", "REB", "AST"].map((col) => (
-                        <th key={col} className="px-3 py-3 label-upper text-[10px]">{col}</th>
-                      ))}
-                      {isAdmin && <th className="px-3 py-3 w-10" />}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.sort((a, b) => b.points - a.points).map((s) => {
-                      const player = players?.find((p) => p.id === s.playerId);
-                      const isConfirming = confirmingDeleteStatPlayerId === s.playerId;
-                      const isDeleting = deletingStatPlayerId === s.playerId;
-                      return (
-                        <tr key={s.id} className="group border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3">
-                            {player ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[280px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/50">
+                        <th className="text-left px-4 py-3 label-upper text-[10px]">Player</th>
+                        {["PTS", "REB", "AST"].map((col) => (
+                          <th key={col} className="px-3 py-3 label-upper text-[10px]">{col}</th>
+                        ))}
+                        {isAdmin && <th className="px-3 py-3 w-10" />}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((player) => {
+                        const statsRow = playerStats?.find((s) => s.playerId === player.id);
+                        const hasStats = statsRow != null;
+                        const isConfirming = confirmingDeleteStatPlayerId === player.id;
+                        const isDeleting = deletingStatPlayerId === player.id;
+                        return (
+                          <tr key={player.id} className="group border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3">
                               <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
                                 {player.firstName} {player.lastName}
                               </Link>
-                            ) : <span className="text-muted-foreground">Unknown</span>}
-                          </td>
-                          <td className="px-3 py-3 text-center font-bold text-primary">{s.points}</td>
-                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.rebounds}</td>
-                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.assists}</td>
-                          {isAdmin && (
-                            <td className="px-3 py-3 text-right">
-                              {isConfirming ? (
-                                <div className="flex items-center gap-1.5 justify-end">
-                                  <button
-                                    onClick={() => handleDeleteStat(s.playerId)}
-                                    disabled={isDeleting}
-                                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
-                                  >
-                                    {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                                    Delete
-                                  </button>
-                                  <button
-                                    onClick={() => setConfirmingDeleteStatPlayerId(null)}
-                                    className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => setConfirmingDeleteStatPlayerId(s.playerId)}
-                                  className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                                  title="Delete stat entry"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              )}
                             </td>
-                          )}
+                            <td className="px-3 py-3 text-center font-bold text-primary">
+                              {hasStats ? statsRow!.points : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-center text-secondary font-medium">
+                              {hasStats ? statsRow!.rebounds : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-center text-secondary font-medium">
+                              {hasStats ? statsRow!.assists : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            {isAdmin && (
+                              <td className="px-3 py-3 text-right">
+                                {hasStats && (isConfirming ? (
+                                  <div className="flex items-center gap-1.5 justify-end">
+                                    <button
+                                      onClick={() => handleDeleteStat(player.id)}
+                                      disabled={isDeleting}
+                                      className="flex items-center gap-1 px-2 py-1 rounded text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                    >
+                                      {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                      Delete
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmingDeleteStatPlayerId(null)}
+                                      className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setConfirmingDeleteStatPlayerId(player.id)}
+                                    className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Delete stat entry"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                ))}
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                      {sorted.length === 0 && (
+                        <tr>
+                          <td colSpan={isAdmin ? 5 : 4} className="px-4 py-6 text-sm text-muted-foreground text-center">
+                            No players registered for this team.
+                          </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      ) : isFinal ? (
-        <div className="card-base p-12 text-center">
-          <p className="font-bold text-secondary text-lg mb-1">No Box Score Data</p>
-          <p className="text-muted-foreground text-sm">Player stats weren't recorded for this game.</p>
-        </div>
-      ) : null}
+      )}
 
       {game.notes && (
         <div className="card-base p-5">
