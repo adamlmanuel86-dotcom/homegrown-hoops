@@ -1,12 +1,13 @@
 import { HomegrownHoopsLogo } from "@/components/logo";
 
 const paragraphs = [
-  "Homegrown Hoops started the way most good things do — on a gym floor, watching a kid who loves the game.",
-  "We built this platform because Atlantic Canada produces real basketball talent. Kids who work hard, compete with heart, and deserve to be seen. But for too long the tools to track that talent, celebrate those moments, and build those legacies only existed for players at the highest levels.",
-  "We're changing that.",
-  "Homegrown Hoops uses AI technology to do something simple — make sure every bucket counts, every assist gets credited, and every player who puts in the work gets recognized for it.",
-  "This isn't a business idea dressed up as a passion project. It started with a father, two sons, and a genuine love for what basketball does for young people. It builds confidence. It teaches resilience. It gives kids something to be proud of.",
-  "Atlantic Canada's game deserves its own platform. This is it.",
+  "Homegrown Hoops is Atlantic Canada's home for youth basketball.",
+  "Every game filmed and uploaded to the platform. Every point, rebound and assist tracked and displayed on your own player profile.",
+  "Earn Stamps for standout performances. Earn your Archetype — are you The Current? The Vortex? The Mainstay? Every player starts Uncharted and earns their identity through real performance.",
+  "At the end of every season the best performers earn Tides — the highest honours on the platform. The Crest goes to one player. Will it be you?",
+  "Your Legacy Score grows every game and never resets. It's your basketball story told in one number.",
+  "Share your player card. Show your Stamps. Own your legacy.",
+  "We're just getting started — and so are you.",
 ];
 
 export function OurStoryPage() {
@@ -33,7 +34,7 @@ export function OurStoryPage() {
           <p
             key={i}
             className={`leading-relaxed ${
-              text === "We're changing that."
+              text === "We're just getting started — and so are you."
                 ? "text-xl font-bold text-primary"
                 : "text-[1.0625rem] text-foreground/85"
             }`}
