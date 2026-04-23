@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState } from "react";
-import { toPng } from "html-to-image";
+import { toBlob } from "html-to-image";
 import {
-  Download, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
+  Download, Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { STAMPS } from "@/components/recognition";
@@ -225,6 +225,8 @@ export function PlayerCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [showStampsPopup, setShowStampsPopup] = useState(false);
   const [showLegacyPopup, setShowLegacyPopup] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const earnedIds = new Set((profile.stamps ?? []).map((s) => s.id));
   const earnedStamps = STAMPS.filter((s) => earnedIds.has(s.id));
@@ -278,17 +280,51 @@ export function PlayerCard({
   const archetypeLabel = meta.label;
 
   const handleDownload = useCallback(async () => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || saving) return;
+    setSaving(true);
+    setSaveError(null);
     try {
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, cacheBust: true });
+      const el = cardRef.current;
+      const opts = { pixelRatio: 3, cacheBust: true };
+      const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
+
+      // html-to-image sometimes misses embedded resources on the first pass —
+      // rendering twice ensures fonts/images are fully loaded before the real capture.
+      await toBlob(el, opts);
+      const blob = await toBlob(el, opts);
+      if (!blob) throw new Error("Image rendering returned empty result.");
+
+      const file = new File([blob], filename, { type: "image/png" });
+
+      // ── iOS Safari / modern mobile: Web Share API with file ──────────────────
+      // This opens the native share sheet; user taps "Save Image" → Camera Roll.
+      if (
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [file] })
+      ) {
+        await navigator.share({ files: [file], title: "My Homegrown Hoops Card" });
+        return;
+      }
+
+      // ── Desktop / browsers without file-share support: blob URL download ─────
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch (err) {
+      // AbortError = user dismissed the share sheet — not a real error
+      if (err instanceof Error && err.name === "AbortError") return;
       console.error("Card export failed:", err);
+      setSaveError("Couldn't save the card automatically. Long-press the card image and choose Save Image.");
+    } finally {
+      setSaving(false);
     }
-  }, [profile.firstName, profile.lastName]);
+  }, [profile.firstName, profile.lastName, saving]);
 
   const BG_DEEP = "hsl(222,42%,7%)";
   const BG_CARD = "hsl(220,36%,10%)";
@@ -652,14 +688,25 @@ export function PlayerCard({
       </div>
 
       {/* ── Share / download button ── */}
-      <button
-        onClick={handleDownload}
-        style={{ width: 320 }}
-        className="btn-primary"
-      >
-        <Download className="h-4 w-4" />
-        Save Card to Device
-      </button>
+      <div style={{ width: 320, display: "flex", flexDirection: "column", gap: 8 }}>
+        <button
+          onClick={handleDownload}
+          disabled={saving}
+          style={{ width: "100%" }}
+          className="btn-primary"
+        >
+          {saving ? (
+            <><Loader2 className="h-4 w-4 animate-spin" /> Generating Card…</>
+          ) : (
+            <><Share2 className="h-4 w-4" /> Save Card to Device</>
+          )}
+        </button>
+        {saveError && (
+          <p style={{ fontSize: 12, color: "#F97316", textAlign: "center", lineHeight: 1.4 }}>
+            {saveError}
+          </p>
+        )}
+      </div>
 
       {/* ── Popups (outside card ref so they don't appear in download) ── */}
       {showStampsPopup && (
