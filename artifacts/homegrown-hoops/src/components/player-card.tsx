@@ -491,8 +491,7 @@ export function PlayerCard({
                   letterSpacing: "0.1em",
                   color: archetypeColor,
                   textShadow: `0 0 14px ${archetypeColor}`,
-                  position: "relative",
-                  top: -1,
+                  verticalAlign: "middle",
                 }}
               >
                 {archetypeLabel}
