@@ -53,6 +53,7 @@ export function GameDetailPage() {
   const [editingScore, setEditingScore] = useState(false);
   const [confirmingDeleteStatPlayerId, setConfirmingDeleteStatPlayerId] = useState<number | null>(null);
   const [deletingStatPlayerId, setDeletingStatPlayerId] = useState<number | null>(null);
+  const [deleteModalPlayerId, setDeleteModalPlayerId] = useState<number | null>(null);
 
   // ── Stat entry ──────────────────────────────────────────────────────────────
   type StatRow = { points: string; rebounds: string; assists: string };
@@ -143,7 +144,8 @@ export function GameDetailPage() {
         });
 
       if (stats.length === 0) {
-        setStatSaveError("Enter stats for at least one player before saving.");
+        setStatSaveSuccess(true);
+        setTimeout(() => setStatSaveSuccess(false), 3000);
         return;
       }
 
@@ -207,6 +209,7 @@ export function GameDetailPage() {
       await deleteGamePlayerStat.mutateAsync({ id, playerId });
       await qc.invalidateQueries({ queryKey: [`/api/games/${id}/player-stats`] });
       setConfirmingDeleteStatPlayerId(null);
+      setDeleteModalPlayerId(null);
       setStatInputs((prev) => { const next = { ...prev }; delete next[playerId]; return next; });
     } finally {
       setDeletingStatPlayerId(null);
@@ -683,39 +686,6 @@ export function GameDetailPage() {
                           {teamPlayers.map((player) => {
                             const row = statInputs[player.id] ?? { points: "", rebounds: "", assists: "" };
                             const hasExistingStats = !!playerStats?.find((s) => s.playerId === player.id);
-                            const isConfirmingDelete = confirmingDeleteStatPlayerId === player.id;
-                            const isDeletingThis = deletingStatPlayerId === player.id;
-
-                            if (isConfirmingDelete) {
-                              return (
-                                <tr key={player.id} className="border-b border-border last:border-0 bg-red-900/10">
-                                  <td colSpan={5} className="px-3 py-3">
-                                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                                      <p className="text-sm text-red-400 font-medium">
-                                        Are you sure you want to delete these stats?
-                                      </p>
-                                      <div className="flex gap-2 flex-shrink-0">
-                                        <button
-                                          onClick={() => handleDeleteStat(player.id)}
-                                          disabled={isDeletingThis}
-                                          className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
-                                        >
-                                          {isDeletingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                                          Delete
-                                        </button>
-                                        <button
-                                          onClick={() => setConfirmingDeleteStatPlayerId(null)}
-                                          className="px-2.5 py-1 rounded text-xs font-semibold border border-border hover:bg-muted transition-colors"
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            }
-
                             return (
                               <tr key={player.id} className="border-b border-border last:border-0">
                                 <td className="px-3 py-2 font-semibold text-secondary">
@@ -736,7 +706,7 @@ export function GameDetailPage() {
                                 <td className="px-2 py-1.5 text-right">
                                   {hasExistingStats && (
                                     <button
-                                      onClick={() => setConfirmingDeleteStatPlayerId(player.id)}
+                                      onClick={() => setDeleteModalPlayerId(player.id)}
                                       className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-900/20 transition-colors"
                                       title="Delete stat entry"
                                     >
@@ -911,6 +881,53 @@ export function GameDetailPage() {
           <p className="text-sm text-muted-foreground">{game.notes}</p>
         </div>
       )}
+
+      {/* ── Delete stat confirmation modal ── */}
+      {deleteModalPlayerId !== null && (() => {
+        const modalPlayer = players?.find((p) => p.id === deleteModalPlayerId);
+        const isDeleting = deletingStatPlayerId === deleteModalPlayerId;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setDeleteModalPlayerId(null)}
+          >
+            <div
+              className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl space-y-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                  <Trash2 className="h-5 w-5 text-red-400" />
+                </div>
+                <h3 className="font-bold text-secondary text-base">Delete Player Stats</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Delete all stats for{" "}
+                <span className="font-semibold text-secondary">
+                  {modalPlayer?.firstName} {modalPlayer?.lastName}
+                </span>{" "}
+                in this game? This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleDeleteStat(deleteModalPlayerId)}
+                  disabled={isDeleting}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Delete Stats
+                </button>
+                <button
+                  onClick={() => setDeleteModalPlayerId(null)}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold border border-border hover:bg-muted transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
