@@ -14,7 +14,7 @@ import {
   useUpsertGamePlayerStats,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2, BarChart3 } from "lucide-react";
+import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, ExternalLink, Loader2, BarChart3, AlertTriangle } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -193,53 +193,133 @@ export function GameDetailPage() {
     await qc.invalidateQueries({ queryKey: [`/api/games/${id}/videos`] });
   }
 
+  function friendlyUploadError(raw: string): string {
+    const r = raw.toLowerCase();
+    if (r.includes("file size too large") || r.includes("413") || r.includes("file_size")) {
+      return "This video exceeds your Cloudinary plan's file size limit. Try compressing the video first, or upgrade your Cloudinary plan.";
+    }
+    if (r.includes("invalid signature") || r.includes("401") || r.includes("403") || r.includes("not allowed")) {
+      return "Upload authorization failed — please refresh the page and try again. If the problem persists, contact the administrator.";
+    }
+    if (r.includes("invalid cloud_name") || r.includes("cloud_name")) {
+      return "Cloudinary is not configured correctly. Please contact the administrator.";
+    }
+    if (r.includes("timed out") || r.includes("timeout")) {
+      return "The upload timed out. Your connection may be too slow for this file. Try a shorter video or move to a faster network.";
+    }
+    if (r.includes("network error") || r.includes("network")) {
+      return "A network error stopped the upload. Check your internet connection and try again.";
+    }
+    return raw || "Upload failed. Please try again.";
+  }
+
+  async function uploadChunk(
+    chunk: Blob,
+    start: number,
+    end: number,
+    totalSize: number,
+    chunkIndex: number,
+    totalChunks: number,
+    uploadId: string,
+    cloudName: string,
+    apiKey: string,
+    timestamp: number,
+    signature: string,
+    folder: string,
+    onProgress: (pct: number) => void,
+  ): Promise<string | null> {
+    const formData = new FormData();
+    formData.append("file", chunk);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", String(timestamp));
+    formData.append("signature", signature);
+    formData.append("folder", folder);
+
+    return new Promise<string | null>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`);
+      xhr.setRequestHeader("X-Unique-Upload-Id", uploadId);
+      xhr.setRequestHeader("Content-Range", `bytes ${start}-${end - 1}/${totalSize}`);
+
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) {
+          const chunkFraction = ev.loaded / ev.total;
+          onProgress(Math.round(((chunkIndex + chunkFraction) / totalChunks) * 100));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data.secure_url ?? null);
+          } catch {
+            resolve(null);
+          }
+        } else {
+          let msg = `Chunk ${chunkIndex + 1}/${totalChunks} was rejected by Cloudinary`;
+          try {
+            const errData = JSON.parse(xhr.responseText);
+            msg = errData?.error?.message ?? msg;
+          } catch { /* */ }
+          reject(new Error(msg));
+        }
+      };
+
+      xhr.onerror = () =>
+        reject(new Error(`Network error on chunk ${chunkIndex + 1}/${totalChunks} — check your connection and try again.`));
+      xhr.ontimeout = () =>
+        reject(new Error(`Chunk ${chunkIndex + 1}/${totalChunks} timed out — your connection may be too slow.`));
+      xhr.timeout = 5 * 60 * 1000; // 5 min per chunk
+      xhr.send(formData);
+    });
+  }
+
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     setUploadError(null);
     setUploadProgress(0);
+
     try {
+      // Get signed upload credentials from our server
       const sigRes = await fetch(`${BASE_URL}/api/cloudinary/signature`, { method: "POST" });
-      if (!sigRes.ok) throw new Error("Failed to get upload signature");
+      if (!sigRes.ok) {
+        const errData = await sigRes.json().catch(() => ({}));
+        throw new Error(errData.error ?? `Could not get upload credentials (${sigRes.status})`);
+      }
       const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", apiKey);
-      formData.append("timestamp", String(timestamp));
-      formData.append("signature", signature);
-      formData.append("folder", folder);
+      // Chunked upload: split into 20 MB pieces so large files (up to ~2 GB) work reliably
+      const CHUNK_SIZE = 20 * 1024 * 1024;
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      const uploadId = crypto.randomUUID();
+      let secureUrl = "";
 
-      // Use XHR so we can track upload progress for large videos
-      const secureUrl = await new Promise<string>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`);
-        xhr.upload.onprogress = (ev) => {
-          if (ev.lengthComputable) {
-            setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const data = JSON.parse(xhr.responseText);
-            resolve(data.secure_url);
-          } else {
-            let msg = "Upload to Cloudinary failed";
-            try { msg = JSON.parse(xhr.responseText)?.error?.message ?? msg; } catch { /* */ }
-            reject(new Error(msg));
-          }
-        };
-        xhr.onerror = () => reject(new Error("Network error — check your connection and try again."));
-        xhr.ontimeout = () => reject(new Error("Upload timed out — try a smaller file or a faster connection."));
-        xhr.timeout = 10 * 60 * 1000; // 10 minute timeout for long videos
-        xhr.send(formData);
-      });
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        const result = await uploadChunk(
+          chunk, start, end, file.size,
+          i, totalChunks,
+          uploadId, cloudName, apiKey, timestamp, signature, folder,
+          (pct) => setUploadProgress(pct),
+        );
+        if (result) secureUrl = result;
+      }
+
+      if (!secureUrl) throw new Error("Upload completed but no video URL was returned — please try again.");
 
       setPendingObjectPath(secureUrl);
       if (!videoTitle) setVideoTitle(file.name.replace(/\.[^.]+$/, ""));
+      setUploadProgress(100);
+
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      const raw = err instanceof Error ? err.message : "Upload failed";
+      setUploadError(friendlyUploadError(raw));
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -409,26 +489,26 @@ export function GameDetailPage() {
                 <p className="text-xs text-muted-foreground">Select a video file (MP4, MOV, MKV, etc.)</p>
                 <label className={`flex flex-col items-center justify-center gap-3 w-full border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer transition-colors ${uploading ? "border-primary/40 bg-primary/5 cursor-default" : "border-border hover:border-primary/40 hover:bg-primary/5"}`}>
                   {uploading ? (
-                    <div className="w-full space-y-3 pointer-events-none">
+                    <div className="w-full space-y-3 pointer-events-none select-none">
                       <Loader2 className="h-7 w-7 text-primary animate-spin mx-auto" />
                       <p className="text-sm font-semibold text-secondary text-center">
                         {uploadProgress > 0 ? `Uploading… ${uploadProgress}%` : "Preparing upload…"}
                       </p>
-                      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                         <div
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          className="bg-primary h-2.5 rounded-full transition-all duration-150"
                           style={{ width: `${uploadProgress}%` }}
                         />
                       </div>
                       <p className="text-xs text-muted-foreground text-center">
-                        Large videos may take several minutes — please keep this page open.
+                        Uploading in chunks — large videos may take several minutes. Keep this page open.
                       </p>
                     </div>
                   ) : (
                     <>
                       <Upload className="h-7 w-7 text-muted-foreground/50" />
                       <span className="text-sm font-medium text-secondary">Click to choose a video file</span>
-                      <span className="text-xs text-muted-foreground">MP4, MOV, MKV — any size</span>
+                      <span className="text-xs text-muted-foreground">MP4, MOV, MKV — up to 2 GB supported</span>
                     </>
                   )}
                   <input
@@ -440,7 +520,10 @@ export function GameDetailPage() {
                   />
                 </label>
                 {uploadError && (
-                  <p className="text-red-600 text-xs font-medium">{uploadError}</p>
+                  <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2.5">
+                    <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-red-400 text-xs font-medium leading-relaxed">{uploadError}</p>
+                  </div>
                 )}
               </div>
             ) : (
@@ -660,11 +743,11 @@ export function GameDetailPage() {
                 <p className="font-bold text-white text-sm uppercase tracking-wide">{label}</p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[580px] text-sm">
+                <table className="w-full min-w-[280px] text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
                       <th className="text-left px-4 py-3 label-upper text-[10px]">Player</th>
-                      {["PTS", "REB", "AST", "STL", "BLK", "TO", "MIN", "FG", "3P", "FT"].map((col) => (
+                      {["PTS", "REB", "AST"].map((col) => (
                         <th key={col} className="px-3 py-3 label-upper text-[10px]">{col}</th>
                       ))}
                     </tr>
@@ -684,13 +767,6 @@ export function GameDetailPage() {
                           <td className="px-3 py-3 text-center font-bold text-primary">{s.points}</td>
                           <td className="px-3 py-3 text-center text-secondary font-medium">{s.rebounds}</td>
                           <td className="px-3 py-3 text-center text-secondary font-medium">{s.assists}</td>
-                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.steals}</td>
-                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.blocks}</td>
-                          <td className="px-3 py-3 text-center text-secondary font-medium">{s.turnovers}</td>
-                          <td className="px-3 py-3 text-center text-muted-foreground">{s.minutesPlayed}</td>
-                          <td className="px-3 py-3 text-center text-muted-foreground">{s.fieldGoalsMade}/{s.fieldGoalsAttempted}</td>
-                          <td className="px-3 py-3 text-center text-muted-foreground">{s.threesMade}/{s.threesAttempted}</td>
-                          <td className="px-3 py-3 text-center text-muted-foreground">{s.freeThrowsMade}/{s.freeThrowsAttempted}</td>
                         </tr>
                       );
                     })}
