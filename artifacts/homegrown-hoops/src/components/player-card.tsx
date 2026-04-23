@@ -470,17 +470,19 @@ export function PlayerCard({
             )}
             <div
               style={{
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
                 gap: 5,
+                width: "fit-content",
                 marginTop: 9,
+                margin: "9px auto 0",
                 padding: "4px 12px",
                 borderRadius: 20,
                 background: `${archetypeColor}18`,
                 border: `1px solid ${archetypeColor}44`,
               }}
             >
-              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
+              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor, verticalAlign: "middle" }} />
               <span
                 style={{
                   fontSize: 10,
@@ -489,6 +491,7 @@ export function PlayerCard({
                   letterSpacing: "0.1em",
                   color: archetypeColor,
                   textShadow: `0 0 14px ${archetypeColor}`,
+                  verticalAlign: "middle",
                 }}
               >
                 {archetypeLabel}
