@@ -303,7 +303,41 @@ router.delete("/games/:id/player-stats/:playerId", async (req, res): Promise<voi
     return;
   }
 
-  // Re-run recognition with the deleted player so their stamps/tides/archetype are recalculated
+  // Check if the player has any remaining stats across ALL games (not just this one)
+  const remainingStats = await db
+    .select({
+      points: gamePlayerStatsTable.points,
+      rebounds: gamePlayerStatsTable.rebounds,
+      assists: gamePlayerStatsTable.assists,
+    })
+    .from(gamePlayerStatsTable)
+    .where(eq(gamePlayerStatsTable.playerId, playerId));
+
+  const totalPoints   = remainingStats.reduce((s, r) => s + (r.points   ?? 0), 0);
+  const totalRebounds = remainingStats.reduce((s, r) => s + (r.rebounds ?? 0), 0);
+  const totalAssists  = remainingStats.reduce((s, r) => s + (r.assists  ?? 0), 0);
+
+  if (totalPoints === 0 && totalRebounds === 0 && totalAssists === 0) {
+    // No meaningful stats remain — directly reset the linked profile
+    const [playerRow] = await db
+      .select()
+      .from(playersTable)
+      .where(eq(playersTable.id, playerId));
+
+    if (playerRow) {
+      await db
+        .update(userProfilesTable)
+        .set({ archetype: "Uncharted", stamps: [], updatedAt: new Date() })
+        .where(
+          and(
+            eq(userProfilesTable.firstName, playerRow.firstName),
+            eq(userProfilesTable.lastName, playerRow.lastName)
+          )
+        );
+    }
+  }
+
+  // Still run full recognition to recalculate archetypes for the rest of the team
   runFullRecognition(gameId, [playerId]).catch((err) =>
     console.error("[recognition] runFullRecognition after delete failed:", err)
   );
