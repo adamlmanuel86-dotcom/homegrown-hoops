@@ -491,7 +491,8 @@ export function PlayerCard({
                   letterSpacing: "0.1em",
                   color: archetypeColor,
                   textShadow: `0 0 14px ${archetypeColor}`,
-                  verticalAlign: "middle",
+                  position: "relative",
+                  top: -1,
                 }}
               >
                 {archetypeLabel}
@@ -646,7 +647,7 @@ export function PlayerCard({
                   color: MUTED,
                   textTransform: "uppercase",
                   letterSpacing: "0.14em",
-                  marginTop: 3,
+                  marginTop: 6,
                 }}
               >
                 Legacy Score
