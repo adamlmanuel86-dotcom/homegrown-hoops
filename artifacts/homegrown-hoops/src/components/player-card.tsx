@@ -283,19 +283,49 @@ export function PlayerCard({
     if (!cardRef.current || saving) return;
     setSaving(true);
     setSaveError(null);
+
+    // Track every inline-style mutation so we can revert regardless of outcome.
+    type Mutation = { node: HTMLElement; prop: string; original: string };
+    const mutations: Mutation[] = [];
+
+    const applyStyle = (node: HTMLElement, prop: string, value: string) => {
+      const s = node.style as unknown as Record<string, string>;
+      mutations.push({ node, prop, original: s[prop] ?? "" });
+      s[prop] = value;
+    };
+
+    const revertAll = () => {
+      mutations.forEach(({ node, prop, original }) => {
+        (node.style as unknown as Record<string, string>)[prop] = original;
+      });
+      mutations.length = 0;
+    };
+
     try {
       const el = cardRef.current;
       const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
 
-      // Add .card-capturing to the card element before html2canvas reads it.
-      // CSS rule `.card-capturing .hide-on-save { display: none }` then hides
-      // any interactive-only elements from the captured image.
-      // This is a synchronous DOM mutation — guaranteed to apply before capture.
-      el.classList.add("card-capturing");
+      // ── Step 1: Hide every "tap for details" / interactive-hint element ───────
+      el.querySelectorAll<HTMLElement>("[data-card-tap-hint]").forEach((node) => {
+        applyStyle(node, "display", "none");
+      });
 
-      // html2canvas re-renders the live DOM element directly onto a canvas,
-      // reading real computed styles and positions from the browser's layout engine.
-      // This produces a pixel-accurate match to what the user sees on screen.
+      // ── Step 2: Force archetype icon + text to inline-flex + center alignment ─
+      const archetypeIcon = el.querySelector<HTMLElement>("[data-card-archetype-icon]");
+      const archetypeText = el.querySelector<HTMLElement>("[data-card-archetype-text]");
+      if (archetypeIcon) {
+        applyStyle(archetypeIcon, "display", "inline-flex");
+        applyStyle(archetypeIcon, "alignItems", "center");
+      }
+      if (archetypeText) {
+        applyStyle(archetypeText, "display", "inline-flex");
+        applyStyle(archetypeText, "alignItems", "center");
+      }
+
+      // ── Step 3: Wait 500 ms for all style changes to render completely ─────────
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+
+      // ── Capture ────────────────────────────────────────────────────────────────
       const canvas = await html2canvas(el, {
         scale: 3,
         useCORS: true,
@@ -304,8 +334,8 @@ export function PlayerCard({
         logging: false,
       });
 
-      // Remove capture class immediately so the card returns to normal.
-      el.classList.remove("card-capturing");
+      // Restore the card to normal before processing the image blob.
+      revertAll();
 
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
@@ -315,7 +345,6 @@ export function PlayerCard({
       const file = new File([blob], filename, { type: "image/png" });
 
       // ── iOS Safari / modern mobile: Web Share API with file ──────────────────
-      // This opens the native share sheet; user taps "Save Image" → Camera Roll.
       if (
         typeof navigator.share === "function" &&
         typeof navigator.canShare === "function" &&
@@ -335,13 +364,11 @@ export function PlayerCard({
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch (err) {
-      // AbortError = user dismissed the share sheet — not a real error
       if (err instanceof Error && err.name === "AbortError") return;
       console.error("Card export failed:", err);
       setSaveError("Couldn't save the card automatically. Long-press the card image and choose Save Image.");
     } finally {
-      // Always remove capture class — covers errors that happen mid-capture
-      cardRef.current?.classList.remove("card-capturing");
+      revertAll(); // safe to call even if already reverted — mutations array is empty
       setSaving(false);
     }
   }, [profile.firstName, profile.lastName, saving]);
@@ -493,8 +520,12 @@ export function PlayerCard({
                 margin: "9px auto 0",
               }}
             >
-              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor, verticalAlign: "middle" }} />
+              <ArchetypeIcon
+                data-card-archetype-icon="1"
+                style={{ width: 11, height: 11, color: archetypeColor, verticalAlign: "middle" }}
+              />
               <span
+                data-card-archetype-text="1"
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
@@ -660,7 +691,7 @@ export function PlayerCard({
                   marginTop: 3,
                 }}
               >
-                Legacy Score<span className="hide-on-save"> · Tap for details</span>
+                Legacy Score<span className="hide-on-save" data-card-tap-hint="1"> · Tap for details</span>
               </p>
             </div>
 
