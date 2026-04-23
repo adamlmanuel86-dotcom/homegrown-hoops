@@ -285,7 +285,12 @@ export function PlayerCard({
     setSaveError(null);
     try {
       const el = cardRef.current;
-      const opts = { pixelRatio: 3, cacheBust: true };
+      const opts = {
+        pixelRatio: 3,
+        cacheBust: true,
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+      };
       const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
 
       // html-to-image sometimes misses embedded resources on the first pass —
@@ -373,6 +378,8 @@ export function PlayerCard({
             <div
               style={{
                 position: "absolute",
+                top: 15,
+                left: 78,
                 width: 160,
                 height: 160,
                 borderRadius: "50%",
@@ -387,9 +394,7 @@ export function PlayerCard({
                   borderRadius: "50%",
                   background: "hsl(220,36%,13%)",
                   border: `2px solid ${archetypeColor}55`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: "relative",
                   boxShadow: `0 0 24px ${archetypeColor}33`,
                   overflow: "hidden",
                   flexShrink: 0,
@@ -403,7 +408,7 @@ export function PlayerCard({
                     crossOrigin="anonymous"
                   />
                 ) : (
-                  <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
+                  <User style={{ position: "absolute", top: 25, left: 25, width: 40, height: 40, display: "block", color: "hsl(220,20%,28%)" }} />
                 )}
               </div>
               <div
@@ -413,13 +418,11 @@ export function PlayerCard({
                   borderRadius: "50%",
                   background: `${archetypeColor}1a`,
                   border: `1.5px solid ${archetypeColor}55`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  position: "relative",
                   boxShadow: `0 0 10px ${archetypeColor}33`,
                 }}
               >
-                <ArchetypeIcon style={{ width: 14, height: 14, color: archetypeColor }} />
+                <ArchetypeIcon style={{ position: "absolute", top: 8, left: 8, width: 14, height: 14, display: "block", color: archetypeColor }} />
               </div>
             </div>
           </div>
@@ -472,7 +475,7 @@ export function PlayerCard({
                 border: `1px solid ${archetypeColor}44`,
               }}
             >
-              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor }} />
+              <ArchetypeIcon style={{ width: 11, height: 11, display: "block", color: archetypeColor }} />
               <span
                 style={{
                   fontSize: 10,
@@ -559,14 +562,12 @@ export function PlayerCard({
                       borderRadius: "50%",
                       background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
                       border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      position: "relative",
                       opacity: earned ? 1 : 0.3,
                       boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
                     }}
                   >
-                    <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                    <Icon style={{ position: "absolute", top: 9, left: 9, width: 14, height: 14, display: "block", color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
                   </div>
                 );
               })}
