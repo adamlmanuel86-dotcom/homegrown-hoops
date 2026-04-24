@@ -8,7 +8,8 @@ import {
 
 const router: IRouter = Router();
 
-async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
+async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade", limit = 5) {
+  const col = gamePlayerStatsTable[field];
   const rows = await db
     .select({
       playerId: playersTable.id,
@@ -17,13 +18,13 @@ async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
       number: playersTable.number,
       teamName: teamsTable.name,
       teamAbbreviation: teamsTable.abbreviation,
-      value: sql<number>`COALESCE(AVG(${gamePlayerStatsTable[field]}), 0)`,
+      value: sql<number>`COALESCE(AVG(${col}), 0)`,
     })
     .from(gamePlayerStatsTable)
     .innerJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
     .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
     .groupBy(playersTable.id, playersTable.firstName, playersTable.lastName, playersTable.number, teamsTable.name, teamsTable.abbreviation)
-    .orderBy(desc(sql<number>`AVG(${gamePlayerStatsTable[field]})`))
+    .orderBy(desc(sql<number>`AVG(${col})`))
     .limit(limit * 5); // fetch extra so we can filter zeros and still have enough
 
   return rows
@@ -33,13 +34,14 @@ async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
 }
 
 router.get("/stats/leaders", async (_req, res): Promise<void> => {
-  const [points, rebounds, assists] = await Promise.all([
+  const [points, rebounds, assists, threesMade] = await Promise.all([
     getLeaders("points"),
     getLeaders("rebounds"),
     getLeaders("assists"),
+    getLeaders("threesMade"),
   ]);
 
-  res.json(GetStatLeadersResponse.parse({ points, rebounds, assists }));
+  res.json(GetStatLeadersResponse.parse({ points, rebounds, assists, threesMade }));
 });
 
 router.get("/stats/summary", async (_req, res): Promise<void> => {

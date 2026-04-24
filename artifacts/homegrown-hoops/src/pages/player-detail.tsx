@@ -143,6 +143,7 @@ export function PlayerDetailPage() {
               <StatBox label="PPG" value={stats.avgPoints} highlight />
               <StatBox label="RPG" value={stats.avgRebounds} />
               <StatBox label="APG" value={stats.avgAssists} />
+              <StatBox label="3PG" value={stats.avgThreesMade} />
               <StatBox label="SPG" value={stats.avgSteals} />
               <StatBox label="BPG" value={stats.avgBlocks} />
               <StatBox label="TPG" value={stats.avgTurnovers} />

@@ -225,9 +225,11 @@ export const GetPlayerStatsResponse = zod.object({
   totalPoints: zod.number(),
   totalRebounds: zod.number(),
   totalAssists: zod.number(),
+  totalThreesMade: zod.number(),
   avgPoints: zod.number(),
   avgRebounds: zod.number(),
   avgAssists: zod.number(),
+  avgThreesMade: zod.number(),
   avgSteals: zod.number(),
   avgBlocks: zod.number(),
   avgTurnovers: zod.number(),
@@ -432,6 +434,17 @@ export const GetStatLeadersResponse = zod.object({
     }),
   ),
   assists: zod.array(
+    zod.object({
+      playerId: zod.number(),
+      firstName: zod.string(),
+      lastName: zod.string(),
+      number: zod.string().nullish(),
+      teamName: zod.string().nullish(),
+      teamAbbreviation: zod.string().nullish(),
+      value: zod.number(),
+    }),
+  ),
+  threesMade: zod.array(
     zod.object({
       playerId: zod.number(),
       firstName: zod.string(),

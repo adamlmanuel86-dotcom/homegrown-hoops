@@ -63,7 +63,7 @@ export function GameDetailPage() {
   const [deleteModalPlayerId, setDeleteModalPlayerId] = useState<number | null>(null);
 
   // ── Stat entry ──────────────────────────────────────────────────────────────
-  type StatRow = { points: string; rebounds: string; assists: string };
+  type StatRow = { points: string; rebounds: string; assists: string; threesMade: string };
   const [showStatEntry, setShowStatEntry] = useState(false);
   const [statInputs, setStatInputs] = useState<Record<number, StatRow>>({});
   const [savingStats, setSavingStats] = useState(false);
@@ -96,9 +96,10 @@ export function GameDetailPage() {
     if (playerStats) {
       for (const s of playerStats) {
         initial[s.playerId] = {
-          points:   s.points   !== null ? String(s.points)   : "",
-          rebounds: s.rebounds !== null ? String(s.rebounds) : "",
-          assists:  s.assists  !== null ? String(s.assists)  : "",
+          points:     s.points     !== null ? String(s.points)     : "",
+          rebounds:   s.rebounds   !== null ? String(s.rebounds)   : "",
+          assists:    s.assists    !== null ? String(s.assists)    : "",
+          threesMade: s.threesMade !== 0    ? String(s.threesMade) : "",
         };
       }
     }
@@ -111,7 +112,7 @@ export function GameDetailPage() {
   function updateStatInput(playerId: number, field: keyof StatRow, value: string) {
     setStatInputs((prev) => ({
       ...prev,
-      [playerId]: { ...(prev[playerId] ?? { points: "", rebounds: "", assists: "" }), [field]: value },
+      [playerId]: { ...(prev[playerId] ?? { points: "", rebounds: "", assists: "", threesMade: "" }), [field]: value },
     }));
   }
 
@@ -127,12 +128,13 @@ export function GameDetailPage() {
       // An all-blank row means "not entered" and is excluded
       const stats = [...teamPlayerIds]
         .filter((pid) => {
-          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "" };
-          return row.points !== "" || row.rebounds !== "" || row.assists !== "";
+          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "", threesMade: "" };
+          return row.points !== "" || row.rebounds !== "" || row.assists !== "" || row.threesMade !== "";
         })
         .map((pid) => {
-          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "" };
+          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "", threesMade: "" };
           const parseField = (s: string): number | null => s === "" ? null : (parseInt(s) || 0);
+          const parseInt0 = (s: string): number => s === "" ? 0 : (parseInt(s) || 0);
           return {
             playerId:              pid,
             points:                parseField(row.points),
@@ -144,7 +146,7 @@ export function GameDetailPage() {
             minutesPlayed:         0,
             fieldGoalsMade:        0,
             fieldGoalsAttempted:   0,
-            threesMade:            0,
+            threesMade:            parseInt0(row.threesMade),
             threesAttempted:       0,
             freeThrowsMade:        0,
             freeThrowsAttempted:   0,
@@ -741,7 +743,7 @@ export function GameDetailPage() {
                         <thead>
                           <tr className="border-b border-border">
                             <th className="text-left px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground">Player</th>
-                            {["PTS", "REB", "AST"].map((h) => (
+                            {["PTS", "REB", "AST", "3PM"].map((h) => (
                               <th key={h} className="px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground text-center w-20">{h}</th>
                             ))}
                             <th className="px-2 py-2 w-10" />
@@ -749,7 +751,7 @@ export function GameDetailPage() {
                         </thead>
                         <tbody>
                           {teamPlayers.map((player) => {
-                            const row = statInputs[player.id] ?? { points: "", rebounds: "", assists: "" };
+                            const row = statInputs[player.id] ?? { points: "", rebounds: "", assists: "", threesMade: "" };
                             const hasExistingStats = !!playerStats?.find((s) => s.playerId === player.id);
                             return (
                               <tr key={player.id} className="border-b border-border last:border-0">
@@ -759,7 +761,7 @@ export function GameDetailPage() {
                                   )}
                                   {player.firstName} {player.lastName}
                                 </td>
-                                {(["points", "rebounds", "assists"] as const).map((field) => (
+                                {(["points", "rebounds", "assists", "threesMade"] as const).map((field) => (
                                   <td key={field} className="px-2 py-1.5 text-center">
                                     <input
                                       type="number"
@@ -866,7 +868,7 @@ export function GameDetailPage() {
                     <thead>
                       <tr className="border-b border-border bg-muted/50">
                         <th className="text-left px-4 py-3 label-upper text-[10px]">Player</th>
-                        {["PTS", "REB", "AST"].map((col) => (
+                        {["PTS", "REB", "AST", "3PM"].map((col) => (
                           <th key={col} className="px-3 py-3 label-upper text-[10px]">{col}</th>
                         ))}
                         {isAdmin && <th className="px-3 py-3 w-10" />}
@@ -896,6 +898,9 @@ export function GameDetailPage() {
                             </td>
                             <td className="px-3 py-3 text-center text-secondary font-medium">
                               {hasStats && statsRow!.assists !== null ? statsRow!.assists : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-center text-secondary font-medium">
+                              {hasStats && statsRow!.threesMade > 0 ? statsRow!.threesMade : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             {isAdmin && (
                               <td className="px-3 py-3 text-right">
@@ -932,7 +937,7 @@ export function GameDetailPage() {
                       })}
                       {sorted.length === 0 && (
                         <tr>
-                          <td colSpan={isAdmin ? 5 : 4} className="px-4 py-6 text-sm text-muted-foreground text-center">
+                          <td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-sm text-muted-foreground text-center">
                             No players registered for this team.
                           </td>
                         </tr>

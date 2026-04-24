@@ -24,6 +24,7 @@ type ArchetypeData = {
   requirement: string;
   accent: string;
   gradient: [string, string, string];
+  comingSoon?: true;
 };
 
 const ARCHETYPES: ArchetypeData[] = [
@@ -77,9 +78,10 @@ const ARCHETYPES: ArchetypeData[] = [
     label: "The Spark",
     icon: Flame,
     tagline: "Changes the game in limited minutes.",
-    requirement: "Earned by having the highest points per minute ratio on the team among players averaging under 15 minutes per game.",
+    requirement: "Earned by having the highest points per minute ratio on the team among players averaging under 15 minutes per game. Requires minutes played tracking.",
     accent: "#F472B6",
     gradient: ["#2E0A1A", "#551030", "#2E0A1A"],
+    comingSoon: true,
   },
 ];
 
@@ -159,18 +161,30 @@ function UnchartedCard() {
 function ArchetypeCard({ arch }: { arch: ArchetypeData }) {
   const Icon = arch.icon;
   const [g0, g1, g2] = arch.gradient;
+  const muted = arch.comingSoon;
 
   return (
     <div
       className="relative flex flex-col rounded-2xl overflow-hidden h-full transition-transform duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
       style={{
         background: `linear-gradient(160deg, ${g0} 0%, ${g1} 50%, ${g2} 100%)`,
-        border: `1px solid ${arch.accent}28`,
+        border: `1px solid ${muted ? "rgba(100,116,139,0.18)" : arch.accent + "28"}`,
         boxShadow: `0 0 32px ${arch.accent}0a`,
+        opacity: muted ? 0.72 : 1,
       }}
     >
       {/* Colour strip */}
-      <div className="h-1 w-full" style={{ background: `linear-gradient(to right, ${arch.accent}, ${arch.accent}44)` }} />
+      <div className="h-1 w-full" style={{ background: muted ? "rgba(100,116,139,0.3)" : `linear-gradient(to right, ${arch.accent}, ${arch.accent}44)` }} />
+
+      {/* Coming Soon badge */}
+      {muted && (
+        <div
+          className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
+          style={{ background: "rgba(100,116,139,0.15)", border: "1px solid rgba(100,116,139,0.25)", color: "#64748b" }}
+        >
+          Coming Soon
+        </div>
+      )}
 
       {/* Card body */}
       <div className="flex-1 flex flex-col p-5 gap-4">
@@ -180,12 +194,12 @@ function ArchetypeCard({ arch }: { arch: ArchetypeData }) {
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
-              background: `${arch.accent}14`,
-              border: `1px solid ${arch.accent}38`,
+              background: muted ? "rgba(100,116,139,0.08)" : `${arch.accent}14`,
+              border: `1px solid ${muted ? "rgba(100,116,139,0.2)" : arch.accent + "38"}`,
               boxShadow: `0 0 16px ${arch.accent}12`,
             }}
           >
-            <Icon className="w-6 h-6" style={{ color: arch.accent }} strokeWidth={1.75} />
+            <Icon className="w-6 h-6" style={{ color: muted ? "#64748b" : arch.accent }} strokeWidth={1.75} />
           </div>
 
           {/* Name + tagline */}
@@ -196,7 +210,7 @@ function ArchetypeCard({ arch }: { arch: ArchetypeData }) {
                 fontSize: "1.3rem",
                 letterSpacing: "0.04em",
                 textTransform: "uppercase",
-                color: "#fff",
+                color: muted ? "#64748b" : "#fff",
                 lineHeight: 1.1,
               }}
             >
@@ -204,7 +218,7 @@ function ArchetypeCard({ arch }: { arch: ArchetypeData }) {
             </h3>
             <p
               className="mt-1 leading-snug"
-              style={{ fontSize: "11px", color: `${arch.accent}bb`, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}
+              style={{ fontSize: "11px", color: muted ? "rgba(100,116,139,0.7)" : `${arch.accent}bb`, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}
             >
               {arch.tagline}
             </p>
