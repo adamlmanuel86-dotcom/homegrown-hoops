@@ -26,6 +26,7 @@ export function ProfilePage() {
 
   const { data: teams } = useListTeams();
   const team = teams?.find((t) => t.id === matchedPlayer?.teamId);
+  const teamLabel = team?.name ?? "Unaffiliated / No Team";
 
   const isOwner = isSignedIn && user?.id === clerkUserId;
 
@@ -70,7 +71,6 @@ export function ProfilePage() {
         <ChevronLeft className="h-4 w-4" /> Back
       </Link>
 
-      {/* ── Player Card (first thing visible) ── */}
       <div className="flex justify-center">
         <PlayerCard
           profile={profile}
@@ -80,7 +80,6 @@ export function ProfilePage() {
         />
       </div>
 
-      {/* ── Banner ── */}
       <div className="rounded-2xl overflow-hidden bg-secondary text-white">
         <div className="px-8 py-10 flex items-center gap-5">
           <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
@@ -106,12 +105,15 @@ export function ProfilePage() {
                   Class of {profile.graduationYear}
                 </span>
               )}
+              <span className="flex items-center gap-1.5 bg-white/10 text-white/80 text-xs font-bold px-3 py-1 rounded-full">
+                <School className="h-3 w-3" />
+                {teamLabel}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Details ── */}
       <div className="card-base p-6 space-y-5">
         {profile.school && (
           <div className="flex items-start gap-3">
@@ -153,7 +155,6 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* ── Recognition ── */}
       <RecognitionBlock
         stamps={profile.stamps ?? []}
         tides={profile.tides ?? []}
