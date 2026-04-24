@@ -82,8 +82,6 @@ export function OnboardingPage() {
   // Prevents redirect-on-profile-load from firing right after we just created
   // the profile (must be declared before the useEffect that references it)
   const [justCreated, setJustCreated] = useState(false);
-  // Account type chosen on sign-up ("player" or "parent")
-  const [accountType, setAccountType] = useState<"player" | "parent">("player");
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
@@ -91,14 +89,6 @@ export function OnboardingPage() {
   useEffect(() => {
     if (isLoaded && !isSignedIn) setLocation("/sign-in");
   }, [isLoaded, isSignedIn, setLocation]);
-
-  // Read account type from localStorage (set during sign-up)
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("hh_account_type");
-      if (stored === "parent") setAccountType("parent");
-    } catch { /* ignore */ }
-  }, []);
 
   // Redirect if already has a profile (onboarding already done).
   // Skip redirect when justCreated=true — we want to show the reveal instead.
@@ -219,35 +209,6 @@ export function OnboardingPage() {
     }
   }
 
-  async function submitParentProfile() {
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      setJustCreated(true);
-      setStep("submitting");
-      await createProfile.mutateAsync({
-        data: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          role: "parent",
-        },
-      });
-      await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      // Clear localStorage flag after successful creation
-      try { localStorage.removeItem("hh_account_type"); } catch {}
-      setStep("reveal");
-    } catch (err) {
-      console.log("[HH] submitParentProfile error:", err);
-      setSubmitError("Something went wrong. Please try again.");
-      setStep("name");
-    } finally {
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
-    }
-  }
-
   function triggerReveal() {
     setRevealPhase(0);
     setShowColorWash(false);
@@ -364,57 +325,6 @@ export function OnboardingPage() {
   // ──────────────────────────────────────────────────
   // CARD REVEAL — cinematic 4-phase sequence
   // ──────────────────────────────────────────────────
-  if (step === "reveal" && accountType === "parent") {
-    return (
-      <div
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "48px 24px",
-          background: "radial-gradient(ellipse at 50% 40%, hsl(22 78% 16% / 0.5), hsl(222 42% 5%) 70%)",
-          textAlign: "center",
-          gap: 32,
-        }}
-      >
-        <div style={{ fontSize: 64 }}>👨‍👧</div>
-        <div>
-          <h1 style={{ fontFamily: "'Barlow Condensed', Impact, sans-serif", fontSize: 48, fontWeight: 900, color: "#fff", textTransform: "uppercase", margin: 0 }}>
-            Welcome,
-          </h1>
-          <h1 style={{ fontFamily: "'Barlow Condensed', Impact, sans-serif", fontSize: 48, fontWeight: 900, color: "hsl(22,78%,60%)", textTransform: "uppercase", margin: 0 }}>
-            {form.firstName}!
-          </h1>
-          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 15, marginTop: 12, lineHeight: 1.6, maxWidth: 280 }}>
-            Your parent account is ready. Head to the home screen to find and link your athlete.
-          </p>
-        </div>
-        <button
-          onClick={() => setLocation("/")}
-          style={{
-            padding: "15px 32px",
-            borderRadius: 14,
-            background: "linear-gradient(135deg, #F97316, #B45309)",
-            border: "none",
-            color: "#fff",
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            touchAction: "manipulation",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          Go to Home <ArrowRight style={{ width: 18, height: 18 }} />
-        </button>
-      </div>
-    );
-  }
-
   if (step === "reveal") {
     const cardProfile = {
       firstName: form.firstName,
@@ -904,17 +814,10 @@ export function OnboardingPage() {
           {step === "name" && (
             <div className="space-y-6">
               <div>
-                <p className="label-upper text-xs text-primary mb-2">
-                  {accountType === "parent" ? "Step 1 of 1" : "Step 1 of 5"}
-                </p>
+                <p className="label-upper text-xs text-primary mb-2">Step 1 of 5</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
                   WHAT'S YOUR NAME?
                 </h2>
-                {accountType === "parent" && (
-                  <p className="text-white/40 text-sm mt-2">
-                    You'll link your athlete's profile from the home screen.
-                  </p>
-                )}
               </div>
               <div className="space-y-3">
                 <input
@@ -933,27 +836,13 @@ export function OnboardingPage() {
                   className="onboarding-input"
                 />
               </div>
-              {submitError && (
-                <p className="text-red-400 text-sm text-center">{submitError}</p>
-              )}
-              {accountType === "parent" ? (
-                <button
-                  onClick={submitParentProfile}
-                  disabled={!form.firstName || !form.lastName || isSubmitting}
-                  className="btn-primary w-full justify-center py-3.5 text-base"
-                >
-                  {isSubmitting ? "Setting up your account…" : "Join as Parent"}
-                  {!isSubmitting && <ArrowRight className="h-5 w-5" />}
-                </button>
-              ) : (
-                <button
-                  onClick={() => { if (form.firstName && form.lastName) setStep("school"); }}
-                  disabled={!form.firstName || !form.lastName}
-                  className="btn-primary w-full justify-center py-3.5 text-base"
-                >
-                  Next <ChevronRight className="h-5 w-5" />
-                </button>
-              )}
+              <button
+                onClick={() => { if (form.firstName && form.lastName) setStep("school"); }}
+                disabled={!form.firstName || !form.lastName}
+                className="btn-primary w-full justify-center py-3.5 text-base"
+              >
+                Next <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
           )}
 

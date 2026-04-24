@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count, and, isNull, ne } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable, gamePlayerStatsTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
@@ -102,7 +102,6 @@ router.get("/profiles", async (_req, res): Promise<void> => {
   const profiles = await db
     .select()
     .from(userProfilesTable)
-    .where(ne(userProfilesTable.role, "parent"))
     .orderBy(userProfilesTable.lastName);
   res.json(serializeRows(profiles));
 });
@@ -195,22 +194,14 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
   const isFirstUser = Number(total) === 0;
   const shouldBeAdmin = protected_ || isFirstUser;
 
-  // Determine role: admin overrides everything; otherwise use requested role or default to "player"
-  const requestedRole = parsed.data.role;
-  const role = shouldBeAdmin ? "admin" : (requestedRole === "parent" ? "parent" : "player");
-
-  // Strip the role field from the insert data (it's handled separately)
-  const { role: _r, ...insertData } = parsed.data;
+  const role = shouldBeAdmin ? "admin" : "player";
 
   const [profile] = await db
     .insert(userProfilesTable)
-    .values({ ...insertData, clerkUserId: userId, isAdmin: shouldBeAdmin, role })
+    .values({ ...parsed.data, clerkUserId: userId, isAdmin: shouldBeAdmin, role })
     .returning();
 
-  // Parents are not players — skip roster sync so they never appear on rosters
-  if (role !== "parent") {
-    await syncPlayerForTeamChange(null, null, null, profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
-  }
+  await syncPlayerForTeamChange(null, null, null, profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
@@ -256,108 +247,6 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
   }
 
   res.json(GetMyProfileResponse.parse(serializeRow(profile)));
-});
-
-// Link or unlink an athlete to a parent account
-router.put("/profiles/me/linked-athlete", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
-
-  const { playerId } = req.body as { playerId: number | null };
-
-  const [profile] = await db
-    .update(userProfilesTable)
-    .set({ linkedPlayerId: playerId ?? null, updatedAt: new Date() })
-    .where(eq(userProfilesTable.clerkUserId, userId))
-    .returning({ linkedPlayerId: userProfilesTable.linkedPlayerId });
-
-  if (!profile) {
-    res.status(404).json({ error: "Profile not found" });
-    return;
-  }
-
-  res.json({ linkedPlayerId: profile.linkedPlayerId });
-});
-
-// Get the full linked athlete data for the signed-in parent
-router.get("/profiles/me/linked-athlete", async (req, res): Promise<void> => {
-  const userId = requireAuth(req, res);
-  if (!userId) return;
-
-  const [myProfile] = await db
-    .select({ linkedPlayerId: userProfilesTable.linkedPlayerId })
-    .from(userProfilesTable)
-    .where(eq(userProfilesTable.clerkUserId, userId));
-
-  if (!myProfile?.linkedPlayerId) {
-    res.json(null);
-    return;
-  }
-
-  const [player] = await db
-    .select()
-    .from(playersTable)
-    .where(eq(playersTable.id, myProfile.linkedPlayerId));
-
-  if (!player) {
-    res.json(null);
-    return;
-  }
-
-  // Aggregate career stats for this player
-  const rows = await db
-    .select()
-    .from(gamePlayerStatsTable)
-    .where(eq(gamePlayerStatsTable.playerId, player.id));
-
-  const gamesPlayed = rows.length;
-  const round1 = (n: number) => Math.round(n * 10) / 10;
-
-  const totalPoints    = rows.reduce((s, r) => s + r.points, 0);
-  const totalRebounds  = rows.reduce((s, r) => s + r.rebounds, 0);
-  const totalAssists   = rows.reduce((s, r) => s + r.assists, 0);
-  const total3m        = rows.reduce((s, r) => s + r.threesMade, 0);
-
-  const stats = {
-    gamesPlayed,
-    totalPoints,
-    totalRebounds,
-    totalAssists,
-    totalThreesMade: total3m,
-    avgPoints:    gamesPlayed ? round1(totalPoints   / gamesPlayed) : 0,
-    avgRebounds:  gamesPlayed ? round1(totalRebounds / gamesPlayed) : 0,
-    avgAssists:   gamesPlayed ? round1(totalAssists  / gamesPlayed) : 0,
-    avgThreesMade: gamesPlayed ? round1(total3m      / gamesPlayed) : 0,
-  };
-
-  // Find the athlete's user profile for stamps / tides / archetype
-  const [athleteProfile] = await db
-    .select({
-      stamps:    userProfilesTable.stamps,
-      tides:     userProfilesTable.tides,
-      archetype: userProfilesTable.archetype,
-      avatarUrl: userProfilesTable.avatarUrl,
-      school:    userProfilesTable.school,
-    })
-    .from(userProfilesTable)
-    .where(
-      and(
-        eq(userProfilesTable.firstName, player.firstName),
-        eq(userProfilesTable.lastName,  player.lastName),
-      )
-    );
-
-  res.json({
-    player: {
-      id:        player.id,
-      firstName: player.firstName,
-      lastName:  player.lastName,
-      number:    player.number,
-      teamId:    player.teamId,
-    },
-    stats,
-    profile: athleteProfile ?? null,
-  });
 });
 
 router.get("/profiles/:clerkUserId", async (req, res): Promise<void> => {

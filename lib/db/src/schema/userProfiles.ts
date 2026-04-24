@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const USER_ROLES = ["admin", "coach", "player", "parent"] as const;
+export const USER_ROLES = ["admin", "coach", "player"] as const;
 export type UserRole = typeof USER_ROLES[number];
 
 export const userProfilesTable = pgTable("user_profiles", {
@@ -23,7 +23,6 @@ export const userProfilesTable = pgTable("user_profiles", {
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
   tides: json("tides").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
   archetype: text("archetype").default("Uncharted"),
-  linkedPlayerId: integer("linked_player_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

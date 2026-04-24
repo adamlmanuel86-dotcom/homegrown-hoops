@@ -43,7 +43,6 @@ export function CustomSignUpPage() {
   const [error, setError] = useState("");
   const [hasSavedState, setHasSavedState] = useState(false);
   const [consented, setConsented] = useState(false);
-  const [accountType, setAccountType] = useState<"" | "player" | "parent">("");
   const [legalModal, setLegalModal] = useState<{ url: string; title: string } | null>(null);
 
   // ── Auto-restore: if Clerk still has a pending verification and we have a
@@ -76,8 +75,6 @@ export function CustomSignUpPage() {
       setError("Still loading — please try again in a moment.");
       return;
     }
-    // Persist account type so onboarding can read it after the email redirect
-    try { localStorage.setItem("hh_account_type", accountType); } catch {}
     setLoading(true);
     setError("");
     try {
@@ -361,49 +358,7 @@ export function CustomSignUpPage() {
                   </span>
                 </label>
 
-                {/* Account type selection */}
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ ...labelStyle, marginBottom: 10 }}>Are you a player or a parent?</p>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {(["player", "parent"] as const).map((type) => {
-                      const selected = accountType === type;
-                      return (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => setAccountType(type)}
-                          style={{
-                            flex: 1,
-                            padding: "14px 12px",
-                            borderRadius: 12,
-                            border: selected
-                              ? "2px solid hsl(22, 78%, 46%)"
-                              : "1px solid hsl(220, 28%, 22%)",
-                            background: selected
-                              ? "hsla(22, 78%, 46%, 0.12)"
-                              : "hsl(220, 28%, 12%)",
-                            color: selected ? "hsl(22, 78%, 70%)" : "hsl(215, 16%, 55%)",
-                            fontSize: 14,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            textAlign: "center",
-                            transition: "all 0.15s ease",
-                            boxSizing: "border-box",
-                            touchAction: "manipulation",
-                            WebkitTapHighlightColor: "transparent",
-                          }}
-                        >
-                          <span style={{ display: "block", fontSize: 20, marginBottom: 4 }}>
-                            {type === "player" ? "🏀" : "👨‍👧"}
-                          </span>
-                          {type === "player" ? "I'm a Player" : "I'm a Parent"}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button type="submit" disabled={loading || !consented || !accountType} style={primaryBtnStyle(loading || !consented || !accountType)}>
+                <button type="submit" disabled={loading || !consented} style={primaryBtnStyle(loading || !consented)}>
                   {loading && <Spinner />}
                   {loading ? "Creating your account…" : "Continue →"}
                 </button>

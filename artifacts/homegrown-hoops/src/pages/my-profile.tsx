@@ -1,17 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
-import {
-  useGetMyProfile,
-  useCreateMyProfile,
-  useUpdateMyProfile,
-  useListTeams,
-  useListPlayers,
-  useGetLinkedAthlete,
-  useLinkMyAthlete,
-} from "@workspace/api-client-react";
+import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X, UserSearch, LinkIcon, Unlink } from "lucide-react";
+import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
@@ -62,16 +54,6 @@ export function MyProfilePage() {
 
   const create = useCreateMyProfile();
   const update = useUpdateMyProfile();
-
-  const isParent = profile?.role === "parent";
-
-  // Athlete linking (parent only)
-  const { data: allPlayers } = useListPlayers();
-  const { data: linkedAthlete, isLoading: loadingLinked } = useGetLinkedAthlete({
-    query: { enabled: isParent },
-  });
-  const linkAthlete = useLinkMyAthlete();
-  const [athleteSearch, setAthleteSearch] = useState("");
 
   const isNew = !isLoading && !profile && (error as { status?: number } | null)?.status === 404;
 
@@ -286,22 +268,17 @@ export function MyProfilePage() {
             </div>
           </div>
           <div className="p-6 space-y-4">
-            {!isParent && profile.school && (
+            {profile.school && (
               <div>
                 <p className="label-upper mb-1">School</p>
                 <p className="font-semibold text-secondary">{profile.school}</p>
               </div>
             )}
-            {!isParent && profile.bio && (
+            {profile.bio && (
               <div>
                 <p className="label-upper mb-1">Bio</p>
                 <p className="text-muted-foreground text-sm leading-relaxed">{profile.bio}</p>
               </div>
-            )}
-            {isParent && (
-              <p className="text-sm text-muted-foreground">
-                Parent account. Use the "My Athlete" section below to link your child's profile.
-              </p>
             )}
             <button onClick={startEditing} className="btn-primary mt-2">
               <Pencil className="h-4 w-4" /> Edit Profile
@@ -394,95 +371,91 @@ export function MyProfilePage() {
             </div>
           </div>
 
-          {!isParent && (
-            <>
-              <div>
-                <label className="label-upper block mb-1.5">School</label>
-                <input
-                  name="school"
-                  value={form.school}
-                  onChange={handleChange}
-                  placeholder="Lincoln High School"
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                />
-              </div>
+          <div>
+            <label className="label-upper block mb-1.5">School</label>
+            <input
+              name="school"
+              value={form.school}
+              onChange={handleChange}
+              placeholder="Lincoln High School"
+              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            />
+          </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="label-upper block mb-1.5">Position</label>
-                  <select
-                    name="position"
-                    value={form.position}
-                    onChange={handleChange}
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
-                  >
-                    <option value="">Select position</option>
-                    {POSITIONS.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label-upper block mb-1.5">Graduation Year</label>
-                  <select
-                    name="graduationYear"
-                    value={form.graduationYear}
-                    onChange={handleChange}
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
-                  >
-                    <option value="">Select year</option>
-                    {GRAD_YEARS.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label-upper block mb-1.5">Jersey #</label>
-                  <input
-                    name="number"
-                    value={form.number}
-                    onChange={handleChange}
-                    placeholder="e.g. 23"
-                    maxLength={3}
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="label-upper block mb-1.5">Position</label>
+              <select
+                name="position"
+                value={form.position}
+                onChange={handleChange}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+              >
+                <option value="">Select position</option>
+                {POSITIONS.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label-upper block mb-1.5">Graduation Year</label>
+              <select
+                name="graduationYear"
+                value={form.graduationYear}
+                onChange={handleChange}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+              >
+                <option value="">Select year</option>
+                {GRAD_YEARS.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label-upper block mb-1.5">Jersey #</label>
+              <input
+                name="number"
+                value={form.number}
+                onChange={handleChange}
+                placeholder="e.g. 23"
+                maxLength={3}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+            </div>
+          </div>
 
-              {/* Team selection */}
-              <div>
-                <label className="label-upper block mb-1.5">Team</label>
-                <select
-                  name="teamId"
-                  value={form.teamId}
-                  onChange={handleChange}
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
-                >
-                  <option value="">No team / select later</option>
-                  {teams?.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} — {t.city}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  Not sure? An admin can assign or correct your team at any time.
-                </p>
-              </div>
+          {/* Team selection */}
+          <div>
+            <label className="label-upper block mb-1.5">Team</label>
+            <select
+              name="teamId"
+              value={form.teamId}
+              onChange={handleChange}
+              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
+            >
+              <option value="">No team / select later</option>
+              {teams?.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} — {t.city}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Not sure? An admin can assign or correct your team at any time.
+            </p>
+          </div>
 
-              <div>
-                <label className="label-upper block mb-1.5">Bio</label>
-                <textarea
-                  name="bio"
-                  value={form.bio}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Tell the league about yourself..."
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label className="label-upper block mb-1.5">Bio</label>
+            <textarea
+              name="bio"
+              value={form.bio}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Tell the league about yourself..."
+              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+            />
+          </div>
 
           <div className="flex gap-3 pt-1">
             <button
@@ -524,96 +497,6 @@ export function MyProfilePage() {
           archetype={profile.archetype}
           showArchetypeLink
         />
-      )}
-
-      {/* ── LINK MY ATHLETE (parent only) ── */}
-      {isParent && !showForm && profile && (
-        <div className="card-base p-6 space-y-5">
-          <div className="flex items-center gap-2">
-            <UserSearch className="h-5 w-5 text-primary" />
-            <h3 className="font-bold text-secondary text-lg">My Athlete</h3>
-          </div>
-
-          {loadingLinked ? (
-            <div className="h-16 rounded-xl bg-muted animate-pulse" />
-          ) : linkedAthlete ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between bg-muted/40 rounded-xl p-4">
-                <div>
-                  <p className="label-upper text-xs mb-0.5">Linked Athlete</p>
-                  <p className="font-bold text-secondary text-lg">
-                    {linkedAthlete.player.firstName} {linkedAthlete.player.lastName}
-                    {linkedAthlete.player.number && (
-                      <span className="text-primary ml-2 text-base font-black">#{linkedAthlete.player.number}</span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={async () => {
-                    await linkAthlete.mutateAsync({ playerId: null });
-                    setAthleteSearch("");
-                  }}
-                  disabled={linkAthlete.isPending}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Unlink className="h-3.5 w-3.5" /> Unlink
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Search for your child's player profile and link it to your account.
-              </p>
-              <input
-                type="text"
-                value={athleteSearch}
-                onChange={(e) => setAthleteSearch(e.target.value)}
-                placeholder="Search by first or last name…"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              />
-              {athleteSearch.length >= 2 && (() => {
-                const q = athleteSearch.toLowerCase();
-                const results = (allPlayers ?? []).filter(
-                  (p) =>
-                    p.firstName.toLowerCase().includes(q) ||
-                    p.lastName.toLowerCase().includes(q)
-                );
-                if (!results.length) {
-                  return (
-                    <p className="text-sm text-muted-foreground text-center py-3">
-                      No players found matching "{athleteSearch}"
-                    </p>
-                  );
-                }
-                return (
-                  <div className="divide-y divide-border border border-border rounded-xl overflow-hidden">
-                    {results.slice(0, 8).map((p) => (
-                      <div key={p.id} className="flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/40 transition-colors">
-                        <div>
-                          <p className="font-semibold text-secondary text-sm">
-                            {p.firstName} {p.lastName}
-                            {p.number && <span className="text-primary font-black ml-1.5">#{p.number}</span>}
-                          </p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            await linkAthlete.mutateAsync({ playerId: p.id });
-                            setAthleteSearch("");
-                          }}
-                          disabled={linkAthlete.isPending}
-                          className="flex items-center gap-1.5 btn-primary text-xs px-3 py-1.5"
-                        >
-                          <LinkIcon className="h-3 w-3" /> Link
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-        </div>
       )}
 
       {/* Account Info */}
@@ -659,13 +542,11 @@ function RoleBadge({ role }: { role: string }) {
     admin: "bg-primary/15 text-primary border border-primary/30",
     coach: "bg-blue-500/15 text-blue-300 border border-blue-500/30",
     player: "bg-white/8 text-foreground/70 border border-white/10",
-    parent: "bg-purple-500/15 text-purple-300 border border-purple-500/30",
   };
   const labels: Record<string, string> = {
     admin: "Admin",
     coach: "Coach",
     player: "Player",
-    parent: "Parent",
   };
   const cls = styles[role] ?? styles.player;
   const label = labels[role] ?? role.charAt(0).toUpperCase() + role.slice(1);

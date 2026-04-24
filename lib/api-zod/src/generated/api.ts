@@ -566,7 +566,7 @@ export const GetMyProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
@@ -582,7 +582,6 @@ export const GetMyProfileResponse = zod.object({
   archetype: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   number: zod.string().nullish(),
-  linkedPlayerId: zod.number().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -600,7 +599,6 @@ export const CreateMyProfileBody = zod.object({
   teamId: zod.number().nullish(),
   avatarUrl: zod.string().nullish(),
   number: zod.string().nullish(),
-  role: zod.enum(["parent", "player"]).optional(),
 });
 
 /**
@@ -797,43 +795,3 @@ export const DeleteGameVideoParams = zod.object({
   id: zod.coerce.number(),
   videoId: zod.coerce.number(),
 });
-
-/**
- * @summary Link or unlink an athlete to a parent profile
- */
-export const LinkMyAthleteBody = zod.object({
-  playerId: zod.number().nullable(),
-});
-
-/**
- * @summary Get the linked athlete data for the signed-in parent
- */
-export const LinkedAthletePlayerStats = zod.object({
-  gamesPlayed: zod.number(),
-  totalPoints: zod.number(),
-  totalRebounds: zod.number(),
-  totalAssists: zod.number(),
-  totalThreesMade: zod.number(),
-  avgPoints: zod.number(),
-  avgRebounds: zod.number(),
-  avgAssists: zod.number(),
-  avgThreesMade: zod.number(),
-});
-
-export const GetLinkedAthleteResponse = zod.object({
-  player: zod.object({
-    id: zod.number(),
-    firstName: zod.string(),
-    lastName: zod.string(),
-    number: zod.string().nullish(),
-    teamId: zod.number().nullish(),
-  }),
-  stats: LinkedAthletePlayerStats,
-  profile: zod.object({
-    stamps: zod.array(zod.object({ id: zod.string(), earnedAt: zod.string() })),
-    tides: zod.array(zod.object({ id: zod.string(), earnedAt: zod.string() })),
-    archetype: zod.string().nullish(),
-    avatarUrl: zod.string().nullish(),
-    school: zod.string().nullish(),
-  }).nullable(),
-}).nullable();
