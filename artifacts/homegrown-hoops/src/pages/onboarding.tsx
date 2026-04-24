@@ -198,9 +198,10 @@ export function OnboardingPage() {
 
   function triggerReveal() {
     setRevealPhase(0);
-    setTimeout(() => setRevealPhase(1), 300);   // text fades in quickly
-    setTimeout(() => setRevealPhase(2), 1400);  // UNCHARTED appears
-    setTimeout(() => setRevealPhase(3), 2600);  // card slides up
+    setTimeout(() => setRevealPhase(1), 600);   // opening text fades in
+    setTimeout(() => setRevealPhase(2), 2200);  // UNCHARTED badge appears
+    setTimeout(() => setRevealPhase(3), 3800);  // card cinematic slide-up
+    setTimeout(() => setRevealPhase(4), 5400);  // CTA buttons fade in
   }
 
   function enterLeague() {
@@ -331,14 +332,14 @@ export function OnboardingPage() {
           position: "relative",
         }}
       >
-        {/* Background glow — fades in with phase 1 */}
+        {/* Background glow — fades in with phase 1, uses team primary color */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "radial-gradient(ellipse at 50% 80%, hsl(22 78% 12% / 0.7), transparent 65%)",
+            background: `radial-gradient(ellipse at 50% 75%, ${teamData?.primaryColor ?? "#F97316"}30, transparent 60%)`,
             opacity: revealPhase >= 1 ? 1 : 0,
-            transition: "opacity 1.6s ease",
+            transition: "opacity 2s ease",
             pointerEvents: "none",
           }}
         />
@@ -353,8 +354,8 @@ export function OnboardingPage() {
             textAlign: "center",
             marginBottom: 20,
             opacity: revealPhase >= 1 ? 1 : 0,
-            transform: revealPhase >= 1 ? "translateY(0)" : "translateY(14px)",
-            transition: "opacity 1s ease, transform 1s ease",
+            transform: revealPhase >= 1 ? "translateY(0)" : "translateY(18px)",
+            transition: "opacity 1.8s ease, transform 1.8s ease",
           }}
         >
           Every player starts the same way.
@@ -368,8 +369,8 @@ export function OnboardingPage() {
             gap: 14,
             marginBottom: 40,
             opacity: revealPhase >= 2 ? 1 : 0,
-            transform: revealPhase >= 2 ? "translateY(0) scale(1)" : "translateY(10px) scale(0.93)",
-            transition: "opacity 1s ease, transform 1s ease",
+            transform: revealPhase >= 2 ? "translateY(0) scale(1)" : "translateY(14px) scale(0.88)",
+            transition: "opacity 1.6s ease, transform 1.6s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <div
@@ -407,8 +408,8 @@ export function OnboardingPage() {
             width: "100%",
             maxWidth: 320,
             opacity: revealPhase >= 3 ? 1 : 0,
-            transform: revealPhase >= 3 ? "translateY(0)" : "translateY(80px)",
-            transition: "opacity 0.9s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+            transform: revealPhase >= 3 ? "translateY(0) scale(1)" : "translateY(110px) scale(0.85)",
+            transition: "opacity 1.4s ease, transform 1.6s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <PlayerCard
@@ -429,8 +430,8 @@ export function OnboardingPage() {
             gap: 20,
             width: "100%",
             maxWidth: 320,
-            opacity: revealPhase >= 3 ? 1 : 0,
-            transition: "opacity 0.9s ease 0.2s",
+            opacity: revealPhase >= 4 ? 1 : 0,
+            transition: "opacity 1.2s ease 0.1s",
           }}
         >
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", lineHeight: 1.6, margin: 0 }}>

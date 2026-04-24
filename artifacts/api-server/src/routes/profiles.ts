@@ -10,7 +10,12 @@ import { isProtectedAdmin } from "../lib/adminGuard";
  * in the `players` table so that the stat entry UI can find them.
  * Matched by first + last name within the same team; creates if missing.
  */
-async function syncPlayerEntry(firstName: string, lastName: string, teamId: number | null | undefined) {
+async function syncPlayerEntry(
+  firstName: string,
+  lastName: string,
+  teamId: number | null | undefined,
+  number?: string | null,
+) {
   if (!teamId || !firstName || !lastName) return;
   const [existing] = await db
     .select({ id: playersTable.id })
@@ -23,7 +28,11 @@ async function syncPlayerEntry(firstName: string, lastName: string, teamId: numb
       )
     );
   if (!existing) {
-    await db.insert(playersTable).values({ firstName, lastName, teamId });
+    await db.insert(playersTable).values({ firstName, lastName, teamId, number: number ?? null });
+  } else if (number !== undefined) {
+    await db.update(playersTable)
+      .set({ number: number ?? null })
+      .where(eq(playersTable.id, existing.id));
   }
 }
 
@@ -140,7 +149,7 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
     .returning();
 
   // Keep players table in sync so stat entry can find this user
-  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined);
+  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
@@ -167,7 +176,7 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
   }
 
   // Keep players table in sync when team changes
-  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined);
+  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
 
   res.json(GetMyProfileResponse.parse(serializeRow(profile)));
 });

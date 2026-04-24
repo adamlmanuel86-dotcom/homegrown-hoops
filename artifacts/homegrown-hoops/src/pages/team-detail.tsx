@@ -1,4 +1,4 @@
-import { useGetTeam, useGetTeamStats, useListPlayers, useListGames } from "@workspace/api-client-react";
+import { useGetTeam, useGetTeamStats, useListPlayers, useListGames, useListTeams } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { Trophy, ChevronLeft, ArrowRight } from "lucide-react";
 
@@ -10,6 +10,7 @@ export function TeamDetailPage() {
   const { data: stats } = useGetTeamStats(teamId, { query: { enabled: !!teamId } });
   const { data: roster, isLoading: loadingRoster } = useListPlayers({ teamId }, { query: { enabled: !!teamId } });
   const { data: games } = useListGames({ teamId }, { query: { enabled: !!teamId } });
+  const { data: allTeams } = useListTeams();
 
   if (loadingTeam) {
     return (
@@ -99,7 +100,7 @@ export function TeamDetailPage() {
                     className="w-10 h-10 rounded-lg flex items-center justify-center font-display text-sm text-white flex-shrink-0"
                     style={{ background: `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#C85A1B"})` }}
                   >
-                    {player.number ?? "#"}
+                    {player.number != null ? `#${player.number}` : "—"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-secondary text-sm">{player.firstName} {player.lastName}</p>
@@ -170,7 +171,7 @@ export function TeamDetailPage() {
                     <div>
                       <p className="label-upper text-[10px]">{game.gameDate}</p>
                       <p className="text-sm font-semibold text-secondary mt-0.5">
-                        {isHome ? "vs" : "@"} #{isHome ? game.awayTeamId : game.homeTeamId}
+                        {isHome ? "vs" : "@"} {allTeams?.find((t) => t.id === (isHome ? game.awayTeamId : game.homeTeamId))?.name ?? `Team #${isHome ? game.awayTeamId : game.homeTeamId}`}
                       </p>
                     </div>
                     {isFinal ? (

@@ -564,6 +564,8 @@ export const GetMyProfileResponse = zod.object({
     }),
   ),
   archetype: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -580,6 +582,7 @@ export const CreateMyProfileBody = zod.object({
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
   avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish(),
 });
 
 /**
@@ -594,6 +597,7 @@ export const UpdateMyProfileBody = zod.object({
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
   avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish(),
 });
 
 export const UpdateMyProfileResponse = zod.object({
@@ -622,6 +626,8 @@ export const UpdateMyProfileResponse = zod.object({
     }),
   ),
   archetype: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -659,6 +665,8 @@ export const GetProfileResponse = zod.object({
     }),
   ),
   archetype: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

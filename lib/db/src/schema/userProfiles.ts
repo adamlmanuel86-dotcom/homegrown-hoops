@@ -17,6 +17,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   teamId: integer("team_id"),
   verified: boolean("verified").notNull().default(false),
   avatarUrl: text("avatar_url"),
+  number: text("number"),
   isAdmin: boolean("is_admin").notNull().default(false),
   role: text("role").notNull().default("player"),
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),

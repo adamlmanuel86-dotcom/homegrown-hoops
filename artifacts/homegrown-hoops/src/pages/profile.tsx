@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { Link, useParams } from "wouter";
 import { useUser } from "@clerk/react";
 import { useGetProfile, useListPlayers, useGetPlayerStats, useListTeams } from "@workspace/api-client-react";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy } from "lucide-react";
@@ -6,8 +6,7 @@ import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 
 export function ProfilePage() {
-  const [, params] = useRoute("/profiles/:clerkUserId");
-  const clerkUserId = params?.clerkUserId ?? "";
+  const { clerkUserId = "" } = useParams<{ clerkUserId: string }>();
   const { user, isSignedIn } = useUser();
 
   const { data: profile, isLoading } = useGetProfile(clerkUserId, {

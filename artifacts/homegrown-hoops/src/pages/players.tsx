@@ -80,25 +80,19 @@ export function PlayersPage() {
                     {profile.firstName} {profile.lastName}
                   </p>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    {profile.position && (
-                      <span className="text-xs font-bold text-primary">
-                        {profile.position}
-                      </span>
-                    )}
-                    {profile.school && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        {profile.school}
-                      </span>
-                    )}
+                    <span className="text-xs font-bold text-primary">
+                      {profile.position ?? "—"}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {profile.school ?? "—"}
+                    </span>
                   </div>
-                  {profile.graduationYear && (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <GraduationCap className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground">
-                        Class of {profile.graduationYear}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <GraduationCap className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground">
+                      {profile.graduationYear ? `Class of ${profile.graduationYear}` : "—"}
+                    </span>
+                  </div>
                 </div>
                 <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </Link>

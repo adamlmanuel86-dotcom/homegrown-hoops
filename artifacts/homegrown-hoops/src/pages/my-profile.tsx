@@ -17,6 +17,7 @@ type FormData = {
   graduationYear: string;
   bio: string;
   teamId: string;
+  number: string;
 };
 
 const empty: FormData = {
@@ -27,6 +28,7 @@ const empty: FormData = {
   graduationYear: "",
   bio: "",
   teamId: "",
+  number: "",
 };
 
 export function MyProfilePage() {
@@ -65,6 +67,7 @@ export function MyProfilePage() {
         graduationYear: profile.graduationYear?.toString() ?? "",
         bio: profile.bio ?? "",
         teamId: profile.teamId?.toString() ?? "",
+        number: profile.number ?? "",
       });
     }
   }, [profile]);
@@ -144,6 +147,7 @@ export function MyProfilePage() {
       graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
       bio: form.bio || null,
       teamId: form.teamId ? parseInt(form.teamId) : null,
+      number: form.number || null,
     };
 
     let photoFailed = false;
@@ -372,7 +376,7 @@ export function MyProfilePage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="label-upper block mb-1.5">Position</label>
               <select
@@ -400,6 +404,17 @@ export function MyProfilePage() {
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="label-upper block mb-1.5">Jersey #</label>
+              <input
+                name="number"
+                value={form.number}
+                onChange={handleChange}
+                placeholder="e.g. 23"
+                maxLength={3}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
             </div>
           </div>
 

@@ -309,6 +309,10 @@ export interface UserProfile {
   tides: RecognitionEntry[];
   /** @nullable */
   archetype?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  number?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -342,6 +346,8 @@ export interface CreateUserProfileBody {
   teamId?: number | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  number?: string | null;
 }
 
 export interface UpdateUserProfileBody {
@@ -359,6 +365,8 @@ export interface UpdateUserProfileBody {
   teamId?: number | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  number?: string | null;
 }
 
 export interface AdminUpdateProfileBody {
