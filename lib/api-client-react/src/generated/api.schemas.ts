@@ -282,6 +282,7 @@ export const UserRole = {
   admin: "admin",
   coach: "coach",
   player: "player",
+  parent: "parent",
 } as const;
 
 export interface RecognitionEntry {
@@ -315,8 +316,42 @@ export interface UserProfile {
   avatarUrl?: string | null;
   /** @nullable */
   number?: string | null;
+  /** @nullable */
+  linkedPlayerId?: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LinkedAthletePlayerStats {
+  gamesPlayed: number;
+  totalPoints: number;
+  totalRebounds: number;
+  totalAssists: number;
+  totalThreesMade: number;
+  avgPoints: number;
+  avgRebounds: number;
+  avgAssists: number;
+  avgThreesMade: number;
+}
+
+export interface LinkedAthleteProfile {
+  stamps: RecognitionEntry[];
+  tides: RecognitionEntry[];
+  archetype?: string | null;
+  avatarUrl?: string | null;
+  school?: string | null;
+}
+
+export interface LinkedAthleteData {
+  player: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    number?: string | null;
+    teamId?: number | null;
+  };
+  stats: LinkedAthletePlayerStats;
+  profile: LinkedAthleteProfile | null;
 }
 
 export interface UpdateUserRoleBody {
@@ -350,6 +385,7 @@ export interface CreateUserProfileBody {
   avatarUrl?: string | null;
   /** @nullable */
   number?: string | null;
+  role?: "parent" | "player";
 }
 
 export interface UpdateUserProfileBody {

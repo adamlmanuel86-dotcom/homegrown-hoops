@@ -1,7 +1,13 @@
-import { useGetStatsSummary, useGetStatLeaders, useListTeams } from "@workspace/api-client-react";
+import {
+  useGetStatsSummary,
+  useGetStatLeaders,
+  useListTeams,
+  useGetMyProfile,
+  useGetLinkedAthlete,
+} from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
-import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, Crosshair } from "lucide-react";
+import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, Crosshair, UserSearch, Star } from "lucide-react";
 
 function CourtTexture() {
   return (
@@ -85,7 +91,14 @@ export function Home() {
   const { data: summary, isLoading: loadingSummary } = useGetStatsSummary();
   const { data: leaders, isLoading: loadingLeaders } = useGetStatLeaders();
   const { data: teams } = useListTeams();
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
+
+  const { data: myProfile } = useGetMyProfile({ query: { enabled: isSignedIn === true } });
+  const isParent = myProfile?.role === "parent";
+
+  const { data: linkedAthlete, isLoading: loadingAthlete } = useGetLinkedAthlete({
+    query: { enabled: isParent },
+  });
 
   const teamById = (id: number) =>
     teams?.find((t) => t.id === id)?.name ?? `Team #${id}`;
@@ -130,6 +143,91 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── MY ATHLETE (parent accounts only) ── */}
+      {isParent && (
+        <>
+          <SectionBreak />
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="h-5 w-5 text-primary" />
+              <h2 className="font-bold text-lg text-secondary">My Athlete</h2>
+            </div>
+
+            {loadingAthlete ? (
+              <div className="card-base p-8 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : linkedAthlete ? (
+              <div className="card-base overflow-hidden">
+                <div className="bg-secondary px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="label-upper text-xs text-white/50 mb-0.5">Athlete</p>
+                    <p className="font-display text-2xl text-white uppercase">
+                      {linkedAthlete.player.firstName} {linkedAthlete.player.lastName}
+                    </p>
+                    {linkedAthlete.player.number && (
+                      <p className="text-primary font-bold text-sm">#{linkedAthlete.player.number}</p>
+                    )}
+                  </div>
+                  {linkedAthlete.player.teamId && (
+                    <p className="text-white/40 text-sm font-semibold">
+                      {teams?.find((t) => t.id === linkedAthlete.player.teamId)?.name ?? `Team #${linkedAthlete.player.teamId}`}
+                    </p>
+                  )}
+                </div>
+                <div className="p-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    {[
+                      { label: "PPG", value: linkedAthlete.stats.avgPoints.toFixed(1) },
+                      { label: "RPG", value: linkedAthlete.stats.avgRebounds.toFixed(1) },
+                      { label: "APG", value: linkedAthlete.stats.avgAssists.toFixed(1) },
+                      { label: "3PG", value: linkedAthlete.stats.avgThreesMade.toFixed(1) },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-muted/40 rounded-xl p-3 text-center">
+                        <p className="font-display text-2xl text-primary leading-none">{value}</p>
+                        <p className="label-upper text-xs mt-1">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {linkedAthlete.stats.gamesPlayed} game{linkedAthlete.stats.gamesPlayed !== 1 ? "s" : ""} played this season
+                  </p>
+                  <div className="mt-4 flex gap-2">
+                    <Link
+                      href={`/players/${linkedAthlete.player.id}`}
+                      className="btn-primary text-sm px-4 py-2"
+                    >
+                      Full Stats <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                    <Link
+                      href={`/my-profile`}
+                      className="bg-white/10 hover:bg-white/15 text-white rounded-lg px-4 py-2 font-bold text-sm transition-colors inline-flex items-center gap-1.5"
+                    >
+                      Change Athlete
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="card-base p-8 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <UserSearch className="h-7 w-7 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-secondary text-lg">No Athlete Linked</p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Link your child's profile to follow their stats and highlights.
+                  </p>
+                </div>
+                <Link href="/my-profile" className="btn-primary inline-flex text-sm px-5 py-2.5">
+                  Link My Athlete <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
+          </section>
+        </>
+      )}
 
       <SectionBreak />
 
