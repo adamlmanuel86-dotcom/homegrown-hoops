@@ -5,6 +5,7 @@ import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ServerStatusBanner } from "@/components/server-status";
 import { Layout } from "@/components/layout";
 import { Home } from "@/pages/home";
 import { TeamsPage } from "@/pages/teams";
@@ -268,6 +269,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
         <Router />
+        <ServerStatusBanner />
       </QueryClientProvider>
     </ClerkProvider>
   );
