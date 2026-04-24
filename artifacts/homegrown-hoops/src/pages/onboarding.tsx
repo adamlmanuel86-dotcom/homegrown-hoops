@@ -20,13 +20,22 @@ type Step =
   | "name"
   | "school"
   | "position"
+  | "number"
   | "year"
   | "photo"
   | "submitting"
   | "reveal"
   | "walkthrough";
 
-const PROFILE_STEPS: Step[] = ["name", "school", "position", "year", "photo"];
+const PROFILE_STEPS: Step[] = ["name", "school", "position", "number", "year", "photo"];
+
+const POSITION_LABELS: Record<string, string> = {
+  PG: "POINT GUARD",
+  SG: "SHOOTING GUARD",
+  SF: "SMALL FORWARD",
+  PF: "POWER FORWARD",
+  C: "CENTER",
+};
 
 function stepIndex(step: Step): number {
   return PROFILE_STEPS.indexOf(step);
@@ -55,6 +64,7 @@ export function OnboardingPage() {
     school: "",
     teamId: "",
     position: "",
+    jerseyNumber: "",
     graduationYear: "",
     avatarUrl: "",
   });
@@ -68,6 +78,7 @@ export function OnboardingPage() {
   // Reveal animation phases
   const [revealPhase, setRevealPhase] = useState(0);
   const [showColorWash, setShowColorWash] = useState(false);
+  const [introPhase, setIntroPhase] = useState(0); // 0=hidden 1=team 2=pos+num 3=name 4=fade-out
   // Prevents redirect-on-profile-load from firing right after we just created
   // the profile (must be declared before the useEffect that references it)
   const [justCreated, setJustCreated] = useState(false);
@@ -181,6 +192,7 @@ export function OnboardingPage() {
           position: form.position || null,
           graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
           avatarUrl: finalAvatarUrl || null,
+          number: form.jerseyNumber || null,
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -200,11 +212,15 @@ export function OnboardingPage() {
   function triggerReveal() {
     setRevealPhase(0);
     setShowColorWash(false);
-    setTimeout(() => setRevealPhase(1), 600);   // opening text fades in
-    setTimeout(() => setRevealPhase(2), 2200);  // UNCHARTED badge appears
-    setTimeout(() => setShowColorWash(true), 2900); // color wash sweeps across
-    setTimeout(() => setRevealPhase(3), 3800);  // card cinematic slide-up
-    setTimeout(() => setRevealPhase(4), 5400);  // CTA buttons fade in
+    setIntroPhase(0);
+    setTimeout(() => setRevealPhase(1), 600);        // "Every player starts the same way"
+    setTimeout(() => setRevealPhase(2), 2200);       // UNCHARTED badge
+    setTimeout(() => setShowColorWash(true), 2900);  // team color wash sweeps across
+    setTimeout(() => setIntroPhase(1), 4000);        // lineup intro: team name
+    setTimeout(() => setIntroPhase(2), 5000);        // lineup intro: position + jersey
+    setTimeout(() => setIntroPhase(3), 6000);        // lineup intro: full name (the big moment)
+    setTimeout(() => { setIntroPhase(4); setRevealPhase(3); }, 8100); // intro out + card in
+    setTimeout(() => setRevealPhase(4), 9700);       // CTA buttons
   }
 
   function enterLeague() {
@@ -318,6 +334,7 @@ export function OnboardingPage() {
       avatarUrl: form.avatarUrl || null,
       stamps: [] as { id: string; earnedAt: string }[],
       tides: [] as { id: string; earnedAt: string }[],
+      number: form.jerseyNumber || null,
     };
     const teamData = teams?.find((t) => t.id.toString() === form.teamId);
 
@@ -356,6 +373,25 @@ export function OnboardingPage() {
             72%  { transform: translateX(15%) skewX(0deg); opacity: 0.7; }
             100% { transform: translateX(130%) skewX(4deg); opacity: 0; }
           }
+          @keyframes hghTeamSlide {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes hghInfoSlide {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes hghNameBoom {
+            0%   { opacity: 0; transform: scale(1.18) translateY(-16px); filter: blur(8px); }
+            45%  { opacity: 1; filter: blur(0px); }
+            68%  { transform: scale(0.97) translateY(5px); }
+            84%  { transform: scale(1.02) translateY(-2px); }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+          }
+          @keyframes hghSpotPulse {
+            0%, 100% { opacity: 0.55; transform: scale(1); }
+            50%      { opacity: 0.85; transform: scale(1.08); }
+          }
         `}</style>
         {showColorWash && (
           <div
@@ -381,6 +417,165 @@ export function OnboardingPage() {
                 animation: "hghColorWash 1.9s cubic-bezier(0.4, 0, 0.2, 1) forwards",
               }}
             />
+          </div>
+        )}
+
+        {/* ── LINEUP INTRO OVERLAY ── */}
+        {introPhase >= 1 && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 15,
+              pointerEvents: "none",
+              background: "rgba(10, 16, 28, 0.97)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0,
+              padding: "0 24px",
+              opacity: introPhase >= 4 ? 0 : 1,
+              transition: introPhase >= 4 ? "opacity 1s ease" : "none",
+            }}
+          >
+            {/* Top rule */}
+            <div style={{
+              width: 48,
+              height: 2,
+              background: teamData?.primaryColor ?? "#F97316",
+              marginBottom: 28,
+              opacity: 0.7,
+            }} />
+
+            {/* Team name */}
+            <div style={{
+              textAlign: "center",
+              animation: "hghTeamSlide 0.7s cubic-bezier(0.16,1,0.3,1) forwards",
+              marginBottom: 20,
+            }}>
+              <p style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.35)",
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                marginBottom: 8,
+                fontFamily: "inherit",
+              }}>
+                Now entering the court
+              </p>
+              <p style={{
+                fontFamily: "'Barlow Condensed', Impact, sans-serif",
+                fontSize: 24,
+                fontWeight: 700,
+                color: teamData?.primaryColor ?? "#F97316",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+              }}>
+                {teamData?.name ?? "Homegrown Hoops"}
+              </p>
+            </div>
+
+            {/* Position + jersey number */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 20,
+              marginBottom: 36,
+              opacity: introPhase >= 2 ? 1 : 0,
+              transform: introPhase >= 2 ? "translateY(0)" : "translateY(14px)",
+              transition: "opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s",
+            }}>
+              {form.position && (
+                <span style={{
+                  fontFamily: "'Barlow Condensed', Impact, sans-serif",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.45)",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}>
+                  {POSITION_LABELS[form.position] ?? form.position}
+                </span>
+              )}
+              {form.position && form.jerseyNumber && (
+                <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 14 }}>·</span>
+              )}
+              {form.jerseyNumber && (
+                <span style={{
+                  fontFamily: "'Barlow Condensed', Impact, sans-serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: teamData?.primaryColor ?? "#F97316",
+                  letterSpacing: "0.06em",
+                }}>
+                  #{form.jerseyNumber}
+                </span>
+              )}
+            </div>
+
+            {/* Full name — the big moment */}
+            <div style={{ position: "relative", textAlign: "center" }}>
+              {/* Spotlight glow */}
+              {introPhase >= 3 && (
+                <div style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "140%",
+                  height: "200%",
+                  background: `radial-gradient(ellipse at center, ${teamData?.primaryColor ?? "#F97316"}35 0%, transparent 65%)`,
+                  filter: "blur(28px)",
+                  zIndex: -1,
+                  animation: "hghSpotPulse 2.4s ease-in-out infinite",
+                }} />
+              )}
+              <p style={{
+                fontFamily: "'Barlow Condensed', Impact, sans-serif",
+                fontSize: "clamp(58px, 15vw, 100px)",
+                fontWeight: 900,
+                color: "#FFFFFF",
+                textTransform: "uppercase",
+                letterSpacing: "0.02em",
+                lineHeight: 0.88,
+                margin: 0,
+                textShadow: introPhase >= 3
+                  ? `0 0 40px rgba(255,255,255,0.25), 0 0 80px ${teamData?.primaryColor ?? "#F97316"}30`
+                  : "none",
+                opacity: introPhase >= 3 ? 1 : 0,
+                animation: introPhase >= 3 ? "hghNameBoom 0.75s cubic-bezier(0.16,1,0.3,1) forwards" : "none",
+              }}>
+                {form.firstName.toUpperCase()}
+              </p>
+              <p style={{
+                fontFamily: "'Barlow Condensed', Impact, sans-serif",
+                fontSize: "clamp(58px, 15vw, 100px)",
+                fontWeight: 900,
+                color: "#FFFFFF",
+                textTransform: "uppercase",
+                letterSpacing: "0.02em",
+                lineHeight: 0.88,
+                margin: "0.05em 0 0",
+                textShadow: introPhase >= 3
+                  ? `0 0 40px rgba(255,255,255,0.25), 0 0 80px ${teamData?.primaryColor ?? "#F97316"}30`
+                  : "none",
+                opacity: introPhase >= 3 ? 1 : 0,
+                animation: introPhase >= 3 ? "hghNameBoom 0.75s 0.12s cubic-bezier(0.16,1,0.3,1) forwards" : "none",
+              }}>
+                {form.lastName.toUpperCase()}
+              </p>
+            </div>
+
+            {/* Bottom rule */}
+            <div style={{
+              width: 48,
+              height: 2,
+              background: teamData?.primaryColor ?? "#F97316",
+              marginTop: 28,
+              opacity: 0.7,
+            }} />
           </div>
         )}
 
@@ -707,7 +902,7 @@ export function OnboardingPage() {
           {step === "position" && (
             <div className="space-y-6">
               <div>
-                <p className="label-upper text-xs text-primary mb-2">Step 3 of 5</p>
+                <p className="label-upper text-xs text-primary mb-2">Step 3 of 6</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
                   WHAT POSITION DO YOU PLAY?
                 </h2>
@@ -735,10 +930,56 @@ export function OnboardingPage() {
                   Back
                 </button>
                 <button
-                  onClick={() => setStep("year")}
+                  onClick={() => setStep("number")}
                   className="flex-[2] btn-primary justify-center py-3.5 text-base"
                 >
                   Next <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── JERSEY NUMBER ── */}
+          {step === "number" && (
+            <div className="space-y-6">
+              <div>
+                <p className="label-upper text-xs text-primary mb-2">Step 4 of 6</p>
+                <h2 className="font-display text-4xl text-white leading-tight">
+                  JERSEY NUMBER
+                </h2>
+                <p className="text-white/40 text-sm mt-2 font-medium">Optional — skip if you don't have one yet.</p>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
+                  placeholder="e.g. 23"
+                  value={form.jerseyNumber}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    setForm((f) => ({ ...f, jerseyNumber: val }));
+                  }}
+                  className="w-full bg-transparent border border-white/15 rounded-xl px-5 py-5 text-white text-center font-display text-5xl placeholder:text-white/20 focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all tracking-wider"
+                />
+                {form.jerseyNumber && (
+                  <p className="text-center text-white/40 text-sm mt-3 font-medium">
+                    #{form.jerseyNumber}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep("position")}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setStep("year")}
+                  className="flex-[2] btn-primary justify-center py-3.5 text-base"
+                >
+                  {form.jerseyNumber ? "Next" : "Skip"} <ChevronRight className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -748,7 +989,7 @@ export function OnboardingPage() {
           {step === "year" && (
             <div className="space-y-6">
               <div>
-                <p className="label-upper text-xs text-primary mb-2">Step 4 of 5</p>
+                <p className="label-upper text-xs text-primary mb-2">Step 5 of 6</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
                   WHAT YEAR DO YOU GRADUATE?
                 </h2>
@@ -770,7 +1011,7 @@ export function OnboardingPage() {
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep("position")}
+                  onClick={() => setStep("number")}
                   className="flex-1 py-3 rounded-xl text-sm font-semibold border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-colors"
                 >
                   Back
@@ -789,7 +1030,7 @@ export function OnboardingPage() {
           {step === "photo" && (
             <div className="space-y-6">
               <div>
-                <p className="label-upper text-xs text-primary mb-2">Step 5 of 5</p>
+                <p className="label-upper text-xs text-primary mb-2">Step 6 of 6</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
                   ADD A PHOTO
                 </h2>
