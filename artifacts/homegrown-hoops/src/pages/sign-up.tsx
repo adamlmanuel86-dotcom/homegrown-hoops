@@ -43,6 +43,7 @@ export function CustomSignUpPage() {
   const [error, setError] = useState("");
   const [hasSavedState, setHasSavedState] = useState(false);
   const [consented, setConsented] = useState(false);
+  const [legalModal, setLegalModal] = useState<{ url: string; title: string } | null>(null);
 
   // ── Auto-restore: if Clerk still has a pending verification and we have a
   //    saved email in localStorage, jump straight to the code entry screen.
@@ -330,35 +331,29 @@ export function CustomSignUpPage() {
                     color: "hsl(215, 16%, 62%)",
                   }}>
                     I confirm that I am 18 or older, OR that I am a parent or guardian consenting on behalf of a minor player. I have read and agree to the{" "}
-                    <a
-                      href={`${basePath}/terms`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline" }}
-                      onClick={(e) => e.stopPropagation()}
+                    <button
+                      type="button"
+                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "inherit" }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLegalModal({ url: `${basePath}/terms`, title: "Terms of Service" }); }}
                     >
                       Terms of Service
-                    </a>
+                    </button>
                     ,{" "}
-                    <a
-                      href={`${basePath}/privacy`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline" }}
-                      onClick={(e) => e.stopPropagation()}
+                    <button
+                      type="button"
+                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "inherit" }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLegalModal({ url: `${basePath}/privacy`, title: "Privacy Policy" }); }}
                     >
                       Privacy Policy
-                    </a>{" "}
+                    </button>{" "}
                     and{" "}
-                    <a
-                      href={`${basePath}/terms#video-consent`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline" }}
-                      onClick={(e) => e.stopPropagation()}
+                    <button
+                      type="button"
+                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "inherit" }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLegalModal({ url: `${basePath}/terms#video-consent`, title: "Video and Image Consent" }); }}
                     >
                       Video and Image Consent
-                    </a>
+                    </button>
                     . I understand that player profiles and game footage are visible to registered users of the platform.
                   </span>
                 </label>
@@ -585,6 +580,112 @@ export function CustomSignUpPage() {
           )}
         </div>
       </div>
+
+      {/* ── Legal modal overlay ───────────────────────────────────────────── */}
+      {legalModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.75)",
+          }}
+          onClick={() => setLegalModal(null)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              height: "90dvh",
+              background: "hsl(222, 42%, 7%)",
+              borderRadius: "16px 16px 0 0",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 20px",
+                borderBottom: "1px solid hsl(220, 28%, 17%)",
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontFamily: "'Anton', sans-serif", fontSize: 16, letterSpacing: "0.06em", textTransform: "uppercase", color: "hsl(22, 78%, 62%)" }}>
+                {legalModal.title}
+              </span>
+              <button
+                onClick={() => setLegalModal(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "hsl(215, 16%, 62%)",
+                  cursor: "pointer",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  padding: "4px 8px",
+                  borderRadius: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scrollable iframe */}
+            <iframe
+              src={legalModal.url}
+              style={{
+                flex: 1,
+                border: "none",
+                width: "100%",
+                background: "hsl(222, 42%, 7%)",
+              }}
+              title={legalModal.title}
+            />
+
+            {/* Done button */}
+            <div
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid hsl(220, 28%, 17%)",
+                flexShrink: 0,
+              }}
+            >
+              <button
+                onClick={() => setLegalModal(null)}
+                style={{
+                  width: "100%",
+                  padding: "13px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "hsl(22, 78%, 46%)",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  cursor: "pointer",
+                }}
+              >
+                Done — Back to Sign Up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
