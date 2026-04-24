@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import {
   db,
   gamePlayerStatsTable,
@@ -369,6 +369,192 @@ export async function recalculateArchetypesForTeam(
         .where(eq(userProfilesTable.id, profile.id));
     }
   }
+}
+
+// ─── Team-scoped tide calculation ─────────────────────────────────────────────
+
+export type TideWinner = {
+  tideId: string;
+  tideLabel: string;
+  playerName: string;
+};
+
+const TIDE_LABELS: Record<string, string> = {
+  high_tide:   "High Tide",
+  the_keeper:  "The Keeper",
+  the_source:  "The Source",
+  the_swell:   "The Swell",
+  lighthouse:  "Lighthouse",
+  rising_tide: "Rising Tide",
+  shoreline:   "Shoreline",
+  the_crest:   "The Crest",
+};
+
+async function getTeamCurrentSeason(teamId: number): Promise<string | null> {
+  const rows = await db
+    .select({ season: gamesTable.season })
+    .from(gamesTable)
+    .where(or(eq(gamesTable.homeTeamId, teamId), eq(gamesTable.awayTeamId, teamId)));
+  if (rows.length === 0) return null;
+  return rows.reduce((best, r) => (r.season > best.season ? r : best)).season;
+}
+
+async function computeTeamTideWinners(teamId: number, season: string): Promise<TideWinner[]> {
+  const allPlayerStats = await getSeasonPlayerStats(season);
+  const teamStats = allPlayerStats.filter((p) => p.teamId === teamId);
+  if (teamStats.length === 0) return [];
+
+  const metrics = teamStats.map((p) => {
+    const pts   = p.games.map((g) => g.points);
+    const reb   = p.games.map((g) => g.rebounds);
+    const ast   = p.games.map((g) => g.assists);
+    const dates = p.games.map((g) => g.gameDate);
+    return {
+      firstName:         p.firstName,
+      lastName:          p.lastName,
+      totalPoints:       pts.reduce((s, n) => s + n, 0),
+      totalRebounds:     reb.reduce((s, n) => s + n, 0),
+      totalAssists:      ast.reduce((s, n) => s + n, 0),
+      highestGamePoints: pts.length ? Math.max(...pts) : 0,
+      stdDevPoints:      stdDev(pts),
+      improvement:       halfImprovement(dates, pts),
+      composite:         mean(pts) + mean(reb) + mean(ast),
+      gamesPlayed:       p.games.length,
+    };
+  });
+
+  type M = (typeof metrics)[0];
+  function topOf(key: (m: M) => number): M {
+    return metrics.reduce((best, m) => (key(m) > key(best) ? m : best));
+  }
+
+  const winnerPairs: Array<[string, M]> = [
+    ["high_tide",   topOf((m) => m.totalPoints)],
+    ["the_keeper",  topOf((m) => m.totalRebounds)],
+    ["the_source",  topOf((m) => m.totalAssists)],
+    ["the_swell",   topOf((m) => m.highestGamePoints)],
+    ["lighthouse",  topOf((m) => -m.stdDevPoints)],
+    ["rising_tide", topOf((m) => m.improvement)],
+    ["shoreline",   topOf((m) => m.gamesPlayed)],
+    ["the_crest",   topOf((m) => m.composite)],
+  ];
+
+  return winnerPairs.map(([tideId, w]) => ({
+    tideId,
+    tideLabel: TIDE_LABELS[tideId] ?? tideId,
+    playerName: `${w.firstName} ${w.lastName}`,
+  }));
+}
+
+export async function previewTeamTides(
+  teamId: number,
+  season?: string
+): Promise<{ season: string; winners: TideWinner[] }> {
+  const resolvedSeason = season ?? (await getTeamCurrentSeason(teamId));
+  if (!resolvedSeason) return { season: "", winners: [] };
+  const winners = await computeTeamTideWinners(teamId, resolvedSeason);
+  return { season: resolvedSeason, winners };
+}
+
+export async function applyTeamTides(
+  teamId: number,
+  season?: string
+): Promise<{ season: string; winners: TideWinner[] }> {
+  const resolvedSeason = season ?? (await getTeamCurrentSeason(teamId));
+  if (!resolvedSeason) return { season: "", winners: [] };
+
+  const winners = await computeTeamTideWinners(teamId, resolvedSeason);
+  const today = new Date().toISOString().split("T")[0];
+
+  const tidesByName = new Map<string, string[]>();
+  for (const { tideId, playerName } of winners) {
+    if (!tidesByName.has(playerName)) tidesByName.set(playerName, []);
+    tidesByName.get(playerName)!.push(tideId);
+  }
+
+  const teamProfiles = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.teamId, teamId));
+
+  for (const profile of teamProfiles) {
+    const name = `${profile.firstName} ${profile.lastName}`;
+    const wonTideIds = tidesByName.get(name) ?? [];
+    const existing = (profile.tides ?? []) as RecEntry[];
+    const kept = existing.filter((t) => !AUTO_TIDE_IDS.includes(t.id as AutoTideId));
+    const gained: RecEntry[] = wonTideIds.map((id) => ({ id, earnedAt: today }));
+    const newTides = [...kept, ...gained];
+    const changed = JSON.stringify(newTides) !== JSON.stringify(existing);
+    if (changed) {
+      await db
+        .update(userProfilesTable)
+        .set({ tides: newTides, updatedAt: new Date() })
+        .where(eq(userProfilesTable.id, profile.id));
+    }
+  }
+
+  return { season: resolvedSeason, winners };
+}
+
+export async function resetTeamSeason(
+  teamId: number,
+  season?: string
+): Promise<{ season: string; playersReset: number; statsDeleted: number }> {
+  const resolvedSeason = season ?? (await getTeamCurrentSeason(teamId));
+  if (!resolvedSeason) return { season: "", playersReset: 0, statsDeleted: 0 };
+
+  const teamProfiles = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.teamId, teamId));
+
+  let playersReset = 0;
+  for (const profile of teamProfiles) {
+    const existing = (profile.tides ?? []) as RecEntry[];
+    if (existing.length > 0) {
+      await db
+        .update(userProfilesTable)
+        .set({ tides: [], updatedAt: new Date() })
+        .where(eq(userProfilesTable.id, profile.id));
+      playersReset++;
+    }
+  }
+
+  const teamPlayers = await db
+    .select({ id: gamePlayerStatsTable.id, gameId: gamePlayerStatsTable.gameId, playerId: gamePlayerStatsTable.playerId })
+    .from(gamePlayerStatsTable)
+    .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
+    .innerJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
+    .where(
+      and(
+        eq(playersTable.teamId, teamId),
+        eq(gamesTable.season, resolvedSeason)
+      )
+    );
+
+  let statsDeleted = 0;
+  for (const row of teamPlayers) {
+    await db
+      .delete(gamePlayerStatsTable)
+      .where(
+        and(
+          eq(gamePlayerStatsTable.gameId, row.gameId),
+          eq(gamePlayerStatsTable.playerId, row.playerId)
+        )
+      );
+    statsDeleted++;
+  }
+
+  const playerRows = await db
+    .select({ id: playersTable.id })
+    .from(playersTable)
+    .where(eq(playersTable.teamId, teamId));
+
+  for (const player of playerRows) {
+    await recalculateStampsForPlayer(player.id);
+  }
+
+  return { season: resolvedSeason, playersReset, statsDeleted };
 }
 
 // ─── 4. Full recognition run (stamps + archetypes only — tides are season-end admin action) ─────

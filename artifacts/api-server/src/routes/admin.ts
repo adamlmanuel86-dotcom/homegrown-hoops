@@ -4,7 +4,7 @@ import { getAuth } from "@clerk/express";
 import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
-import { recalculateTides } from "../recognition";
+import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason } from "../recognition";
 
 const router: IRouter = Router();
 
@@ -222,6 +222,48 @@ router.get("/admin/profiles-tides", async (req, res): Promise<void> => {
     .orderBy(userProfilesTable.firstName);
 
   res.json(serializeRows(profiles));
+});
+
+// ─── Team end-of-season: preview (dry-run, no saves) ─────────────────────────
+// GET /admin/teams/:teamId/season-tides/preview?season=X
+router.get("/admin/teams/:teamId/season-tides/preview", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const teamId = parseInt(req.params.teamId);
+  if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
+
+  const season = req.query.season as string | undefined;
+  const result = await previewTeamTides(teamId, season);
+  res.json(result);
+});
+
+// ─── Team end-of-season: apply tides ─────────────────────────────────────────
+// POST /admin/teams/:teamId/season-tides   body: { season?: string }
+router.post("/admin/teams/:teamId/season-tides", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const teamId = parseInt(req.params.teamId);
+  if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
+
+  const { season } = req.body as { season?: string };
+  const result = await applyTeamTides(teamId, season);
+  res.json({ success: true, ...result });
+});
+
+// ─── Team new-season reset ────────────────────────────────────────────────────
+// POST /admin/teams/:teamId/new-season-reset   body: { season?: string }
+router.post("/admin/teams/:teamId/new-season-reset", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const teamId = parseInt(req.params.teamId);
+  if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
+
+  const { season } = req.body as { season?: string };
+  const result = await resetTeamSeason(teamId, season);
+  res.json({ success: true, ...result });
 });
 
 // ─── One-time / on-demand roster cleanup ─────────────────────────────────────
