@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and } from "drizzle-orm";
+import { eq, count, and, isNull } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
@@ -272,6 +272,34 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   if (!deleted) {
     res.status(404).json({ error: "Profile not found" });
     return;
+  }
+
+  // Remove the matching player entry (and cascade-delete all their game stats).
+  // Match on name + team — the same key used by syncPlayerEntry — so we remove
+  // exactly the players row that was auto-created for this profile.
+  // If teamId is null the player was never assigned a team and no player row exists.
+  if (deleted.teamId) {
+    await db
+      .delete(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, deleted.firstName),
+          eq(playersTable.lastName, deleted.lastName),
+          eq(playersTable.teamId, deleted.teamId)
+        )
+      );
+  } else {
+    // No team: still try to clean up any orphan player rows with this name
+    // that have a null teamId (edge case where player was synced without a team).
+    await db
+      .delete(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, deleted.firstName),
+          eq(playersTable.lastName, deleted.lastName),
+          isNull(playersTable.teamId)
+        )
+      );
   }
 
   res.status(204).send();
