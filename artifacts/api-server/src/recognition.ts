@@ -440,42 +440,62 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
 
   type M = (typeof metrics)[0];
 
-  // Single winner: highest by primary key; tie-break by secondary key (higher = better)
-  function topOf(primary: (m: M) => number, secondary?: (m: M) => number): M {
-    return metrics.reduce((best, m) => {
-      const diff = primary(m) - primary(best);
-      if (diff > 1e-10) return m;
-      if (secondary && Math.abs(diff) <= 1e-10 && secondary(m) > secondary(best)) return m;
-      return best;
-    });
+  // Returns ALL players who share the best value on the primary metric.
+  // If a secondary tie-breaker is provided, it is applied first; players still
+  // mathematically tied after the secondary metric all receive the tide.
+  function topAll(primary: (m: M) => number, secondary?: (m: M) => number): M[] {
+    if (metrics.length === 0) return [];
+
+    let pool = metrics;
+
+    // Apply secondary first if provided (narrows the pool before primary check)
+    if (secondary) {
+      const bestSecondary = Math.max(...pool.map(secondary));
+      const afterSecondary = pool.filter((m) => Math.abs(secondary(m) - bestSecondary) <= 1e-10);
+      // Only narrow the pool when the secondary actually differentiates
+      if (afterSecondary.length < pool.length) pool = afterSecondary;
+    }
+
+    const bestPrimary = Math.max(...pool.map(primary));
+    return pool.filter((m) => Math.abs(primary(m) - bestPrimary) <= 1e-10);
   }
 
   const results: TideWinner[] = [];
 
-  // Standard single-winner tides
-  const singleWinners: Array<[string, M]> = [
-    ["high_tide",   topOf((m) => m.totalPoints)],
-    ["the_keeper",  topOf((m) => m.totalRebounds)],
-    ["the_source",  topOf((m) => m.totalAssists)],
-    ["the_swell",   topOf((m) => m.highestGamePoints)],
-    // Lighthouse: lowest stddev, tie-break by lowest maxDeviation (lower max-dev = better = higher negated)
-    ["lighthouse",  topOf((m) => -m.stdDevPoints, (m) => -m.maxDeviationPts)],
-    ["rising_tide", topOf((m) => m.improvement)],
-    ["the_crest",   topOf((m) => m.composite)],
+  // All tides that award to the single best player (or all who are genuinely tied)
+  const tidesSpec: Array<{
+    tideId: string;
+    primary: (m: M) => number;
+    secondary?: (m: M) => number;
+  }> = [
+    { tideId: "high_tide",   primary: (m) => m.totalPoints },
+    { tideId: "the_keeper",  primary: (m) => m.totalRebounds },
+    { tideId: "the_source",  primary: (m) => m.totalAssists },
+    { tideId: "the_swell",   primary: (m) => m.highestGamePoints },
+    // Lighthouse: lowest stddev; tie-break by lowest max single-game deviation
+    {
+      tideId: "lighthouse",
+      primary:   (m) => -m.stdDevPoints,
+      secondary: (m) => -m.maxDeviationPts,
+    },
+    { tideId: "rising_tide", primary: (m) => m.improvement },
+    { tideId: "the_crest",   primary: (m) => m.composite },
   ];
 
-  for (const [tideId, w] of singleWinners) {
-    results.push({
-      tideId,
-      tideLabel: TIDE_LABELS[tideId] ?? tideId,
-      playerName: `${w.firstName} ${w.lastName}`,
-    });
+  for (const { tideId, primary, secondary } of tidesSpec) {
+    for (const w of topAll(primary, secondary)) {
+      results.push({
+        tideId,
+        tideLabel: TIDE_LABELS[tideId] ?? tideId,
+        playerName: `${w.firstName} ${w.lastName}`,
+      });
+    }
   }
 
-  // Shoreline: ALL players who have a stat entry in every team game this season
+  // Shoreline: ALL players who appeared in every team game this season
   const shorelineWinners = totalTeamGames > 0
     ? metrics.filter((m) => m.gamesPlayed >= totalTeamGames)
-    : [topOf((m) => m.gamesPlayed)]; // fallback if we can't count games
+    : topAll((m) => m.gamesPlayed); // fallback: all who played the most
 
   for (const w of shorelineWinners) {
     results.push({
