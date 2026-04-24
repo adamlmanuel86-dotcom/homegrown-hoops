@@ -20,6 +20,7 @@ export type CardStats = {
   avgPoints: number | string;
   avgRebounds: number | string;
   avgAssists: number | string;
+  avgThreesMade?: number | string;
   totalPoints?: number;
   totalRebounds?: number;
   totalAssists?: number;
@@ -344,9 +345,10 @@ export function PlayerCard({
     typeof v === "number" ? v.toFixed(1) : "—";
 
   const statItems = [
-    { label: "Points",   value: fmtAvg(stats?.avgPoints) },
-    { label: "Rebounds", value: fmtAvg(stats?.avgRebounds) },
-    { label: "Assists",  value: fmtAvg(stats?.avgAssists) },
+    { label: "PPG", value: fmtAvg(stats?.avgPoints) },
+    { label: "RPG", value: fmtAvg(stats?.avgRebounds) },
+    { label: "APG", value: fmtAvg(stats?.avgAssists) },
+    { label: "3PG", value: fmtAvg(stats?.avgThreesMade) },
   ];
 
   return (
@@ -528,20 +530,20 @@ export function PlayerCard({
           <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
 
           {/* ── Stats strip ── */}
-          <div style={{ display: "flex", padding: "14px 20px" }}>
+          <div style={{ display: "flex", padding: "12px 20px" }}>
             {statItems.map((stat, i) => (
               <div
                 key={i}
                 style={{
                   flex: 1,
                   textAlign: "center",
-                  borderRight: i < 2 ? `1px solid ${DIVIDER}` : "none",
+                  borderRight: i < statItems.length - 1 ? `1px solid ${DIVIDER}` : "none",
                 }}
               >
                 <p
                   style={{
                     fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
-                    fontSize: 26,
+                    fontSize: 22,
                     fontWeight: 800,
                     color: "#F97316",
                     margin: 0,
@@ -556,7 +558,7 @@ export function PlayerCard({
                     fontWeight: 700,
                     color: MUTED,
                     textTransform: "uppercase",
-                    letterSpacing: "0.1em",
+                    letterSpacing: "0.08em",
                     marginTop: 4,
                   }}
                 >
