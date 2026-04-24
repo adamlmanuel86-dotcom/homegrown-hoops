@@ -404,11 +404,25 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
   const teamStats = allPlayerStats.filter((p) => p.teamId === teamId);
   if (teamStats.length === 0) return [];
 
+  // Count total games the team played this season (for Shoreline eligibility)
+  const teamGameRows = await db
+    .select({ id: gamesTable.id })
+    .from(gamesTable)
+    .where(
+      and(
+        or(eq(gamesTable.homeTeamId, teamId), eq(gamesTable.awayTeamId, teamId)),
+        eq(gamesTable.season, season)
+      )
+    );
+  const totalTeamGames = teamGameRows.length;
+
   const metrics = teamStats.map((p) => {
     const pts   = p.games.map((g) => g.points);
     const reb   = p.games.map((g) => g.rebounds);
     const ast   = p.games.map((g) => g.assists);
     const dates = p.games.map((g) => g.gameDate);
+    const m     = mean(pts);
+    const maxDev = pts.length ? Math.max(...pts.map((v) => Math.abs(v - m))) : 0;
     return {
       firstName:         p.firstName,
       lastName:          p.lastName,
@@ -417,6 +431,7 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
       totalAssists:      ast.reduce((s, n) => s + n, 0),
       highestGamePoints: pts.length ? Math.max(...pts) : 0,
       stdDevPoints:      stdDev(pts),
+      maxDeviationPts:   maxDev,
       improvement:       halfImprovement(dates, pts),
       composite:         mean(pts) + mean(reb) + mean(ast),
       gamesPlayed:       p.games.length,
@@ -424,26 +439,53 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
   });
 
   type M = (typeof metrics)[0];
-  function topOf(key: (m: M) => number): M {
-    return metrics.reduce((best, m) => (key(m) > key(best) ? m : best));
+
+  // Single winner: highest by primary key; tie-break by secondary key (higher = better)
+  function topOf(primary: (m: M) => number, secondary?: (m: M) => number): M {
+    return metrics.reduce((best, m) => {
+      const diff = primary(m) - primary(best);
+      if (diff > 1e-10) return m;
+      if (secondary && Math.abs(diff) <= 1e-10 && secondary(m) > secondary(best)) return m;
+      return best;
+    });
   }
 
-  const winnerPairs: Array<[string, M]> = [
+  const results: TideWinner[] = [];
+
+  // Standard single-winner tides
+  const singleWinners: Array<[string, M]> = [
     ["high_tide",   topOf((m) => m.totalPoints)],
     ["the_keeper",  topOf((m) => m.totalRebounds)],
     ["the_source",  topOf((m) => m.totalAssists)],
     ["the_swell",   topOf((m) => m.highestGamePoints)],
-    ["lighthouse",  topOf((m) => -m.stdDevPoints)],
+    // Lighthouse: lowest stddev, tie-break by lowest maxDeviation (lower max-dev = better = higher negated)
+    ["lighthouse",  topOf((m) => -m.stdDevPoints, (m) => -m.maxDeviationPts)],
     ["rising_tide", topOf((m) => m.improvement)],
-    ["shoreline",   topOf((m) => m.gamesPlayed)],
     ["the_crest",   topOf((m) => m.composite)],
   ];
 
-  return winnerPairs.map(([tideId, w]) => ({
-    tideId,
-    tideLabel: TIDE_LABELS[tideId] ?? tideId,
-    playerName: `${w.firstName} ${w.lastName}`,
-  }));
+  for (const [tideId, w] of singleWinners) {
+    results.push({
+      tideId,
+      tideLabel: TIDE_LABELS[tideId] ?? tideId,
+      playerName: `${w.firstName} ${w.lastName}`,
+    });
+  }
+
+  // Shoreline: ALL players who have a stat entry in every team game this season
+  const shorelineWinners = totalTeamGames > 0
+    ? metrics.filter((m) => m.gamesPlayed >= totalTeamGames)
+    : [topOf((m) => m.gamesPlayed)]; // fallback if we can't count games
+
+  for (const w of shorelineWinners) {
+    results.push({
+      tideId: "shoreline",
+      tideLabel: "Shoreline",
+      playerName: `${w.firstName} ${w.lastName}`,
+    });
+  }
+
+  return results;
 }
 
 export async function previewTeamTides(
