@@ -91,13 +91,13 @@ export function AdminPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
   });
 
-  // Run the canonical roster sync once when admin panel is confirmed, so that
-  // any stale player rows from before this fix are corrected immediately.
+  // Run the canonical roster sync + load tide profiles once when admin is confirmed.
   useEffect(() => {
     if (!isAdmin) return;
     fetch(`${BASE_URL}/api/admin/sync-all-players`, { method: "POST" })
       .then(() => qc.invalidateQueries({ queryKey: ["/api/players"] }))
       .catch(() => { /* non-critical, silent */ });
+    loadTideProfiles();
   }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tidesSeasonInput, setTidesSeasonInput] = useState("");
@@ -600,47 +600,148 @@ export function AdminPage() {
         {usersLoading ? (
           <div className="divide-y divide-border">Loading…</div>
         ) : users?.length ? (
-          <div className="divide-y divide-border">
+          <div>
             {users.map((u) => {
               const profile = profiles?.find((p) => p.clerkUserId === u.clerkUserId);
               const isEditing = editingProfileId === u.clerkUserId;
               const isConfirming = confirmingDeleteProfileId === u.clerkUserId;
               const team = teams?.find((t) => t.id === profile?.teamId);
+              const profileNumericId = profile?.id;
+              const tideProfile = profileNumericId
+                ? tideProfiles.find((tp) => tp.id === profileNumericId)
+                : undefined;
+              const earnedTideIds = new Set(
+                (tideProfile?.tides ?? profile?.tides ?? []).map((t: { id: string }) => t.id)
+              );
+              const isTidesExpanded = expandedTidePlayerId === profileNumericId;
+
               return (
-                <div key={u.clerkUserId} className="px-6 py-4">
-                  {isEditing ? (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <select value={profileEdit.teamId} onChange={(e) => setProfileEdit((s) => ({ ...s, teamId: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm">
-                          <option value="">No team / unaffiliated</option>
-                          {teams?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </select>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleProfileSave(u.clerkUserId)} className="btn-primary text-sm py-2"><Save className="h-3.5 w-3.5" />Save</button>
-                        <button onClick={cancelEditProfile} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border">Cancel</button>
-                      </div>
-                    </div>
-                  ) : isConfirming ? (
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-red-400" />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold">Delete {u.firstName} {u.lastName}?</p>
-                        <div className="flex gap-2 mt-2">
-                          <button onClick={() => handleProfileDelete(u.clerkUserId)} className="btn-primary text-sm py-2">Yes, delete</button>
-                          <button onClick={() => setConfirmingDeleteProfileId(null)} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border">Cancel</button>
+                <div key={u.clerkUserId} className="border-b border-border last:border-0">
+                  <div className="px-6 py-4">
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <select value={profileEdit.teamId} onChange={(e) => setProfileEdit((s) => ({ ...s, teamId: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm">
+                            <option value="">No team / unaffiliated</option>
+                            {teams?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleProfileSave(u.clerkUserId)} className="btn-primary text-sm py-2"><Save className="h-3.5 w-3.5" />Save</button>
+                          <button onClick={cancelEditProfile} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border">Cancel</button>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">{u.firstName?.[0]}{u.lastName?.[0]}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-secondary">{u.firstName} {u.lastName}</p>
-                        <p className="text-xs text-muted-foreground">{team?.name ?? "No team / unaffiliated"}</p>
+                    ) : isConfirming ? (
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-red-400" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold">Delete {u.firstName} {u.lastName}?</p>
+                          <div className="flex gap-2 mt-2">
+                            <button onClick={() => handleProfileDelete(u.clerkUserId)} className="btn-primary text-sm py-2">Yes, delete</button>
+                            <button onClick={() => setConfirmingDeleteProfileId(null)} className="px-3 py-2 text-sm font-semibold rounded-lg border border-border">Cancel</button>
+                          </div>
+                        </div>
                       </div>
-                      <button onClick={() => startEditProfile(u.clerkUserId, profile?.teamId, profile?.verified ?? false)} className="px-3 py-2 text-xs font-semibold rounded-lg border border-border">Edit</button>
-                      <button onClick={() => setConfirmingDeleteProfileId(u.clerkUserId)} className="px-3 py-2 text-xs font-semibold rounded-lg border border-red-500/30 text-red-400">Delete</button>
+                    ) : (
+                      <div className="space-y-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-sm font-bold flex-shrink-0">{u.firstName?.[0]}{u.lastName?.[0]}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-secondary">{u.firstName} {u.lastName}</p>
+                            <p className="text-xs text-muted-foreground">{team?.name ?? "No team / unaffiliated"}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => {
+                                if (!profileNumericId) return;
+                                setExpandedTidePlayerId(isTidesExpanded ? null : profileNumericId);
+                              }}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all touch-manipulation ${
+                                isTidesExpanded
+                                  ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
+                                  : "border-border hover:border-blue-500/30 hover:bg-blue-500/5 text-muted-foreground hover:text-blue-300"
+                              }`}
+                            >
+                              <Waves className="h-3.5 w-3.5" />
+                              Tides {earnedTideIds.size}/8
+                              {isTidesExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                            </button>
+                            <button onClick={() => startEditProfile(u.clerkUserId, profile?.teamId, profile?.verified ?? false)} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors touch-manipulation">Edit</button>
+                            <button onClick={() => setConfirmingDeleteProfileId(u.clerkUserId)} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors touch-manipulation">Delete</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Admin Override Tides Drawer ── */}
+                  {isTidesExpanded && !isEditing && !isConfirming && (
+                    <div className="mx-4 mb-4 rounded-xl overflow-hidden border border-blue-500/20 bg-blue-950/20">
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/10 border-b border-blue-500/20">
+                        <Shield className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin Override — Tides</span>
+                        <span className="text-xs text-blue-400/60 ml-1">· For exceptional circumstances only</span>
+                      </div>
+                      <div className="p-4">
+                        {tideProfilesLoading ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                              <div key={i} className="h-20 rounded-xl bg-muted/30 animate-pulse" />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {TIDES.map((tide) => {
+                              const isAwarded = earnedTideIds.has(tide.id);
+                              const TideIcon = tide.icon;
+                              const isPending =
+                                (awardTide.isPending && (awardTide.variables as { profileId: number; tideId: string } | undefined)?.tideId === tide.id && (awardTide.variables as { profileId: number; tideId: string } | undefined)?.profileId === profileNumericId) ||
+                                (removeTide.isPending && (removeTide.variables as { profileId: number; tideId: string } | undefined)?.tideId === tide.id && (removeTide.variables as { profileId: number; tideId: string } | undefined)?.profileId === profileNumericId);
+                              return (
+                                <button
+                                  key={tide.id}
+                                  onClick={() => {
+                                    if (!profileNumericId || isPending) return;
+                                    if (isAwarded) {
+                                      removeTide.mutate({ profileId: profileNumericId, tideId: tide.id });
+                                    } else {
+                                      awardTide.mutate({ profileId: profileNumericId, tideId: tide.id });
+                                    }
+                                  }}
+                                  disabled={isPending}
+                                  title={tide.description}
+                                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all touch-manipulation disabled:opacity-50 ${
+                                    isAwarded
+                                      ? "bg-opacity-20 border-opacity-40"
+                                      : "border-white/8 bg-white/4 hover:bg-white/8 hover:border-white/15"
+                                  }`}
+                                  style={isAwarded ? {
+                                    background: `${tide.color}18`,
+                                    borderColor: `${tide.color}44`,
+                                  } : {}}
+                                >
+                                  <TideIcon
+                                    className="h-4 w-4"
+                                    style={{ color: isAwarded ? tide.color : "hsl(215 16% 45%)" }}
+                                  />
+                                  <span
+                                    className="text-xs font-bold leading-tight"
+                                    style={{ color: isAwarded ? tide.color : "hsl(215 16% 55%)" }}
+                                  >
+                                    {tide.label}
+                                  </span>
+                                  <span
+                                    className="text-xs leading-none"
+                                    style={{ color: isAwarded ? `${tide.color}bb` : "hsl(215 16% 40%)" }}
+                                  >
+                                    {isPending ? "…" : isAwarded ? "✓ On" : "Off"}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
