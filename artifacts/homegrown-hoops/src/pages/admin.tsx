@@ -91,6 +91,15 @@ export function AdminPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
   });
 
+  // Run the canonical roster sync once when admin panel is confirmed, so that
+  // any stale player rows from before this fix are corrected immediately.
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetch(`${BASE_URL}/api/admin/sync-all-players`, { method: "POST" })
+      .then(() => qc.invalidateQueries({ queryKey: ["/api/players"] }))
+      .catch(() => { /* non-critical, silent */ });
+  }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [tidesSeasonInput, setTidesSeasonInput] = useState("");
   const [tidesSeasonMsg, setTidesSeasonMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [expandedTidePlayerId, setExpandedTidePlayerId] = useState<number | null>(null);
@@ -211,7 +220,10 @@ export function AdminPage() {
           verified: profileEdit.verified,
         },
       });
-      await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["/api/profiles"] }),
+        qc.invalidateQueries({ queryKey: ["/api/players"] }),
+      ]);
       setEditingProfileId(null);
       setProfileSaveError(null);
     } catch {

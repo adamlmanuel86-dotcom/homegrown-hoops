@@ -1,34 +1,86 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and, isNull } from "drizzle-orm";
+import { eq, count, and, isNull, ne } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
 /**
- * When a user sets their team via a profile, ensure a matching entry exists
- * in the `players` table so that the stat entry UI can find them.
- * Matched by first + last name within the same team; creates if missing.
+ * Full roster sync when a profile is created or updated.
+ * - Removes any player row for the OLD name+team combination.
+ * - Removes any player rows for the NEW name that belong to a DIFFERENT team
+ *   (handles name changes where an old row would otherwise linger).
+ * - If a newTeamId is provided, upserts the player row for new name+team.
+ * - If newTeamId is null/undefined, the player is left with no roster entry
+ *   (they will not appear on any team page).
  */
-async function syncPlayerEntry(
-  firstName: string,
-  lastName: string,
-  teamId: number | null | undefined,
+export async function syncPlayerForTeamChange(
+  oldFirstName: string | null,
+  oldLastName: string | null,
+  oldTeamId: number | null | undefined,
+  newFirstName: string,
+  newLastName: string,
+  newTeamId: number | null | undefined,
   number?: string | null,
 ) {
-  if (!teamId || !firstName || !lastName) return;
+  // 1. Remove the old team's player row (if the old team existed and is now different)
+  if (oldFirstName && oldLastName && oldTeamId && oldTeamId !== newTeamId) {
+    await db
+      .delete(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, oldFirstName),
+          eq(playersTable.lastName, oldLastName),
+          eq(playersTable.teamId, oldTeamId)
+        )
+      );
+  }
+
+  // 2. If the name changed, remove any old-name row on the new team too
+  if (
+    oldFirstName && oldLastName &&
+    (oldFirstName !== newFirstName || oldLastName !== newLastName) &&
+    newTeamId
+  ) {
+    await db
+      .delete(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, oldFirstName),
+          eq(playersTable.lastName, oldLastName),
+          eq(playersTable.teamId, newTeamId)
+        )
+      );
+  }
+
+  // 3. If no new team — nothing more to do; player won't appear on any roster
+  if (!newTeamId || !newFirstName || !newLastName) return;
+
+  // 4. Remove any stale rows for new name on a DIFFERENT team (prevents duplicates)
+  await db
+    .delete(playersTable)
+    .where(
+      and(
+        eq(playersTable.firstName, newFirstName),
+        eq(playersTable.lastName, newLastName),
+        ne(playersTable.teamId, newTeamId)
+      )
+    );
+
+  // 5. Upsert the correct player row for new name + new team
   const [existing] = await db
     .select({ id: playersTable.id })
     .from(playersTable)
     .where(
       and(
-        eq(playersTable.firstName, firstName),
-        eq(playersTable.lastName, lastName),
-        eq(playersTable.teamId, teamId)
+        eq(playersTable.firstName, newFirstName),
+        eq(playersTable.lastName, newLastName),
+        eq(playersTable.teamId, newTeamId)
       )
     );
+
   if (!existing) {
-    await db.insert(playersTable).values({ firstName, lastName, teamId, number: number ?? null });
+    await db.insert(playersTable).values({ firstName: newFirstName, lastName: newLastName, teamId: newTeamId, number: number ?? null });
   } else if (number !== undefined) {
     await db.update(playersTable)
       .set({ number: number ?? null })
@@ -148,8 +200,8 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
     .values({ ...parsed.data, clerkUserId: userId, isAdmin: shouldBeAdmin, role })
     .returning();
 
-  // Keep players table in sync so stat entry can find this user
-  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
+  // New profile — no old team to clean up, just ensure roster row exists
+  await syncPlayerForTeamChange(null, null, null, profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
@@ -164,6 +216,12 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
+  // Capture old state so we can remove stale roster entries
+  const [oldProfile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
   const [profile] = await db
     .update(userProfilesTable)
     .set({ ...parsed.data, updatedAt: new Date() })
@@ -175,8 +233,16 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
     return;
   }
 
-  // Keep players table in sync when team changes
-  await syncPlayerEntry(profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
+  // Sync roster: removes old team entry, adds new one (or removes entirely if no team)
+  await syncPlayerForTeamChange(
+    oldProfile?.firstName ?? null,
+    oldProfile?.lastName ?? null,
+    oldProfile?.teamId ?? undefined,
+    profile.firstName,
+    profile.lastName,
+    profile.teamId ?? undefined,
+    profile.number ?? null,
+  );
 
   res.json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
@@ -219,6 +285,12 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
     return;
   }
 
+  // Capture old state so we can remove stale roster entries
+  const [oldProfile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
   const [profile] = await db
     .update(userProfilesTable)
     .set({ ...parsed.data, updatedAt: new Date() })
@@ -229,6 +301,17 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Profile not found" });
     return;
   }
+
+  // Sync roster: removes old team entry, adds new one (or removes entirely if no team)
+  await syncPlayerForTeamChange(
+    oldProfile?.firstName ?? null,
+    oldProfile?.lastName ?? null,
+    oldProfile?.teamId ?? undefined,
+    profile.firstName,
+    profile.lastName,
+    profile.teamId ?? undefined,
+    profile.number ?? null,
+  );
 
   res.json(GetProfileResponse.parse(serializeRow(profile)));
 });

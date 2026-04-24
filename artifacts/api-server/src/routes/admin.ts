@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and, ne, isNull } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 import { recalculateTides } from "../recognition";
@@ -222,6 +222,87 @@ router.get("/admin/profiles-tides", async (req, res): Promise<void> => {
     .orderBy(userProfilesTable.firstName);
 
   res.json(serializeRows(profiles));
+});
+
+// ─── One-time / on-demand roster cleanup ─────────────────────────────────────
+// POST /admin/sync-all-players
+// For every profile: removes player rows that don't match the profile's current
+// teamId, and ensures the correct row exists. Safe to call repeatedly.
+router.post("/admin/sync-all-players", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const profiles = await db.select().from(userProfilesTable);
+  let removed = 0;
+  let upserted = 0;
+
+  for (const profile of profiles) {
+    const { firstName, lastName, teamId } = profile;
+    if (!firstName || !lastName) continue;
+
+    if (teamId) {
+      // Delete any rows for this name on a DIFFERENT team
+      const del = await db
+        .delete(playersTable)
+        .where(
+          and(
+            eq(playersTable.firstName, firstName),
+            eq(playersTable.lastName, lastName),
+            ne(playersTable.teamId, teamId)
+          )
+        )
+        .returning({ id: playersTable.id });
+      removed += del.length;
+
+      // Also remove null-team orphans for this name
+      const delNull = await db
+        .delete(playersTable)
+        .where(
+          and(
+            eq(playersTable.firstName, firstName),
+            eq(playersTable.lastName, lastName),
+            isNull(playersTable.teamId)
+          )
+        )
+        .returning({ id: playersTable.id });
+      removed += delNull.length;
+
+      // Ensure correct row exists
+      const [existing] = await db
+        .select({ id: playersTable.id })
+        .from(playersTable)
+        .where(
+          and(
+            eq(playersTable.firstName, firstName),
+            eq(playersTable.lastName, lastName),
+            eq(playersTable.teamId, teamId)
+          )
+        );
+      if (!existing) {
+        await db.insert(playersTable).values({
+          firstName,
+          lastName,
+          teamId,
+          number: profile.number ?? null,
+        });
+        upserted++;
+      }
+    } else {
+      // Profile has no team — remove all player rows for this name
+      const del = await db
+        .delete(playersTable)
+        .where(
+          and(
+            eq(playersTable.firstName, firstName),
+            eq(playersTable.lastName, lastName)
+          )
+        )
+        .returning({ id: playersTable.id });
+      removed += del.length;
+    }
+  }
+
+  res.json({ success: true, removed, upserted });
 });
 
 export default router;

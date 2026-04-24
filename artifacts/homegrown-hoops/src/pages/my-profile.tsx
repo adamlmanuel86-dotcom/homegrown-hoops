@@ -175,7 +175,13 @@ export function MyProfilePage() {
     setAvatarFile(null);
     setAvatarPreview(null);
     setClearAvatar(false);
-    await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+    // Invalidate all data that depends on team membership so every page updates
+    // immediately without requiring a manual refresh.
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["/api/profiles/me"] }),
+      qc.invalidateQueries({ queryKey: ["/api/profiles"] }),
+      qc.invalidateQueries({ queryKey: ["/api/players"] }),
+    ]);
     // If photo upload failed keep the form open so the user can see the error
     if (!photoFailed) setEditing(false);
     setSaved(true);
