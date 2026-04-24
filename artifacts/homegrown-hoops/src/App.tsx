@@ -16,6 +16,7 @@ import { GamesPage } from "@/pages/games";
 import { GameDetailPage } from "@/pages/game-detail";
 import { MyProfilePage } from "@/pages/my-profile";
 import { ProfilePage } from "@/pages/profile";
+import { PublicProfilePage } from "@/pages/public-profile";
 import { AdminPage } from "@/pages/admin";
 import { OurStoryPage } from "@/pages/our-story";
 import { ArchetypesPage } from "@/pages/archetypes";
@@ -227,6 +228,7 @@ function Router() {
       {/* Full-screen routes — no nav layout */}
       <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route path="/p/:clerkUserId" component={PublicProfilePage} />
 
       {/* Standard routes — inside nav layout */}
       <Route>

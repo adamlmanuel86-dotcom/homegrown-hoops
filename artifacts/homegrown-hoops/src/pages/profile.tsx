@@ -1,13 +1,35 @@
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { useUser } from "@clerk/react";
 import { useGetProfile, useListPlayers, useGetPlayerStats, useListTeams } from "@workspace/api-client-react";
-import { User, Pencil, ChevronLeft, School, Calendar, Trophy } from "lucide-react";
+import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
+
+const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function ProfilePage() {
   const { clerkUserId = "" } = useParams<{ clerkUserId: string }>();
   const { user, isSignedIn } = useUser();
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url = `${window.location.origin}${BASE_URL}/p/${clerkUserId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  }
 
   const { data: profile, isLoading } = useGetProfile(clerkUserId, {
     query: { enabled: !!clerkUserId },
@@ -73,13 +95,33 @@ export function ProfilePage() {
         <ChevronLeft className="h-4 w-4" /> Back
       </Link>
 
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center gap-4">
         <PlayerCard
           profile={profile}
           stats={cardStats}
           primaryColor={team?.primaryColor ?? "#B45309"}
           secondaryColor={team?.secondaryColor ?? "#1E3A5F"}
         />
+        <button
+          onClick={handleShare}
+          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            copied
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-white/8 hover:bg-white/12 text-foreground/80 hover:text-white border border-white/10"
+          }`}
+        >
+          {copied ? (
+            <>
+              <Check className="h-4 w-4" />
+              Profile link copied — share it anywhere.
+            </>
+          ) : (
+            <>
+              <Share2 className="h-4 w-4" />
+              Share Profile
+            </>
+          )}
+        </button>
       </div>
 
       <div className="rounded-2xl overflow-hidden bg-secondary text-white">
