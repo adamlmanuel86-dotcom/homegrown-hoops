@@ -391,7 +391,7 @@ const TIDE_LABELS: Record<string, string> = {
   the_crest:   "The Crest",
 };
 
-async function getTeamCurrentSeason(teamId: number): Promise<string | null> {
+export async function getTeamCurrentSeason(teamId: number): Promise<string | null> {
   const rows = await db
     .select({ season: gamesTable.season })
     .from(gamesTable)

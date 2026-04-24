@@ -196,6 +196,12 @@ export function AdminPage() {
   const [newSeasonResetDone, setNewSeasonResetDone] = useState(false);
   const [newSeasonResetError, setNewSeasonResetError] = useState<string | null>(null);
 
+  const [seasonHistoryTeamId, setSeasonHistoryTeamId] = useState<number | null>(null);
+  const [teamSeasonsMap, setTeamSeasonsMap] = useState<Map<number, { seasons: string[]; currentSeason: string | null }>>(new Map());
+  const [seasonDeleteConfirmKey, setSeasonDeleteConfirmKey] = useState<string | null>(null);
+  const [seasonDeletePending, setSeasonDeletePending] = useState(false);
+  const [seasonDeleteError, setSeasonDeleteError] = useState<string | null>(null);
+
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [newTeam, setNewTeam] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
   const [addTeamError, setAddTeamError] = useState<string | null>(null);
@@ -334,6 +340,40 @@ export function AdminPage() {
       setNewSeasonResetError(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setNewSeasonResetPending(false);
+    }
+  }
+
+  async function loadTeamSeasons(teamId: number) {
+    try {
+      const res = await fetch(`${BASE_URL}/api/admin/teams/${teamId}/seasons`);
+      if (!res.ok) throw new Error("Failed to load seasons");
+      const data = await res.json() as { seasons: string[]; currentSeason: string | null };
+      setTeamSeasonsMap((prev) => new Map(prev).set(teamId, data));
+    } catch {
+      // silently ignore — UI handles empty state
+    }
+  }
+
+  async function handleDeleteSeason(teamId: number, season: string) {
+    setSeasonDeletePending(true);
+    setSeasonDeleteError(null);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/admin/teams/${teamId}/seasons/${encodeURIComponent(season)}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(body.error ?? `Server error: ${res.status}`);
+      }
+      setSeasonDeleteConfirmKey(null);
+      await loadTeamSeasons(teamId);
+      await qc.invalidateQueries({ queryKey: ["/api/games"] });
+      await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+    } catch (e: unknown) {
+      setSeasonDeleteError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setSeasonDeletePending(false);
     }
   }
 
@@ -662,6 +702,19 @@ export function AdminPage() {
                           <RotateCcw className="h-3.5 w-3.5" />
                           New Season Reset
                         </button>
+                        <button
+                          onClick={() => {
+                            const opening = seasonHistoryTeamId !== team.id;
+                            setSeasonHistoryTeamId(opening ? team.id : null);
+                            setSeasonDeleteConfirmKey(null);
+                            setSeasonDeleteError(null);
+                            if (opening) loadTeamSeasons(team.id);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                        >
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          Season History
+                        </button>
                       </div>
 
                       {/* End of Season drawer */}
@@ -718,6 +771,101 @@ export function AdminPage() {
                           )}
                         </div>
                       )}
+
+                      {/* Season History panel */}
+                      {seasonHistoryTeamId === team.id && (() => {
+                        const info = teamSeasonsMap.get(team.id);
+                        const archivedSeasons = info
+                          ? info.seasons.filter((s) => s !== info.currentSeason)
+                          : [];
+                        return (
+                          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                <p className="text-sm font-bold">Season History — {team.name}</p>
+                              </div>
+                              <button
+                                onClick={() => { setSeasonHistoryTeamId(null); setSeasonDeleteConfirmKey(null); setSeasonDeleteError(null); }}
+                                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            {info && info.currentSeason && (
+                              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-primary">{info.currentSeason}</span>
+                                  <span className="text-xs px-1.5 py-0.5 rounded bg-primary/20 text-primary font-bold">Active</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">Cannot delete active season</span>
+                              </div>
+                            )}
+
+                            {archivedSeasons.length === 0 ? (
+                              <p className="text-xs text-muted-foreground text-center py-2">
+                                {info ? "No archived seasons yet." : "Loading…"}
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {archivedSeasons.map((s) => {
+                                  const key = `${team.id}:${s}`;
+                                  const isConfirming = seasonDeleteConfirmKey === key;
+                                  return (
+                                    <div key={s} className="space-y-2">
+                                      <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-background">
+                                        <div className="flex items-center gap-2">
+                                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                                          <span className="text-xs font-semibold">{s}</span>
+                                          <span className="text-xs text-muted-foreground">Archived</span>
+                                        </div>
+                                        {!isConfirming && (
+                                          <button
+                                            onClick={() => { setSeasonDeleteConfirmKey(key); setSeasonDeleteError(null); }}
+                                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                            Delete
+                                          </button>
+                                        )}
+                                      </div>
+                                      {isConfirming && (
+                                        <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-3 space-y-2.5">
+                                          <div className="flex items-start gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                            <p className="text-xs text-muted-foreground">
+                                              This will permanently delete all data for <span className="font-bold text-foreground">{s}</span> including games, stats and Tides. This cannot be undone. Are you sure?
+                                            </p>
+                                          </div>
+                                          {seasonDeleteError && <p className="text-xs text-red-400 font-medium">{seasonDeleteError}</p>}
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={() => handleDeleteSeason(team.id, s)}
+                                              disabled={seasonDeletePending}
+                                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                              {seasonDeletePending ? "Deleting…" : "Yes, Delete Season"}
+                                            </button>
+                                            <button
+                                              onClick={() => { setSeasonDeleteConfirmKey(null); setSeasonDeleteError(null); }}
+                                              disabled={seasonDeletePending}
+                                              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* New Season Reset drawer */}
                       {newSeasonResetTeamId === team.id && (

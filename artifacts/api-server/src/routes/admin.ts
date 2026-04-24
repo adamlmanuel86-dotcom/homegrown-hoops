@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ne, isNull } from "drizzle-orm";
+import { eq, and, ne, isNull, or, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
-import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason } from "../recognition";
+import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason, getTeamCurrentSeason } from "../recognition";
+import type { TideEntry, ArchetypeHistoryEntry } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -264,6 +265,90 @@ router.post("/admin/teams/:teamId/new-season-reset", async (req, res): Promise<v
   const { season } = req.body as { season?: string };
   const result = await resetTeamSeason(teamId, season);
   res.json({ success: true, ...result });
+});
+
+// ─── Team season history ──────────────────────────────────────────────────────
+// GET /admin/teams/:teamId/seasons
+// Returns all distinct seasons for the team, sorted newest first. Marks which
+// is the current active season. Archived = all seasons except the current one.
+router.get("/admin/teams/:teamId/seasons", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const teamId = parseInt(req.params.teamId);
+  if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
+
+  const rows = await db
+    .select({ season: gamesTable.season })
+    .from(gamesTable)
+    .where(or(eq(gamesTable.homeTeamId, teamId), eq(gamesTable.awayTeamId, teamId)));
+
+  const all = [...new Set(rows.map((r) => r.season))].sort((a, b) => b.localeCompare(a));
+  const currentSeason = all[0] ?? null;
+
+  res.json({ seasons: all, currentSeason });
+});
+
+// ─── Delete an archived season ────────────────────────────────────────────────
+// DELETE /admin/teams/:teamId/seasons/:season
+// Permanently removes all data for that season: games (+ stats via cascade),
+// tides tagged with that season, and archetypeHistory entries for that season.
+// Refuses to delete the current active season.
+router.delete("/admin/teams/:teamId/seasons/:season", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const teamId = parseInt(req.params.teamId);
+  if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
+
+  const { season } = req.params;
+  const currentSeason = await getTeamCurrentSeason(teamId);
+  if (season === currentSeason) {
+    res.status(400).json({ error: "Cannot delete the current active season." });
+    return;
+  }
+
+  // Find all game IDs for this team in this season
+  const gameRows = await db
+    .select({ id: gamesTable.id })
+    .from(gamesTable)
+    .where(
+      and(
+        eq(gamesTable.season, season),
+        or(eq(gamesTable.homeTeamId, teamId), eq(gamesTable.awayTeamId, teamId))
+      )
+    );
+  const gameIds = gameRows.map((g) => g.id);
+
+  // Delete game_player_stats (explicit delete before games, cascade covers it too)
+  if (gameIds.length > 0) {
+    await db.delete(gamePlayerStatsTable).where(inArray(gamePlayerStatsTable.gameId, gameIds));
+    await db.delete(gamesTable).where(inArray(gamesTable.id, gameIds));
+  }
+
+  // Remove season tides and archetypeHistory from all team player profiles
+  const teamProfiles = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.teamId, teamId));
+
+  for (const profile of teamProfiles) {
+    const filteredTides = ((profile.tides ?? []) as TideEntry[])
+      .filter((t) => t.season !== season);
+    const filteredHistory = ((profile.archetypeHistory ?? []) as ArchetypeHistoryEntry[])
+      .filter((h) => h.season !== season);
+
+    await db
+      .update(userProfilesTable)
+      .set({
+        tides:            filteredTides,
+        archetypeHistory: filteredHistory,
+        updatedAt:        new Date(),
+      })
+      .where(eq(userProfilesTable.id, profile.id));
+  }
+
+  res.json({ success: true, season, gamesDeleted: gameIds.length });
 });
 
 // ─── One-time / on-demand roster cleanup ─────────────────────────────────────
