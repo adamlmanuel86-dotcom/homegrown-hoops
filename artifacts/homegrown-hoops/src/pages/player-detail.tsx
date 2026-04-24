@@ -60,7 +60,7 @@ export function PlayerDetailPage() {
             className="w-20 h-20 rounded-2xl flex items-center justify-center font-display text-4xl text-white flex-shrink-0 shadow-lg"
             style={{ backgroundColor: team?.primaryColor ?? "#C85A1B" }}
           >
-            {player.number ?? "#"}
+            {player.number != null ? `#${player.number}` : `${player.firstName.charAt(0)}${player.lastName.charAt(0)}`}
           </div>
           <div className="flex-1">
             <h1 className="font-display text-4xl md:text-6xl text-white leading-tight">

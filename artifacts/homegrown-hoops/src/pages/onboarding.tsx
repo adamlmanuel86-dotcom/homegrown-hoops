@@ -67,6 +67,7 @@ export function OnboardingPage() {
   const isSubmittingRef = useRef(false);
   // Reveal animation phases
   const [revealPhase, setRevealPhase] = useState(0);
+  const [showColorWash, setShowColorWash] = useState(false);
   // Prevents redirect-on-profile-load from firing right after we just created
   // the profile (must be declared before the useEffect that references it)
   const [justCreated, setJustCreated] = useState(false);
@@ -198,8 +199,10 @@ export function OnboardingPage() {
 
   function triggerReveal() {
     setRevealPhase(0);
+    setShowColorWash(false);
     setTimeout(() => setRevealPhase(1), 600);   // opening text fades in
     setTimeout(() => setRevealPhase(2), 2200);  // UNCHARTED badge appears
+    setTimeout(() => setShowColorWash(true), 2900); // color wash sweeps across
     setTimeout(() => setRevealPhase(3), 3800);  // card cinematic slide-up
     setTimeout(() => setRevealPhase(4), 5400);  // CTA buttons fade in
   }
@@ -343,6 +346,43 @@ export function OnboardingPage() {
             pointerEvents: "none",
           }}
         />
+
+        {/* Color wash — cinematic sweep between UNCHARTED reveal and card appear */}
+        <style>{`
+          @keyframes hghColorWash {
+            0%   { transform: translateX(-130%) skewX(-6deg); opacity: 0; }
+            12%  { opacity: 1; }
+            45%  { transform: translateX(-5%) skewX(-3deg); opacity: 0.92; }
+            72%  { transform: translateX(15%) skewX(0deg); opacity: 0.7; }
+            100% { transform: translateX(130%) skewX(4deg); opacity: 0; }
+          }
+        `}</style>
+        {showColorWash && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 8,
+              pointerEvents: "none",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: "-20%",
+                width: "140%",
+                background: `linear-gradient(to right,
+                  transparent 0%,
+                  ${teamData?.primaryColor ?? "#F97316"}55 28%,
+                  ${teamData?.primaryColor ?? "#F97316"}cc 50%,
+                  ${teamData?.primaryColor ?? "#F97316"}55 72%,
+                  transparent 100%)`,
+                animation: "hghColorWash 1.9s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+              }}
+            />
+          </div>
+        )}
 
         {/* Phase 1 — opening text */}
         <p

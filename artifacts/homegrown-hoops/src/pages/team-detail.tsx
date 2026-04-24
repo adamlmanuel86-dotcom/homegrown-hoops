@@ -103,7 +103,12 @@ export function TeamDetailPage() {
                     {player.number != null ? `#${player.number}` : "—"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-secondary text-sm">{player.firstName} {player.lastName}</p>
+                    <p className="font-bold text-secondary text-sm">
+                      {player.number != null && (
+                        <span className="text-primary font-black mr-1">#{player.number}</span>
+                      )}
+                      {player.firstName} {player.lastName}
+                    </p>
                     <p className="text-xs text-muted-foreground">{player.position ?? "—"}</p>
                   </div>
                   <div className="text-xs text-muted-foreground hidden sm:block">

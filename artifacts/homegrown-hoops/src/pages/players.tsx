@@ -77,6 +77,9 @@ export function PlayersPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-secondary text-sm leading-tight">
+                    {profile.number != null && (
+                      <span className="text-primary font-black mr-1.5">#{profile.number}</span>
+                    )}
                     {profile.firstName} {profile.lastName}
                   </p>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">

@@ -254,6 +254,8 @@ export interface PlayerLeaderEntry {
   firstName: string;
   lastName: string;
   /** @nullable */
+  number?: string | null;
+  /** @nullable */
   teamName?: string | null;
   /** @nullable */
   teamAbbreviation?: string | null;

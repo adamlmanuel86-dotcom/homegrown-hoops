@@ -754,6 +754,9 @@ export function GameDetailPage() {
                             return (
                               <tr key={player.id} className="border-b border-border last:border-0">
                                 <td className="px-3 py-2 font-semibold text-secondary">
+                                  {player.number != null && (
+                                    <span className="text-primary font-black mr-1">#{player.number}</span>
+                                  )}
                                   {player.firstName} {player.lastName}
                                 </td>
                                 {(["points", "rebounds", "assists"] as const).map((field) => (
@@ -879,6 +882,9 @@ export function GameDetailPage() {
                           <tr key={player.id} className="group border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                             <td className="px-4 py-3">
                               <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
+                                {player.number != null && (
+                                  <span className="text-primary font-black mr-1">#{player.number}</span>
+                                )}
                                 {player.firstName} {player.lastName}
                               </Link>
                             </td>

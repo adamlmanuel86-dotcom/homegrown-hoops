@@ -201,6 +201,9 @@ export function Home() {
                         <span className="text-xs font-sans font-bold text-muted-foreground ml-1">{abbr}</span>
                       </p>
                       <p className="text-sm font-bold text-secondary leading-tight group-hover:text-primary transition-colors">
+                        {top.number != null && (
+                          <span className="text-primary font-black mr-1">#{top.number}</span>
+                        )}
                         {top.firstName} {top.lastName}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{top.teamName || "Free Agent"}</p>

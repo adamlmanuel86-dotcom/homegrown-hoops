@@ -88,6 +88,9 @@ export function ProfilePage() {
           </div>
           <div className="flex-1">
             <h1 className="font-display text-4xl text-white leading-tight">
+              {profile.number != null && (
+                <span className="text-primary mr-2">#{profile.number}</span>
+              )}
               {profile.firstName.toUpperCase()} {profile.lastName.toUpperCase()}
             </h1>
             <div className="flex flex-wrap gap-2 mt-3">

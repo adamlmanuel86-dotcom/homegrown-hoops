@@ -33,6 +33,7 @@ export type CardProfile = {
   avatarUrl?: string | null;
   stamps?: { id: string; earnedAt: string }[] | null;
   tides?: { id: string; earnedAt: string }[] | null;
+  number?: string | null;
 };
 
 type Props = {
@@ -387,6 +388,27 @@ export function PlayerCard({
                 background: `radial-gradient(circle, ${archetypeColor}28, transparent 65%)`,
               }}
             />
+            {/* Jersey number — top-right corner badge */}
+            {profile.number != null && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 14,
+                  fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: primaryColor,
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1,
+                  textShadow: `0 0 14px ${primaryColor}66`,
+                  userSelect: "none",
+                }}
+              >
+                #{profile.number}
+              </div>
+            )}
+
             <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
               <div
                 style={{

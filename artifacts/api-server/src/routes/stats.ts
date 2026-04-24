@@ -14,6 +14,7 @@ async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
       playerId: playersTable.id,
       firstName: playersTable.firstName,
       lastName: playersTable.lastName,
+      number: playersTable.number,
       teamName: teamsTable.name,
       teamAbbreviation: teamsTable.abbreviation,
       value: sql<number>`COALESCE(AVG(${gamePlayerStatsTable[field]}), 0)`,
@@ -21,7 +22,7 @@ async function getLeaders(field: "points" | "rebounds" | "assists", limit = 5) {
     .from(gamePlayerStatsTable)
     .innerJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
     .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
-    .groupBy(playersTable.id, playersTable.firstName, playersTable.lastName, teamsTable.name, teamsTable.abbreviation)
+    .groupBy(playersTable.id, playersTable.firstName, playersTable.lastName, playersTable.number, teamsTable.name, teamsTable.abbreviation)
     .orderBy(desc(sql<number>`AVG(${gamePlayerStatsTable[field]})`))
     .limit(limit * 5); // fetch extra so we can filter zeros and still have enough
 
