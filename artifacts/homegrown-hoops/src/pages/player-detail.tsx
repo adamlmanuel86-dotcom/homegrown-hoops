@@ -140,9 +140,9 @@ export function PlayerDetailPage() {
               <span className="label-upper">{stats.gamesPlayed} GP</span>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <StatBox label="PPG" value={stats.avgPoints} highlight />
-              <StatBox label="RPG" value={stats.avgRebounds} />
-              <StatBox label="APG" value={stats.avgAssists} />
+              <StatBox label="PPG" value={stats.avgPoints.toFixed(1)} highlight />
+              <StatBox label="RPG" value={stats.avgRebounds.toFixed(1)} />
+              <StatBox label="APG" value={stats.avgAssists.toFixed(1)} />
             </div>
           </div>
 
@@ -155,7 +155,7 @@ export function PlayerDetailPage() {
               </div>
               <div className="card-base p-5 text-center">
                 <p className="label-upper text-[10px] mb-2">Per Game</p>
-                <p className="font-display text-4xl text-secondary">{stats.avgThreesMade}</p>
+                <p className="font-display text-4xl text-secondary">{stats.avgThreesMade.toFixed(1)}</p>
               </div>
             </div>
           </div>

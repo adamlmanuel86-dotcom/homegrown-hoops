@@ -340,10 +340,13 @@ export function PlayerCard({
   const DIVIDER = "hsl(220,36%,14%)";
   const MUTED = "hsl(220,20%,38%)";
 
+  const fmtAvg = (v: number | string | undefined): string =>
+    typeof v === "number" ? v.toFixed(1) : "—";
+
   const statItems = [
-    { label: "Points", value: stats?.avgPoints ?? "—" },
-    { label: "Rebounds", value: stats?.avgRebounds ?? "—" },
-    { label: "Assists", value: stats?.avgAssists ?? "—" },
+    { label: "Points",   value: fmtAvg(stats?.avgPoints) },
+    { label: "Rebounds", value: fmtAvg(stats?.avgRebounds) },
+    { label: "Assists",  value: fmtAvg(stats?.avgAssists) },
   ];
 
   return (
