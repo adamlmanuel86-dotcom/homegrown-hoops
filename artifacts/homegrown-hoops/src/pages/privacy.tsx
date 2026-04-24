@@ -5,7 +5,18 @@ export function PrivacyPage() {
     <div style={pageStyle}>
       <div style={containerStyle}>
         <div style={{ marginBottom: 32 }}>
-          <a href={`${basePath}/`} style={backLinkStyle}>← Back to Homegrown Hoops</a>
+          <a
+            href={`${basePath}/sign-up`}
+            style={backLinkStyle}
+            onClick={(e) => {
+              if (window.history.length > 1) {
+                e.preventDefault();
+                window.history.back();
+              }
+            }}
+          >
+            ← Back
+          </a>
         </div>
 
         <div style={headerStyle}>

@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, useUser, useClerk } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers, HelpCircle, ChevronDown } from "lucide-react";
+import { Menu, X, CalendarDays, Home, Trophy, Users, User, Shield, BookOpen, LogOut, LogIn, Layers, HelpCircle, ChevronDown, Mail } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
 import { Walkthrough } from "@/components/walkthrough";
 import {
@@ -117,6 +117,16 @@ export function Layout({ children }: { children: ReactNode }) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="mailto:adamlmanuel86@gmail.com?subject=Homegrown%20Hoops%20Inquiry"
+                        className="flex items-center gap-2 cursor-pointer text-white/80 hover:text-white focus:bg-white/10 focus:text-white"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Contact Admin
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
                     <DropdownMenuItem
                       onClick={() => signOut({ redirectUrl: "/" })}
                       className="flex items-center gap-2 cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-500/10 focus:text-red-300"
@@ -199,6 +209,15 @@ export function Layout({ children }: { children: ReactNode }) {
                   {user?.firstName ?? "My Profile"}
                 </Link>
 
+                <a
+                  href="mailto:adamlmanuel86@gmail.com?subject=Homegrown%20Hoops%20Inquiry"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                >
+                  <Mail className="h-4 w-4" />
+                  Contact Admin
+                </a>
+
                 <div className="px-1">
                   <button
                     onClick={() => { setIsOpen(false); signOut({ redirectUrl: "/" }); }}
@@ -219,8 +238,17 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
 
       <footer className="bg-secondary text-white/50 py-6 mt-auto">
-        <div className="container mx-auto px-4 text-center text-sm font-medium">
-          © {new Date().getFullYear()} Homegrown Hoops
+        <div className="container mx-auto px-4 text-center text-sm font-medium space-y-2">
+          <div className="flex items-center justify-center gap-4">
+            <a
+              href="mailto:adamlmanuel86@gmail.com?subject=Homegrown%20Hoops%20Inquiry"
+              className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors text-xs font-semibold"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Contact
+            </a>
+          </div>
+          <div>© {new Date().getFullYear()} Homegrown Hoops</div>
         </div>
       </footer>
     </div>
