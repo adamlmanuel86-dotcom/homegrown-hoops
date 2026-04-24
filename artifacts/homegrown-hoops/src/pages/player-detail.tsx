@@ -1,5 +1,6 @@
-import { useRoute, Link } from "wouter";
-import { useGetPlayer, useGetPlayerStats, useListTeams } from "@workspace/api-client-react";
+import { useEffect } from "react";
+import { useRoute, Link, useLocation } from "wouter";
+import { useGetPlayer, useGetPlayerStats, useListTeams, useListProfiles } from "@workspace/api-client-react";
 import { ChevronLeft, User } from "lucide-react";
 
 function StatBox({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) {
@@ -14,13 +15,30 @@ function StatBox({ label, value, highlight }: { label: string; value: string | n
 export function PlayerDetailPage() {
   const [, params] = useRoute("/players/:id");
   const id = Number(params?.id);
-  const { data: player, isLoading } = useGetPlayer(id, { query: { enabled: !!id } });
+  const [, setLocation] = useLocation();
+
+  const { data: player, isLoading: playerLoading } = useGetPlayer(id, { query: { enabled: !!id } });
+  const { data: profiles, isLoading: profilesLoading } = useListProfiles();
   const { data: stats } = useGetPlayerStats(id, { query: { enabled: !!id } });
   const { data: teams } = useListTeams();
 
   const team = teams?.find((t) => t.id === player?.teamId);
 
-  if (isLoading) {
+  const matchedProfile = player && profiles
+    ? profiles.find(
+        (p) =>
+          p.firstName.toLowerCase() === player.firstName.toLowerCase() &&
+          p.lastName.toLowerCase() === player.lastName.toLowerCase()
+      )
+    : undefined;
+
+  useEffect(() => {
+    if (matchedProfile?.clerkUserId) {
+      setLocation(`/profiles/${matchedProfile.clerkUserId}`, { replace: true });
+    }
+  }, [matchedProfile, setLocation]);
+
+  if (playerLoading || profilesLoading) {
     return (
       <div className="space-y-8 animate-pulse max-w-4xl mx-auto">
         <div className="h-4 w-24 bg-muted rounded" />
@@ -28,6 +46,15 @@ export function PlayerDetailPage() {
         <div className="grid grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-20 bg-muted rounded-xl" />)}
         </div>
+      </div>
+    );
+  }
+
+  if (matchedProfile) {
+    return (
+      <div className="space-y-8 animate-pulse max-w-4xl mx-auto">
+        <div className="h-4 w-24 bg-muted rounded" />
+        <div className="h-52 bg-muted rounded-2xl" />
       </div>
     );
   }
@@ -47,7 +74,6 @@ export function PlayerDetailPage() {
         <ChevronLeft className="h-4 w-4" /> Back to Players
       </Link>
 
-      {/* Player Banner */}
       <div className="rounded-2xl overflow-hidden bg-secondary text-white relative">
         <div
           className="absolute inset-0 opacity-25"
@@ -106,7 +132,6 @@ export function PlayerDetailPage() {
         )}
       </div>
 
-      {/* Stats */}
       {stats && stats.gamesPlayed > 0 ? (
         <div className="space-y-6">
           <div>
