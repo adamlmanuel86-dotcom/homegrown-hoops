@@ -139,31 +139,24 @@ export function PlayerDetailPage() {
               <h2 className="font-bold text-lg text-secondary">Career Averages</h2>
               <span className="label-upper">{stats.gamesPlayed} GP</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <StatBox label="PPG" value={stats.avgPoints} highlight />
               <StatBox label="RPG" value={stats.avgRebounds} />
               <StatBox label="APG" value={stats.avgAssists} />
-              <StatBox label="3PG" value={stats.avgThreesMade} />
-              <StatBox label="SPG" value={stats.avgSteals} />
-              <StatBox label="BPG" value={stats.avgBlocks} />
-              <StatBox label="TPG" value={stats.avgTurnovers} />
-              <StatBox label="MPG" value={stats.avgMinutes} />
             </div>
           </div>
 
           <div>
-            <h3 className="font-bold text-secondary mb-4">Shooting</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "FG%", value: `${stats.fieldGoalPct}%` },
-                { label: "3PT%", value: `${stats.threePointPct}%` },
-                { label: "FT%", value: `${stats.freeThrowPct}%` },
-              ].map(({ label, value }) => (
-                <div key={label} className="card-base p-5 text-center">
-                  <p className="label-upper text-[10px] mb-2">{label}</p>
-                  <p className="font-display text-4xl text-secondary">{value}</p>
-                </div>
-              ))}
+            <h3 className="font-bold text-secondary mb-4">Three Pointers</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="card-base p-5 text-center">
+                <p className="label-upper text-[10px] mb-2">Career Total</p>
+                <p className="font-display text-4xl text-secondary">{stats.totalThreesMade}</p>
+              </div>
+              <div className="card-base p-5 text-center">
+                <p className="label-upper text-[10px] mb-2">Per Game</p>
+                <p className="font-display text-4xl text-secondary">{stats.avgThreesMade}</p>
+              </div>
             </div>
           </div>
         </div>
