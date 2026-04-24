@@ -20,6 +20,8 @@ import { OurStoryPage } from "@/pages/our-story";
 import { ArchetypesPage } from "@/pages/archetypes";
 import { OnboardingPage } from "@/pages/onboarding";
 import { CustomSignUpPage } from "@/pages/sign-up";
+import { TermsPage } from "@/pages/terms";
+import { PrivacyPage } from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -242,6 +244,8 @@ function Router() {
             <Route path="/admin" component={AdminPage} />
             <Route path="/our-story" component={OurStoryPage} />
             <Route path="/archetypes" component={ArchetypesPage} />
+            <Route path="/terms" component={TermsPage} />
+            <Route path="/privacy" component={PrivacyPage} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

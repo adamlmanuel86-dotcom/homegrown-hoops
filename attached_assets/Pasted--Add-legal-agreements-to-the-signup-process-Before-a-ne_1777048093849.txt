@@ -1,0 +1,19 @@
+“Add legal agreements to the signup process. Before a new user can create an account they must see and agree to the following. First: Add a consent checkbox at the bottom of the signup form with this exact text: ‘I confirm that I am 18 or older, OR that I am a parent or guardian consenting on behalf of a minor player. I have read and agree to the Terms of Service, Privacy Policy and Video and Image Consent. I understand that player profiles and game footage are visible to registered users of the platform.’ The checkbox must be ticked before the continue button activates. Second: Add a Terms of Service page to the site with a link in the consent checkbox text and in the site footer. Third: Add a Privacy Policy page to the site with a link in the consent checkbox text and in the site footer. Fourth: Both pages should match the dark navy design of the rest of the site and be readable on mobile. Use the following content exactly for each page:
+TERMS OF SERVICE PAGE CONTENT:
+Homegrown Hoops Pilot Season 2026
+What Homegrown Hoops is: Homegrown Hoops is a youth basketball platform that tracks player stats, displays achievements and stores game footage. It is currently operating as a free pilot season.
+Who can use it: Players must be registered members of a participating team. Players under 18 require a parent or guardian to consent on their behalf at signup.
+Your content: By uploading or allowing upload of video footage you grant Homegrown Hoops permission to store and display that footage on the platform. You retain ownership of your content. You can request removal at any time by contacting us.
+Your data: We collect your name, email, school, position, graduation year, jersey number, profile photo and basketball statistics. This information is used only to operate your player profile. We do not sell your data to anyone.
+Stats and achievements: Your stats, Stamps, Tides, Archetype and Legacy Score are displayed on your public player profile. Other registered users can view your profile.
+Pilot season: This is a free pilot season. Features may change. The platform is being actively developed. We appreciate your patience and feedback.
+Contact: Questions or concerns can be directed to the platform administrator.
+PRIVACY POLICY PAGE CONTENT:
+Homegrown Hoops Pilot Season 2026
+What we collect: Name, email address, school, graduation year, position, jersey number, profile photo, basketball statistics, game footage you or your team uploads.
+How we use it: To create and display your player profile, calculate your stats and achievements, and operate the platform. Nothing else.
+Who can see it: Your player profile including name, school, stats, Stamps, Tides and Archetype is visible to all registered users of the platform. Your email address is never visible to other users.
+Game footage: Game footage uploaded to the platform is viewable by registered users. If you want footage removed contact the administrator and it will be deleted within 48 hours.
+Your rights under Canadian law: Under PIPEDA you have the right to access your personal information, correct inaccurate information and request deletion of your data. To exercise these rights contact the administrator.
+Data storage: Your data is stored securely on third party servers including Replit and Cloudinary. We take reasonable steps to protect your information.
+Contact: Questions about privacy can be directed to the platform administrator.”**

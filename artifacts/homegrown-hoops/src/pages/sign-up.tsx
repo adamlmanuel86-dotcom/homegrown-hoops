@@ -42,6 +42,7 @@ export function CustomSignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasSavedState, setHasSavedState] = useState(false);
+  const [consented, setConsented] = useState(false);
 
   // ── Auto-restore: if Clerk still has a pending verification and we have a
   //    saved email in localStorage, jump straight to the code entry screen.
@@ -299,7 +300,70 @@ export function CustomSignUpPage() {
 
                 {error && <ErrorBox message={error} />}
 
-                <button type="submit" disabled={loading} style={primaryBtnStyle(loading)}>
+                {/* Legal consent checkbox */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    marginBottom: 20,
+                    cursor: "pointer",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={consented}
+                    onChange={(e) => setConsented(e.target.checked)}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      marginTop: 2,
+                      flexShrink: 0,
+                      accentColor: "hsl(22, 78%, 46%)",
+                      cursor: "pointer",
+                    }}
+                  />
+                  <span style={{
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                    color: "hsl(215, 16%, 62%)",
+                  }}>
+                    I confirm that I am 18 or older, OR that I am a parent or guardian consenting on behalf of a minor player. I have read and agree to the{" "}
+                    <a
+                      href={`${basePath}/terms`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Terms of Service
+                    </a>
+                    ,{" "}
+                    <a
+                      href={`${basePath}/privacy`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Privacy Policy
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href={`${basePath}/terms#video-consent`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "hsl(22, 78%, 58%)", fontWeight: 600, textDecoration: "underline" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Video and Image Consent
+                    </a>
+                    . I understand that player profiles and game footage are visible to registered users of the platform.
+                  </span>
+                </label>
+
+                <button type="submit" disabled={loading || !consented} style={primaryBtnStyle(loading || !consented)}>
                   {loading && <Spinner />}
                   {loading ? "Creating your account…" : "Continue →"}
                 </button>
