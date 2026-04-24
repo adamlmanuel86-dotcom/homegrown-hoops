@@ -21,6 +21,7 @@ export type CardStats = {
   avgRebounds: number | string;
   avgAssists: number | string;
   avgThreesMade?: number | string;
+  gamesPlayed?: number;
   totalPoints?: number;
   totalRebounds?: number;
   totalAssists?: number;
@@ -134,6 +135,7 @@ function LegacyScorePopup({
 }: {
   score: number;
   breakdown: {
+    games: number; gameLP: number;
     pts: number; ptLP: number;
     reb: number; rebLP: number;
     ast: number; astLP: number;
@@ -143,6 +145,7 @@ function LegacyScorePopup({
   onClose: () => void;
 }) {
   const rows: { label: string; value: string; lp: number; color: string }[] = [
+    { label: `${breakdown.games} Games Played`, value: "×25", lp: breakdown.gameLP, color: "#4ADE80" },
     { label: `${breakdown.pts} Career Points`, value: "×10", lp: breakdown.ptLP, color: "#F97316" },
     { label: `${breakdown.reb} Career Rebounds`, value: "×15", lp: breakdown.rebLP, color: "#38BDF8" },
     { label: `${breakdown.ast} Career Assists`, value: "×20", lp: breakdown.astLP, color: "#34D399" },
@@ -209,7 +212,7 @@ function LegacyScorePopup({
             style={{ background: "hsl(220 28% 11%)", border: "1px solid hsl(220 28% 16%)" }}
           >
             <p style={{ color: "hsl(215 16% 65%)" }}>
-              Your Legacy Score grows every game and never resets. Every point, rebound and assist adds to it. Earn Stamps and Tides for big bonus points. Your Legacy Score is yours forever.
+              Your Legacy Score grows every game and never resets. You earn 25 points just for showing up. Every point, rebound and assist adds to it. Earn Stamps and Tides for big bonus points. Your Legacy Score is yours forever.
             </p>
           </div>
         </div>
@@ -255,25 +258,27 @@ export function PlayerCard({
   }
 
   // Legacy Score formula:
-  //   pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000
+  //   games×25 + pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000
   const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
   const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
 
+  const gameLP  = (stats?.gamesPlayed   ?? 0) * 25;
   const ptLP    = (stats?.totalPoints   ?? 0) * 10;
   const rebLP   = (stats?.totalRebounds ?? 0) * 15;
   const astLP   = (stats?.totalAssists  ?? 0) * 20;
   const stampLP = uniqueStampCount * 200;
   const tideLP  = totalTides * 1000;
 
-  const legacyScore = ptLP + rebLP + astLP + stampLP + tideLP;
+  const legacyScore = gameLP + ptLP + rebLP + astLP + stampLP + tideLP;
 
   const legacyBreakdown = {
-    pts: stats?.totalPoints   ?? 0, ptLP,
-    reb: stats?.totalRebounds ?? 0, rebLP,
-    ast: stats?.totalAssists  ?? 0, astLP,
+    games: stats?.gamesPlayed  ?? 0, gameLP,
+    pts:   stats?.totalPoints  ?? 0, ptLP,
+    reb:   stats?.totalRebounds ?? 0, rebLP,
+    ast:   stats?.totalAssists  ?? 0, astLP,
     stamps: uniqueStampCount, stampLP,
-    tides: totalTides, tideLP,
+    tides:  totalTides, tideLP,
   };
 
   const meta = ARCHETYPE_META[archetypeKey] ?? ARCHETYPE_META["Uncharted"];

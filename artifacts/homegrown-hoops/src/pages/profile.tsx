@@ -57,6 +57,7 @@ export function ProfilePage() {
           avgRebounds: playerStats.avgRebounds,
           avgAssists: playerStats.avgAssists,
           avgThreesMade: playerStats.avgThreesMade,
+          gamesPlayed: playerStats.gamesPlayed,
           totalPoints: playerStats.totalPoints,
           totalRebounds: playerStats.totalRebounds,
           totalAssists: playerStats.totalAssists,
