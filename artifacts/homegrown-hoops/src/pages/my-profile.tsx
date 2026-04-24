@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck } from "lucide-react";
+import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
@@ -43,6 +43,13 @@ export function MyProfilePage() {
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState<FormData>(empty);
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [clearAvatar, setClearAvatar] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const create = useCreateMyProfile();
   const update = useUpdateMyProfile();
 
@@ -79,9 +86,57 @@ export function MyProfilePage() {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    setClearAvatar(false);
+    setPhotoError(null);
+  }
+
+  async function uploadPhoto(file: File): Promise<string | null> {
+    try {
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!urlRes.ok) return null;
+      const { uploadURL, objectPath } = await urlRes.json();
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!putRes.ok) return null;
+      return `/api/storage/objects/${objectPath.replace(/^\/objects\//, "")}`;
+    } catch {
+      return null;
+    }
+  }
+
+  function startEditing() {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setClearAvatar(false);
+    setPhotoError(null);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setClearAvatar(false);
+    setPhotoError(null);
+    setEditing(false);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = {
+    setPhotoError(null);
+
+    const payload: Record<string, unknown> = {
       firstName: form.firstName,
       lastName: form.lastName,
       school: form.school || null,
@@ -91,14 +146,34 @@ export function MyProfilePage() {
       teamId: form.teamId ? parseInt(form.teamId) : null,
     };
 
-    if (isNew) {
-      await create.mutateAsync({ data: payload });
-    } else {
-      await update.mutateAsync({ data: payload });
+    let photoFailed = false;
+
+    if (clearAvatar) {
+      payload.avatarUrl = null;
+    } else if (avatarFile) {
+      setIsUploadingPhoto(true);
+      const url = await uploadPhoto(avatarFile);
+      setIsUploadingPhoto(false);
+      if (url) {
+        payload.avatarUrl = url;
+      } else {
+        photoFailed = true;
+        setPhotoError("Photo upload failed — your other changes were saved, but the photo was not updated.");
+      }
     }
 
+    if (isNew) {
+      await create.mutateAsync({ data: payload as Parameters<typeof create.mutateAsync>[0]["data"] });
+    } else {
+      await update.mutateAsync({ data: payload as Parameters<typeof update.mutateAsync>[0]["data"] });
+    }
+
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setClearAvatar(false);
     await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-    setEditing(false);
+    // If photo upload failed keep the form open so the user can see the error
+    if (!photoFailed) setEditing(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
@@ -145,8 +220,16 @@ export function MyProfilePage() {
       {!showForm && profile ? (
         <div className="card-base overflow-hidden">
           <div className="bg-secondary px-6 py-8 flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <User className="h-8 w-8 text-primary" />
+            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.firstName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="h-8 w-8 text-primary" />
+              )}
             </div>
             <div>
               <h2 className="font-display text-3xl text-white leading-tight">
@@ -187,13 +270,72 @@ export function MyProfilePage() {
                 <p className="text-muted-foreground text-sm leading-relaxed">{profile.bio}</p>
               </div>
             )}
-            <button onClick={() => setEditing(true)} className="btn-primary mt-2">
+            <button onClick={startEditing} className="btn-primary mt-2">
               <Pencil className="h-4 w-4" /> Edit Profile
             </button>
           </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="card-base p-6 space-y-5">
+
+          {/* ── Photo upload ── */}
+          <div>
+            <label className="label-upper block mb-2">Profile Photo</label>
+            <div className="flex items-center gap-4">
+              {/* Preview / current avatar */}
+              <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {clearAvatar ? (
+                  <User className="h-9 w-9 text-muted-foreground" />
+                ) : avatarPreview ? (
+                  <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="Current photo" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="h-9 w-9 text-muted-foreground" />
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 min-w-0">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+                >
+                  <Camera className="h-4 w-4 text-primary" />
+                  {avatarPreview || (profile?.avatarUrl && !clearAvatar) ? "Change Photo" : "Add Photo"}
+                </button>
+                {(avatarPreview || (profile?.avatarUrl && !clearAvatar)) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarFile(null);
+                      setAvatarPreview(null);
+                      setClearAvatar(true);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" /> Remove photo
+                  </button>
+                )}
+                {isUploadingPhoto && (
+                  <p className="text-xs text-muted-foreground">Uploading photo…</p>
+                )}
+              </div>
+            </div>
+            {photoError && (
+              <p className="text-amber-500 text-xs font-medium mt-2">{photoError}</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label-upper block mb-1.5">First Name *</label>
@@ -310,7 +452,7 @@ export function MyProfilePage() {
             {!isNew && (
               <button
                 type="button"
-                onClick={() => setEditing(false)}
+                onClick={cancelEditing}
                 className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
               >
                 Cancel

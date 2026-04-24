@@ -579,6 +579,7 @@ export const CreateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
+  avatarUrl: zod.string().nullish(),
 });
 
 /**
@@ -592,6 +593,7 @@ export const UpdateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
+  avatarUrl: zod.string().nullish(),
 });
 
 export const UpdateMyProfileResponse = zod.object({

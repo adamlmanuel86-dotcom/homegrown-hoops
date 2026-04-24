@@ -340,6 +340,8 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** @nullable */
+  avatarUrl?: string | null;
 }
 
 export interface UpdateUserProfileBody {
@@ -355,6 +357,8 @@ export interface UpdateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** @nullable */
+  avatarUrl?: string | null;
 }
 
 export interface AdminUpdateProfileBody {

@@ -154,6 +154,16 @@ export function OnboardingPage() {
         if (url) {
           finalAvatarUrl = url;
           setForm((f) => ({ ...f, avatarUrl: url }));
+        } else {
+          // Upload failed — clear file so a retry won't re-attempt it,
+          // show a friendly message, and bail out so the user sees the
+          // photo step (not the loading screen) with the error visible.
+          setAvatarFile(null);
+          setAvatarPreview(null);
+          setUploadError(
+            "Photo upload failed — you can add a photo later in your profile settings."
+          );
+          return; // finally block will reset isSubmitting
         }
       }
 
