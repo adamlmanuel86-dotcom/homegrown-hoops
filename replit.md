@@ -38,10 +38,12 @@ Tables: `teams`, `players`, `games`, `game_player_stats`, `user_profiles`
 
 ## Season Reset Rules
 
-`resetTeamSeason` (admin action):
-- **RESETS**: current season tides (cleared), current season archetype (→ "Uncharted"), current season game_player_stats (deleted)
-- **PRESERVES**: stamps (permanent career achievements, never recalculated), careerStats (snapshot added before deletion), Legacy Score (computed from careerStats + live stats)
-- **SAVES**: archetype for the closing season into archetypeHistory before resetting to Uncharted
+`resetTeamSeason` (admin action) — **archive + fresh start, nothing is ever deleted**:
+- **ARCHIVES**: saves each player's closing archetype into `archetypeHistory` keyed by season name
+- **RESETS**: current archetype → "Uncharted" for the fresh season
+- **PRESERVES PERMANENTLY**: all `game_player_stats` rows (every stat from every season), all tides (season-tagged on profile), all stamps
+- Legacy Score = computed from ALL `game_player_stats` in DB (all seasons, no careerStats snapshot needed)
+- The `careerStats` profile field is now deprecated/unused — removed from reset logic
 
 ## Season History (Player Profiles)
 

@@ -94,12 +94,13 @@ export function ProfilePage() {
     );
   }
 
-  // ── Career totals for Legacy Score (careerStats snapshot + live game stats) ──
-  const snap = profile.careerStats;
-  const careerGames = (snap?.gamesPlayed ?? 0) + (allSeasonStats?.gamesPlayed ?? 0);
-  const careerPoints = (snap?.points ?? 0) + (allSeasonStats?.totalPoints ?? 0);
-  const careerRebounds = (snap?.rebounds ?? 0) + (allSeasonStats?.totalRebounds ?? 0);
-  const careerAssists = (snap?.assists ?? 0) + (allSeasonStats?.totalAssists ?? 0);
+  // ── Career totals for Legacy Score ─────────────────────────────────────────
+  // All game stats are permanently in the DB — allSeasonStats (no season filter)
+  // already covers every season a player has ever played.
+  const careerGames = allSeasonStats?.gamesPlayed ?? 0;
+  const careerPoints = allSeasonStats?.totalPoints ?? 0;
+  const careerRebounds = allSeasonStats?.totalRebounds ?? 0;
+  const careerAssists = allSeasonStats?.totalAssists ?? 0;
 
   const careerTotalsForCard =
     careerGames > 0
@@ -108,9 +109,9 @@ export function ProfilePage() {
           totalPoints: careerPoints,
           totalRebounds: careerRebounds,
           totalAssists: careerAssists,
-          avgPoints: careerGames > 0 ? careerPoints / careerGames : 0,
-          avgRebounds: careerGames > 0 ? careerRebounds / careerGames : 0,
-          avgAssists: careerGames > 0 ? careerAssists / careerGames : 0,
+          avgPoints: careerPoints / careerGames,
+          avgRebounds: careerRebounds / careerGames,
+          avgAssists: careerAssists / careerGames,
         }
       : undefined;
 
@@ -141,11 +142,17 @@ export function ProfilePage() {
       }
     : undefined;
 
-  // ── Tides for selected season (or current/all tides when no season selected) ──
+  // ── Tides for selected season ──────────────────────────────────────────────
+  // When no season is selected, show tides for the current (most recent) season
+  // only. Tides accumulate permanently with season tags; the season selector
+  // lets the user browse past seasons.
   const allTides = profile.tides ?? [];
+  const currentSeason = seasons.length > 0 ? seasons[0] : null;
   const displayTides = selectedSeason
     ? allTides.filter((t) => t.season === selectedSeason)
-    : allTides;
+    : currentSeason
+    ? allTides.filter((t) => t.season === currentSeason)
+    : [];
 
   // ── Archetype for selected season (from history) or current ──
   const displayArchetype = selectedSeason

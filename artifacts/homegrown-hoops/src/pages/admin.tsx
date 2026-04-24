@@ -726,7 +726,7 @@ export function AdminPage() {
                             <>
                               <div className="flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
-                                <p className="text-sm font-bold text-green-300">Season reset complete. Ready for a new season.</p>
+                                <p className="text-sm font-bold text-green-300">Season archived. All data preserved. Ready for a fresh season.</p>
                               </div>
                               <button
                                 onClick={() => { setNewSeasonResetTeamId(null); setNewSeasonResetDone(false); }}
@@ -741,7 +741,7 @@ export function AdminPage() {
                                 <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
                                 <div>
                                   <p className="text-sm font-bold text-red-300 mb-1">New Season Reset — {team.name}</p>
-                                  <p className="text-xs text-muted-foreground">This will remove all Tides from all players on this team and reset stats for the new season. Player Legacy Scores and career stats will be preserved. This cannot be undone. Are you sure?</p>
+                                  <p className="text-xs text-muted-foreground">This will archive the current season and start a fresh new season. All historical data is preserved and viewable. This cannot be undone.</p>
                                 </div>
                               </div>
                               {newSeasonResetError && <p className="text-xs text-red-400 font-medium">{newSeasonResetError}</p>}
@@ -752,7 +752,7 @@ export function AdminPage() {
                                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
                                 >
                                   <RotateCcw className="h-3.5 w-3.5" />
-                                  {newSeasonResetPending ? "Resetting…" : "Yes, Reset Season"}
+                                  {newSeasonResetPending ? "Archiving…" : "Yes, Archive Season"}
                                 </button>
                                 <button
                                   onClick={() => { setNewSeasonResetTeamId(null); setNewSeasonResetError(null); }}

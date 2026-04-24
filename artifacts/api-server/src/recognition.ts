@@ -6,7 +6,7 @@ import {
   userProfilesTable,
   playersTable,
 } from "@workspace/db";
-import type { CareerStats, ArchetypeHistoryEntry } from "@workspace/db";
+import type { ArchetypeHistoryEntry } from "@workspace/db";
 
 type RecEntry = { id: string; earnedAt: string; season?: string };
 
@@ -562,73 +562,26 @@ export async function applyTeamTides(
 export async function resetTeamSeason(
   teamId: number,
   season?: string
-): Promise<{ season: string; playersReset: number; statsDeleted: number }> {
+): Promise<{ season: string; playersArchived: number }> {
   const resolvedSeason = season ?? (await getTeamCurrentSeason(teamId));
-  if (!resolvedSeason) return { season: "", playersReset: 0, statsDeleted: 0 };
+  if (!resolvedSeason) return { season: "", playersArchived: 0 };
 
-  // ── Step 1: Collect this season's game stats per player (by name) ──────────
-  const seasonRows = await db
-    .select({
-      firstName:    playersTable.firstName,
-      lastName:     playersTable.lastName,
-      points:       gamePlayerStatsTable.points,
-      rebounds:     gamePlayerStatsTable.rebounds,
-      assists:      gamePlayerStatsTable.assists,
-      steals:       gamePlayerStatsTable.steals,
-      blocks:       gamePlayerStatsTable.blocks,
-      threesMade:   gamePlayerStatsTable.threesMade,
-    })
-    .from(gamePlayerStatsTable)
-    .innerJoin(gamesTable,   eq(gamePlayerStatsTable.gameId,  gamesTable.id))
-    .innerJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
-    .where(and(eq(playersTable.teamId, teamId), eq(gamesTable.season, resolvedSeason)));
+  // ── Archive: save the closing season's archetype for each player, then
+  //    reset archetype to Uncharted for the fresh season.
+  //
+  //    NOTHING is deleted. All game stats, tides (season-tagged), and stamps
+  //    remain in the database permanently and are viewable via the season
+  //    selector on player profiles.
+  // ─────────────────────────────────────────────────────────────────────────
 
-  type SeasonTotals = CareerStats;
-  const statsByName = new Map<string, SeasonTotals>();
-  for (const row of seasonRows) {
-    const key = `${row.firstName}|${row.lastName}`;
-    if (!statsByName.has(key)) {
-      statsByName.set(key, { gamesPlayed: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, threesMade: 0 });
-    }
-    const s = statsByName.get(key)!;
-    s.gamesPlayed++;
-    s.points    += row.points;
-    s.rebounds  += row.rebounds;
-    s.assists   += row.assists;
-    s.steals    += row.steals;
-    s.blocks    += row.blocks;
-    s.threesMade += row.threesMade;
-  }
-
-  // ── Step 2: Update each profile — snapshot career stats, save archetype
-  //           history, clear tides, reset archetype to Uncharted ──────────────
   const teamProfiles = await db
     .select()
     .from(userProfilesTable)
     .where(eq(userProfilesTable.teamId, teamId));
 
-  let playersReset = 0;
+  let playersArchived = 0;
   for (const profile of teamProfiles) {
-    const nameKey = `${profile.firstName}|${profile.lastName}`;
-    const seasonTotals = statsByName.get(nameKey);
-
-    // Accumulate career stats (previous snapshot + this season's game stats)
-    const prev = (profile.careerStats ?? {
-      gamesPlayed: 0, points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, threesMade: 0,
-    }) as CareerStats;
-    const newCareerStats: CareerStats = seasonTotals
-      ? {
-          gamesPlayed: prev.gamesPlayed + seasonTotals.gamesPlayed,
-          points:      prev.points      + seasonTotals.points,
-          rebounds:    prev.rebounds    + seasonTotals.rebounds,
-          assists:     prev.assists     + seasonTotals.assists,
-          steals:      prev.steals      + seasonTotals.steals,
-          blocks:      prev.blocks      + seasonTotals.blocks,
-          threesMade:  prev.threesMade  + seasonTotals.threesMade,
-        }
-      : prev;
-
-    // Save current archetype to history before resetting
+    // Append (or overwrite) the archetype entry for the closing season
     const existingHistory = ((profile.archetypeHistory ?? []) as ArchetypeHistoryEntry[])
       .filter((h) => h.season !== resolvedSeason);
     const newHistory: ArchetypeHistoryEntry[] = [
@@ -639,42 +592,20 @@ export async function resetTeamSeason(
     await db
       .update(userProfilesTable)
       .set({
-        careerStats:      newCareerStats,
         archetypeHistory: newHistory,
-        tides:            [],
         archetype:        "Uncharted",
         updatedAt:        new Date(),
       })
       .where(eq(userProfilesTable.id, profile.id));
 
-    playersReset++;
+    playersArchived++;
   }
 
-  // ── Step 3: Delete this season's game-player-stats rows ───────────────────
-  const teamPlayerRows = await db
-    .select({ gameId: gamePlayerStatsTable.gameId, playerId: gamePlayerStatsTable.playerId })
-    .from(gamePlayerStatsTable)
-    .innerJoin(gamesTable,   eq(gamePlayerStatsTable.gameId,  gamesTable.id))
-    .innerJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
-    .where(and(eq(playersTable.teamId, teamId), eq(gamesTable.season, resolvedSeason)));
+  // Stamps are permanent career achievements — untouched.
+  // Tides remain on each profile, tagged with their season, permanently viewable.
+  // Game stats remain in game_player_stats permanently — no rows are deleted.
 
-  let statsDeleted = 0;
-  for (const row of teamPlayerRows) {
-    await db
-      .delete(gamePlayerStatsTable)
-      .where(
-        and(
-          eq(gamePlayerStatsTable.gameId,  row.gameId),
-          eq(gamePlayerStatsTable.playerId, row.playerId)
-        )
-      );
-    statsDeleted++;
-  }
-
-  // NOTE: Stamps are permanent career achievements and are NEVER recalculated
-  // or removed during a season reset.
-
-  return { season: resolvedSeason, playersReset, statsDeleted };
+  return { season: resolvedSeason, playersArchived };
 }
 
 // ─── 4. Full recognition run (stamps + archetypes only — tides are season-end admin action) ─────
