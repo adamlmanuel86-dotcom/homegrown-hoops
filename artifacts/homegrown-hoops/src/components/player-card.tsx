@@ -41,6 +41,8 @@ export type CardProfile = {
 type Props = {
   profile: CardProfile;
   stats?: CardStats;
+  /** When provided, used for Legacy Score instead of `stats`. Pass career totals here so the score never decreases after a season reset. */
+  careerTotals?: CardStats;
   primaryColor?: string;
   secondaryColor?: string;
 };
@@ -224,6 +226,7 @@ function LegacyScorePopup({
 export function PlayerCard({
   profile,
   stats,
+  careerTotals,
   primaryColor = "#B45309",
   secondaryColor = "#1E3A5F",
 }: Props) {
@@ -259,24 +262,27 @@ export function PlayerCard({
 
   // Legacy Score formula:
   //   games×25 + pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000
+  // careerTotals is used for the score when provided (career-based, never decreases).
+  // profile.tides and profile.stamps are ALWAYS career-wide (all seasons combined).
   const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
   const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
 
-  const gameLP  = (stats?.gamesPlayed   ?? 0) * 25;
-  const ptLP    = (stats?.totalPoints   ?? 0) * 10;
-  const rebLP   = (stats?.totalRebounds ?? 0) * 15;
-  const astLP   = (stats?.totalAssists  ?? 0) * 20;
+  const lp = careerTotals ?? stats;
+  const gameLP  = (lp?.gamesPlayed   ?? 0) * 25;
+  const ptLP    = (lp?.totalPoints   ?? 0) * 10;
+  const rebLP   = (lp?.totalRebounds ?? 0) * 15;
+  const astLP   = (lp?.totalAssists  ?? 0) * 20;
   const stampLP = uniqueStampCount * 200;
   const tideLP  = totalTides * 1000;
 
   const legacyScore = gameLP + ptLP + rebLP + astLP + stampLP + tideLP;
 
   const legacyBreakdown = {
-    games: stats?.gamesPlayed  ?? 0, gameLP,
-    pts:   stats?.totalPoints  ?? 0, ptLP,
-    reb:   stats?.totalRebounds ?? 0, rebLP,
-    ast:   stats?.totalAssists  ?? 0, astLP,
+    games: lp?.gamesPlayed  ?? 0, gameLP,
+    pts:   lp?.totalPoints  ?? 0, ptLP,
+    reb:   lp?.totalRebounds ?? 0, rebLP,
+    ast:   lp?.totalAssists  ?? 0, astLP,
     stamps: uniqueStampCount, stampLP,
     tides:  totalTides, tideLP,
   };

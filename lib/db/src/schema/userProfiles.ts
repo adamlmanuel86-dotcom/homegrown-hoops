@@ -5,6 +5,18 @@ import { z } from "zod/v4";
 export const USER_ROLES = ["admin", "coach", "player"] as const;
 export type UserRole = typeof USER_ROLES[number];
 
+export type TideEntry = { id: string; earnedAt: string; season?: string };
+export type CareerStats = {
+  gamesPlayed: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  threesMade: number;
+};
+export type ArchetypeHistoryEntry = { season: string; archetype: string };
+
 export const userProfilesTable = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
   clerkUserId: text("clerk_user_id").notNull().unique(),
@@ -21,8 +33,10 @@ export const userProfilesTable = pgTable("user_profiles", {
   isAdmin: boolean("is_admin").notNull().default(false),
   role: text("role").notNull().default("player"),
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
-  tides: json("tides").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
+  tides: json("tides").$type<TideEntry[]>().notNull().default([]),
   archetype: text("archetype").default("Uncharted"),
+  careerStats: json("career_stats").$type<CareerStats | null>().default(null),
+  archetypeHistory: json("archetype_history").$type<ArchetypeHistoryEntry[] | null>().default(null),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

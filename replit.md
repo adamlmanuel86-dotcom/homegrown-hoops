@@ -30,9 +30,26 @@ Mobile-friendly basketball stats tracking website for community/neighborhood lea
 ## Database Schema
 
 Tables: `teams`, `players`, `games`, `game_player_stats`, `user_profiles`
-- `user_profiles`: clerkUserId (unique), firstName, lastName, school, position, graduationYear, bio, isAdmin (bool), role ('admin'|'coach'|'player', default 'player')
+- `user_profiles`: clerkUserId (unique), firstName, lastName, school, position, graduationYear, bio, isAdmin (bool), role ('admin'|'coach'|'player', default 'player'), stamps (json, permanent), tides (json `{id, earnedAt, season?}[]`), archetype (text, current season), careerStats (json, accumulated totals from completed seasons), archetypeHistory (json, per-season archetype record)
 - First account to register automatically gets role='admin' and isAdmin=true
 - Role changes done via admin panel UI (PATCH /api/admin/users/:clerkUserId/role)
+- `careerStats` is snapshotted during New Season Reset — stores cumulative games/pts/reb/ast/stl/blk/3pm from all completed seasons so Legacy Score never decreases
+- `archetypeHistory` stores the archetype assigned at season end (written during reset) for season history view
+
+## Season Reset Rules
+
+`resetTeamSeason` (admin action):
+- **RESETS**: current season tides (cleared), current season archetype (→ "Uncharted"), current season game_player_stats (deleted)
+- **PRESERVES**: stamps (permanent career achievements, never recalculated), careerStats (snapshot added before deletion), Legacy Score (computed from careerStats + live stats)
+- **SAVES**: archetype for the closing season into archetypeHistory before resetting to Uncharted
+
+## Season History (Player Profiles)
+
+- Profile pages have a season selector dropdown (appears when player has historical data)
+- Selecting a past season shows: season-specific stats, tides filtered by season tag, archetype from archetypeHistory
+- Career Legacy Score and all stamps always show regardless of selected season
+- `GET /api/players/:id/seasons` — returns distinct seasons the player has game data for
+- `GET /api/players/:id/stats?season=X` — returns stats for that season only (no season param = all seasons)
 
 ## Stack
 

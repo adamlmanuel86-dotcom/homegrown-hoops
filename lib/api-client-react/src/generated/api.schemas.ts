@@ -287,6 +287,23 @@ export const UserRole = {
 export interface RecognitionEntry {
   id: string;
   earnedAt: string;
+  /** Season this recognition was earned in, e.g. "2025-26". Present on tides awarded from the 2025-26 season onward. */
+  season?: string;
+}
+
+export interface CareerStatsSnapshot {
+  gamesPlayed: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  threesMade: number;
+}
+
+export interface ArchetypeHistoryEntry {
+  season: string;
+  archetype: string;
 }
 
 export interface UserProfile {
@@ -315,6 +332,10 @@ export interface UserProfile {
   avatarUrl?: string | null;
   /** @nullable */
   number?: string | null;
+  /** Career stat totals accumulated from all completed seasons (snapshotted at each season reset). */
+  careerStats?: CareerStatsSnapshot | null;
+  /** Archetype assigned at the end of each completed season. */
+  archetypeHistory?: ArchetypeHistoryEntry[] | null;
   createdAt: string;
   updatedAt: string;
 }

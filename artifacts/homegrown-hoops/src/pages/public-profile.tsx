@@ -1,6 +1,14 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useGetProfile, useListPlayers, useGetPlayerStats, useListTeams } from "@workspace/api-client-react";
-import { User, Trophy, Calendar, School, ExternalLink } from "lucide-react";
+import {
+  useGetProfile,
+  useListPlayers,
+  useGetPlayerStats,
+  useListTeams,
+  useGetPlayerSeasons,
+  useGetPlayerStatsBySeason,
+} from "@workspace/api-client-react";
+import { User, Trophy, Calendar, School, ExternalLink, ChevronDown } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 
@@ -8,6 +16,7 @@ const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function PublicProfilePage() {
   const { clerkUserId = "" } = useParams<{ clerkUserId: string }>();
+  const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
 
   const { data: profile, isLoading } = useGetProfile(clerkUserId, {
     query: { enabled: !!clerkUserId },
@@ -20,27 +29,89 @@ export function PublicProfilePage() {
       p.lastName.toLowerCase() === (profile?.lastName ?? "").toLowerCase()
   );
 
-  const { data: playerStats } = useGetPlayerStats(matchedPlayer?.id ?? 0, {
-    query: { enabled: !!matchedPlayer?.id },
+  const playerId = matchedPlayer?.id ?? 0;
+
+  // All-season stats (for career Legacy Score)
+  const { data: allSeasonStats } = useGetPlayerStats(playerId, {
+    query: { enabled: !!playerId },
+  });
+
+  // Available seasons
+  const { data: seasonsData } = useGetPlayerSeasons(playerId, {
+    query: { enabled: !!playerId },
+  });
+  const seasons = seasonsData?.seasons ?? [];
+
+  // Season-specific stats (for display when a past season is selected)
+  const { data: seasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
+    query: { enabled: !!playerId && !!selectedSeason },
   });
 
   const { data: teams } = useListTeams();
   const team = teams?.find((t) => t.id === matchedPlayer?.teamId);
   const teamLabel = team?.name ?? "Unaffiliated / No Team";
 
-  const cardStats =
-    playerStats && playerStats.gamesPlayed > 0
+  // ── Career totals for Legacy Score ─────────────────────────────────────────
+  const snap = profile?.careerStats;
+  const careerGames = (snap?.gamesPlayed ?? 0) + (allSeasonStats?.gamesPlayed ?? 0);
+  const careerPoints = (snap?.points ?? 0) + (allSeasonStats?.totalPoints ?? 0);
+  const careerRebounds = (snap?.rebounds ?? 0) + (allSeasonStats?.totalRebounds ?? 0);
+  const careerAssists = (snap?.assists ?? 0) + (allSeasonStats?.totalAssists ?? 0);
+
+  const careerTotalsForCard =
+    careerGames > 0
       ? {
-          avgPoints: playerStats.avgPoints,
-          avgRebounds: playerStats.avgRebounds,
-          avgAssists: playerStats.avgAssists,
-          avgThreesMade: playerStats.avgThreesMade,
-          gamesPlayed: playerStats.gamesPlayed,
-          totalPoints: playerStats.totalPoints,
-          totalRebounds: playerStats.totalRebounds,
-          totalAssists: playerStats.totalAssists,
+          gamesPlayed: careerGames,
+          totalPoints: careerPoints,
+          totalRebounds: careerRebounds,
+          totalAssists: careerAssists,
+          avgPoints: careerGames > 0 ? careerPoints / careerGames : 0,
+          avgRebounds: careerGames > 0 ? careerRebounds / careerGames : 0,
+          avgAssists: careerGames > 0 ? careerAssists / careerGames : 0,
         }
       : undefined;
+
+  // ── Display stats for card ─────────────────────────────────────────────────
+  const displayStats = selectedSeason
+    ? seasonStats && seasonStats.gamesPlayed > 0
+      ? {
+          avgPoints: seasonStats.avgPoints,
+          avgRebounds: seasonStats.avgRebounds,
+          avgAssists: seasonStats.avgAssists,
+          avgThreesMade: seasonStats.avgThreesMade,
+          gamesPlayed: seasonStats.gamesPlayed,
+          totalPoints: seasonStats.totalPoints,
+          totalRebounds: seasonStats.totalRebounds,
+          totalAssists: seasonStats.totalAssists,
+        }
+      : undefined
+    : allSeasonStats && allSeasonStats.gamesPlayed > 0
+    ? {
+        avgPoints: allSeasonStats.avgPoints,
+        avgRebounds: allSeasonStats.avgRebounds,
+        avgAssists: allSeasonStats.avgAssists,
+        avgThreesMade: allSeasonStats.avgThreesMade,
+        gamesPlayed: allSeasonStats.gamesPlayed,
+        totalPoints: allSeasonStats.totalPoints,
+        totalRebounds: allSeasonStats.totalRebounds,
+        totalAssists: allSeasonStats.totalAssists,
+      }
+    : undefined;
+
+  // ── Tides for selected season ──────────────────────────────────────────────
+  const allTides = profile?.tides ?? [];
+  const displayTides = selectedSeason
+    ? allTides.filter((t) => t.season === selectedSeason)
+    : allTides;
+
+  // ── Archetype for selected season ──────────────────────────────────────────
+  const displayArchetype = selectedSeason
+    ? (profile?.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype ?? "Uncharted"
+    : profile?.archetype;
+
+  const displayProfile = profile
+    ? { ...profile, tides: displayTides, archetype: displayArchetype }
+    : null;
 
   if (isLoading) {
     return (
@@ -68,7 +139,7 @@ export function PublicProfilePage() {
     );
   }
 
-  if (!profile) {
+  if (!profile || !displayProfile) {
     return (
       <div
         style={{
@@ -183,11 +254,76 @@ export function PublicProfilePage() {
           padding: "32px 20px 0",
         }}
       >
+        {/* Season selector */}
+        {seasons.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 24,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                color: "hsl(215, 16%, 45%)",
+              }}
+            >
+              Season
+            </span>
+            <div style={{ position: "relative" }}>
+              <select
+                value={selectedSeason ?? ""}
+                onChange={(e) => setSelectedSeason(e.target.value || null)}
+                style={{
+                  appearance: "none",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 12,
+                  color: "hsl(210, 16%, 88%)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "8px 36px 8px 14px",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="">Current Season</option>
+                {seasons.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <ChevronDown
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 13,
+                  height: 13,
+                  color: "hsl(215, 16%, 45%)",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
+            {selectedSeason && (
+              <span style={{ fontSize: 11, color: "hsl(215, 16%, 45%)" }}>
+                Legacy Score always shows career total
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Player Card */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
           <PlayerCard
-            profile={profile}
-            stats={cardStats}
+            profile={displayProfile}
+            stats={displayStats}
+            careerTotals={careerTotalsForCard}
             primaryColor={team?.primaryColor ?? "#B45309"}
             secondaryColor={team?.secondaryColor ?? "#1E3A5F"}
           />
@@ -339,11 +475,11 @@ export function PublicProfilePage() {
           )}
         </div>
 
-        {/* Recognition */}
+        {/* Recognition — stamps always career-wide; tides + archetype season-filtered */}
         <RecognitionBlock
           stamps={profile.stamps ?? []}
-          tides={profile.tides ?? []}
-          archetype={profile.archetype}
+          tides={displayTides}
+          archetype={displayArchetype}
         />
 
         <div style={{ height: 32 }} />

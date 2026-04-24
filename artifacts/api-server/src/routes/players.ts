@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, playersTable, gamePlayerStatsTable } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
+import { db, playersTable, gamePlayerStatsTable, gamesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import {
   CreatePlayerBody,
@@ -75,7 +75,8 @@ router.patch("/players/:id", async (req, res): Promise<void> => {
   res.json(UpdatePlayerResponse.parse(serializeRow(player)));
 });
 
-router.get("/players/:id/stats", async (req, res): Promise<void> => {
+// GET /players/:id/seasons — distinct seasons a player has game data for
+router.get("/players/:id/seasons", async (req, res): Promise<void> => {
   const params = GetPlayerStatsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -84,9 +85,35 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
   const playerId = params.data.id;
 
   const rows = await db
-    .select()
+    .select({ season: gamesTable.season })
     .from(gamePlayerStatsTable)
+    .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
     .where(eq(gamePlayerStatsTable.playerId, playerId));
+
+  const seasons = [...new Set(rows.map((r) => r.season).filter(Boolean))].sort().reverse();
+  res.json({ seasons });
+});
+
+router.get("/players/:id/stats", async (req, res): Promise<void> => {
+  const params = GetPlayerStatsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const playerId = params.data.id;
+  const season = typeof req.query.season === "string" ? req.query.season : undefined;
+
+  const rows = season
+    ? await db
+        .select({ stat: gamePlayerStatsTable })
+        .from(gamePlayerStatsTable)
+        .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
+        .where(and(eq(gamePlayerStatsTable.playerId, playerId), eq(gamesTable.season, season)))
+        .then((r) => r.map((x) => x.stat))
+    : await db
+        .select()
+        .from(gamePlayerStatsTable)
+        .where(eq(gamePlayerStatsTable.playerId, playerId));
 
   const gamesPlayed = rows.length;
 
