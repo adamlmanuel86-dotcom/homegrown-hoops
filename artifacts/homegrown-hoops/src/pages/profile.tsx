@@ -8,8 +8,9 @@ import {
   useListTeams,
   useGetPlayerSeasons,
   useGetPlayerStatsBySeason,
+  useGetIsoBallProfile,
 } from "@workspace/api-client-react";
-import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown } from "lucide-react";
+import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 
@@ -81,6 +82,8 @@ export function ProfilePage() {
   const teamLabel = team?.name ?? "Unaffiliated / No Team";
 
   const isOwner = isSignedIn && user?.id === clerkUserId;
+
+  const { data: isoBallData } = useGetIsoBallProfile(clerkUserId || null);
 
   if (isLoading) {
     return (
@@ -329,6 +332,74 @@ export function ProfilePage() {
         tides={tidesForBlock}
         archetype={displayArchetype}
       />
+
+      {/* Ball Knowledge — only visible after at least 1 Iso Ball session */}
+      {isoBallData && isoBallData.sessionCount > 0 && (
+        <BallKnowledgeBlock
+          totalPoints={isoBallData.totalPoints}
+          sessionCount={isoBallData.sessionCount}
+          level={isoBallData.level}
+        />
+      )}
+    </div>
+  );
+}
+
+function getBallKnowledgeLevelColor(level: string): string {
+  if (level === "Elite Playmaker")    return "#c084fc";
+  if (level === "High Basketball IQ") return "#fb923c";
+  if (level === "Varsity Vision")     return "#60a5fa";
+  if (level === "Court Aware")        return "#4ade80";
+  return "#94a3b8";
+}
+
+function BallKnowledgeBlock({ totalPoints, sessionCount, level }: { totalPoints: number; sessionCount: number; level: string }) {
+  const levelColor = getBallKnowledgeLevelColor(level);
+  const isElite = level === "Elite Playmaker";
+  const pct = Math.min(100, Math.round((totalPoints / 800) * 100));
+
+  return (
+    <div className="card-base overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+        <Brain className="h-5 w-5" style={{ color: levelColor }} />
+        <h2 className="font-bold text-secondary">Ball Knowledge</h2>
+        {isElite && <Medal className="h-4 w-4" style={{ color: "#c084fc" }} />}
+      </div>
+      <div className="px-6 py-5 space-y-4">
+        <div className="flex items-end gap-3">
+          <div>
+            <p className="label-upper mb-0.5">Level</p>
+            <p className="text-xl font-black" style={{ color: levelColor }}>{level}</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="label-upper mb-0.5">Total Points</p>
+            <p className="text-xl font-black text-secondary tabular-nums">{totalPoints.toLocaleString()}</p>
+          </div>
+        </div>
+        {!isElite && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Progress to Elite Playmaker</span>
+              <span className="font-bold tabular-nums">{totalPoints} / 800 pts</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${pct}%`, background: levelColor }}
+              />
+            </div>
+          </div>
+        )}
+        {isElite && (
+          <div className="flex items-center gap-2 rounded-xl border border-purple-500/25 bg-purple-500/8 px-4 py-2.5">
+            <Medal className="h-4 w-4 flex-shrink-0" style={{ color: "#c084fc" }} />
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c084fc" }}>The Playbook Stamp Earned</p>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {sessionCount} {sessionCount === 1 ? "session" : "sessions"} completed on Iso Ball
+        </p>
+      </div>
     </div>
   );
 }

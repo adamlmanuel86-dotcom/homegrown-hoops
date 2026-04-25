@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, ChevronLeft, RotateCcw, Zap, Trophy, Timer } from "lucide-react";
+import { Brain, ChevronLeft, RotateCcw, Zap, Trophy, Timer, BookOpen, Medal } from "lucide-react";
+import { useUser } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetIsoBallLeaderboard } from "@workspace/api-client-react";
 
 type Difficulty = "rookie" | "varsity" | "elite";
 type AnswerKey = "A" | "B" | "C" | "D";
@@ -79,10 +82,10 @@ const QUESTIONS: Record<Difficulty, Question[]> = {
   ],
 };
 
-const DIFF_META: Record<Difficulty, { label: string; color: string; bg: string; ring: string; tagline: string }> = {
-  rookie: { label: "ROOKIE", color: "#4ade80", bg: "rgba(74,222,128,0.1)", ring: "rgba(74,222,128,0.4)", tagline: "Learn the fundamentals" },
-  varsity: { label: "VARSITY", color: "#fb923c", bg: "rgba(251,146,60,0.1)", ring: "rgba(251,146,60,0.4)", tagline: "Prove your court sense" },
-  elite:   { label: "ELITE",   color: "#c084fc", bg: "rgba(192,132,252,0.1)", ring: "rgba(192,132,252,0.4)", tagline: "Separate yourself from the field" },
+const DIFF_META: Record<Difficulty, { label: string; color: string; bg: string; ring: string; tagline: string; pts: number }> = {
+  rookie:  { label: "ROOKIE",  color: "#4ade80", bg: "rgba(74,222,128,0.1)",  ring: "rgba(74,222,128,0.4)",  tagline: "Learn the fundamentals",           pts: 10 },
+  varsity: { label: "VARSITY", color: "#fb923c", bg: "rgba(251,146,60,0.1)",  ring: "rgba(251,146,60,0.4)",  tagline: "Prove your court sense",            pts: 15 },
+  elite:   { label: "ELITE",   color: "#c084fc", bg: "rgba(192,132,252,0.1)", ring: "rgba(192,132,252,0.4)", tagline: "Separate yourself from the field",  pts: 20 },
 };
 
 const LABELS: [AnswerKey, string][] = [["A", "A"], ["B", "B"], ["C", "C"], ["D", "D"]];
@@ -115,9 +118,30 @@ function getPerformance(score: number, diff: Difficulty): string {
   return "Back to the Film Room";
 }
 
+function getBallKnowledgeLevel(pts: number): string {
+  if (pts >= 800) return "Elite Playmaker";
+  if (pts >= 500) return "High Basketball IQ";
+  if (pts >= 250) return "Varsity Vision";
+  if (pts >= 100) return "Court Aware";
+  if (pts >= 1)   return "Rookie IQ";
+  return "none";
+}
+
+function getLevelColor(level: string): string {
+  if (level === "Elite Playmaker")   return "#c084fc";
+  if (level === "High Basketball IQ") return "#fb923c";
+  if (level === "Varsity Vision")    return "#60a5fa";
+  if (level === "Court Aware")       return "#4ade80";
+  return "#94a3b8";
+}
+
 const TIMER_SECS = 15;
+const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 export function IsoBallPage() {
+  const { isSignedIn, user } = useUser();
+  const qc = useQueryClient();
+
   const [screen, setScreen] = useState<"landing" | "quiz" | "results">("landing");
   const [difficulty, setDifficulty] = useState<Difficulty>("rookie");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -129,6 +153,14 @@ export function IsoBallPage() {
   const [timeLeft, setTimeLeft] = useState(TIMER_SECS);
   const [answered, setAnswered] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [sessionSaved, setSessionSaved] = useState(false);
+  const [sessionPtsEarned, setSessionPtsEarned] = useState<number | null>(null);
+  const [newTotalPoints, setNewTotalPoints] = useState<number | null>(null);
+  const [newLevel, setNewLevel] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState(false);
+
+  const { data: leaderboard, isLoading: lbLoading } = useGetIsoBallLeaderboard();
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -175,6 +207,37 @@ export function IsoBallPage() {
     return stopTimer;
   }, [screen, qIndex, answered, advance, stopTimer]);
 
+  // Submit session when results screen shows
+  useEffect(() => {
+    if (screen !== "results" || !isSignedIn) return;
+
+    let cancelled = false;
+    async function save() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/iso-ball/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ difficulty, score: correct }),
+        });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json() as { pointsEarned: number; totalPoints: number; level: string };
+        if (cancelled) return;
+        setSessionPtsEarned(data.pointsEarned);
+        setNewTotalPoints(data.totalPoints);
+        setNewLevel(data.level);
+        setSessionSaved(true);
+        qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
+        qc.invalidateQueries({ queryKey: ["isoBallProfile", user?.id] });
+      } catch {
+        if (!cancelled) setSaveError(true);
+      }
+    }
+    save();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
   function startQuiz(diff: Difficulty) {
     setDifficulty(diff);
     setQuestions(shuffle(QUESTIONS[diff]).slice(0, 10));
@@ -185,6 +248,11 @@ export function IsoBallPage() {
     setBestStreak(0);
     setAnswered(false);
     setTimeLeft(TIMER_SECS);
+    setSessionSaved(false);
+    setSessionPtsEarned(null);
+    setNewTotalPoints(null);
+    setNewLevel(null);
+    setSaveError(false);
     setScreen("quiz");
   }
 
@@ -215,6 +283,11 @@ export function IsoBallPage() {
           <p className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
             Test your basketball IQ. Three levels. Ten questions. How deep is your knowledge?
           </p>
+          {!isSignedIn && (
+            <p className="text-xs text-muted-foreground/70">
+              <a href={`${BASE_URL}/sign-in`} className="underline text-primary/70 hover:text-primary">Sign in</a> to save your score and appear on The Playbook.
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4">
@@ -225,11 +298,7 @@ export function IsoBallPage() {
                 key={diff}
                 onClick={() => startQuiz(diff)}
                 className="w-full text-left rounded-2xl p-5 border transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{
-                  background: m.bg,
-                  borderColor: m.ring,
-                  boxShadow: `0 0 0 0 ${m.ring}`,
-                }}
+                style={{ background: m.bg, borderColor: m.ring }}
               >
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -238,13 +307,80 @@ export function IsoBallPage() {
                     </div>
                     <div className="text-sm text-muted-foreground">{m.tagline}</div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: m.color }}>
-                    Play <Zap className="h-4 w-4" />
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: m.color }}>
+                      Play <Zap className="h-4 w-4" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{m.pts} pts/correct</span>
                   </div>
                 </div>
               </button>
             );
           })}
+        </div>
+
+        {/* The Playbook Leaderboard */}
+        <div className="rounded-2xl border border-white/10 overflow-hidden">
+          <div className="flex items-center gap-3 px-5 py-4 bg-white/4 border-b border-white/8">
+            <BookOpen className="h-5 w-5 text-primary flex-shrink-0" />
+            <div>
+              <h2 className="font-black text-sm uppercase tracking-widest text-foreground">The Playbook</h2>
+              <p className="text-xs text-muted-foreground">Who Knows The Game</p>
+            </div>
+          </div>
+
+          {lbLoading ? (
+            <div className="divide-y divide-white/6">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
+                  <div className="w-6 h-4 bg-muted/30 rounded" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 bg-muted/30 rounded w-32" />
+                    <div className="h-2.5 bg-muted/20 rounded w-20" />
+                  </div>
+                  <div className="h-3 bg-muted/30 rounded w-16" />
+                </div>
+              ))}
+            </div>
+          ) : !leaderboard || leaderboard.length === 0 ? (
+            <div className="px-5 py-10 text-center text-muted-foreground text-sm">
+              No players on the board yet. Be the first!
+            </div>
+          ) : (
+            <div className="divide-y divide-white/6">
+              {leaderboard.slice(0, 10).map((entry) => {
+                const levelColor = getLevelColor(entry.level);
+                const isElite = entry.level === "Elite Playmaker";
+                const isMe = isSignedIn && user?.id === entry.clerkUserId;
+                return (
+                  <div
+                    key={entry.clerkUserId}
+                    className={`flex items-center gap-4 px-5 py-3.5 transition-colors ${isMe ? "bg-primary/8" : ""}`}
+                  >
+                    <span className={`text-sm font-black w-6 text-center tabular-nums ${entry.rank <= 3 ? "text-primary" : "text-muted-foreground"}`}>
+                      {entry.rank}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-bold truncate ${isMe ? "text-primary" : "text-foreground"}`}>
+                          {entry.firstName} {entry.lastName}
+                          {isMe && <span className="text-xs text-primary/70 font-medium ml-1">(you)</span>}
+                        </p>
+                        {isElite && (
+                          <Medal className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "#c084fc" }} />
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold" style={{ color: levelColor }}>{entry.level}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-black tabular-nums text-foreground">{entry.totalPoints.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{entry.sessions} {entry.sessions === 1 ? "session" : "sessions"}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -255,8 +391,6 @@ export function IsoBallPage() {
     const q = questions[qIndex];
     return (
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-
-        {/* Header row */}
         <div className="flex items-center justify-between">
           <button onClick={goLanding} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft className="h-4 w-4" /> Back
@@ -275,7 +409,6 @@ export function IsoBallPage() {
           </div>
         </div>
 
-        {/* Timer bar */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1 text-muted-foreground">
@@ -291,13 +424,11 @@ export function IsoBallPage() {
           </div>
         </div>
 
-        {/* Question */}
         <div className="rounded-2xl border border-white/10 bg-white/4 p-6">
           <p className="text-sm text-muted-foreground font-semibold uppercase tracking-wider mb-3">Question {qIndex + 1}</p>
           <p className="text-lg font-bold leading-snug">{q.q}</p>
         </div>
 
-        {/* Answer options */}
         <div className="grid gap-3">
           {LABELS.map(([key], i) => {
             const optText = q.opts[i];
@@ -337,6 +468,7 @@ export function IsoBallPage() {
   const pct = Math.round((correct / 10) * 100);
   const perfLabel = getPerformance(correct, difficulty);
   const ringColor = correct >= 8 ? "#4ade80" : correct >= 6 ? "#fb923c" : "#f87171";
+  const pointsEarnedThisSession = correct * DIFF_META[difficulty].pts;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center">
@@ -345,7 +477,6 @@ export function IsoBallPage() {
         <h2 className="text-3xl font-black uppercase tracking-tight" style={{ fontFamily: "'Anton', sans-serif" }}>{perfLabel}</h2>
       </div>
 
-      {/* Score ring */}
       <div className="flex justify-center">
         <div className="relative w-40 h-40">
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
@@ -366,7 +497,6 @@ export function IsoBallPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-white/10 bg-white/4 p-4 space-y-1">
           <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Accuracy</p>
@@ -374,14 +504,64 @@ export function IsoBallPage() {
         </div>
         <div className="rounded-xl border border-white/10 bg-white/4 p-4 space-y-1">
           <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Best Streak</p>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
             <Zap className="h-5 w-5 text-orange-400" />
             <p className="text-2xl font-black">{bestStreak}</p>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Ball Knowledge points earned */}
+      {isSignedIn ? (
+        <div
+          className="rounded-xl border p-4 space-y-1"
+          style={{
+            borderColor: sessionSaved ? "rgba(192,132,252,0.3)" : "rgba(255,255,255,0.08)",
+            background: sessionSaved ? "rgba(192,132,252,0.08)" : "rgba(255,255,255,0.04)",
+          }}
+        >
+          {sessionSaved ? (
+            <>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#c084fc" }}>Ball Knowledge</p>
+              <p className="text-lg font-black">
+                +{sessionPtsEarned} pts earned
+              </p>
+              {newTotalPoints !== null && newLevel && (
+                <p className="text-sm text-muted-foreground">
+                  Total: <span className="font-bold text-foreground">{newTotalPoints.toLocaleString()} pts</span>
+                  {" · "}
+                  <span className="font-bold" style={{ color: getLevelColor(newLevel) }}>{newLevel}</span>
+                </p>
+              )}
+              {newLevel === "Elite Playmaker" && (
+                <div className="flex items-center justify-center gap-1.5 mt-1">
+                  <Medal className="h-4 w-4" style={{ color: "#c084fc" }} />
+                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c084fc" }}>The Playbook Stamp Earned</span>
+                </div>
+              )}
+            </>
+          ) : saveError ? (
+            <>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ball Knowledge</p>
+              <p className="text-xs text-muted-foreground">+{pointsEarnedThisSession} pts (could not save — try again later)</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ball Knowledge</p>
+              <p className="text-xs text-muted-foreground animate-pulse">Saving +{pointsEarnedThisSession} pts…</p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-white/8 bg-white/4 p-4 space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ball Knowledge</p>
+          <p className="text-sm text-muted-foreground">
+            <a href={`${BASE_URL}/sign-in`} className="text-primary underline font-semibold">Sign in</a> to save your score and earn a spot on The Playbook.
+          </p>
+          <p className="text-xs text-muted-foreground/60">You would have earned +{pointsEarnedThisSession} pts this session.</p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
         <button
           onClick={restart}

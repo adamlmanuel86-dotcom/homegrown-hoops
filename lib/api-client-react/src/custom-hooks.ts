@@ -2,6 +2,63 @@ import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "./custom-fetch";
 import type { PlayerStats } from "./generated/api.schemas";
 
+export interface IsoBallProfile {
+  totalPoints: number;
+  sessionCount: number;
+  level: string;
+}
+
+export interface IsoBallLeaderboardEntry {
+  rank: number;
+  clerkUserId: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  totalPoints: number;
+  sessions: number;
+  level: string;
+}
+
+export const getIsoBallProfile = async (
+  clerkUserId: string,
+  options?: RequestInit
+): Promise<IsoBallProfile> => {
+  return customFetch<IsoBallProfile>(
+    `/api/iso-ball/profile/${encodeURIComponent(clerkUserId)}`,
+    { method: "GET", ...options }
+  );
+};
+
+export const getIsoBallLeaderboard = async (
+  options?: RequestInit
+): Promise<IsoBallLeaderboardEntry[]> => {
+  return customFetch<IsoBallLeaderboardEntry[]>("/api/iso-ball/leaderboard", {
+    method: "GET",
+    ...options,
+  });
+};
+
+export function useGetIsoBallProfile(
+  clerkUserId: string | null | undefined,
+  opts?: { query?: { enabled?: boolean } }
+) {
+  return useQuery({
+    queryKey: ["isoBallProfile", clerkUserId],
+    queryFn: ({ signal }) => getIsoBallProfile(clerkUserId!, { signal }),
+    enabled: (opts?.query?.enabled ?? true) && !!clerkUserId,
+  });
+}
+
+export function useGetIsoBallLeaderboard(opts?: {
+  query?: { enabled?: boolean };
+}) {
+  return useQuery({
+    queryKey: ["isoBallLeaderboard"],
+    queryFn: ({ signal }) => getIsoBallLeaderboard({ signal }),
+    enabled: opts?.query?.enabled ?? true,
+  });
+}
+
 export interface PlayerSeasons {
   seasons: string[];
   activeSeason: string | null;

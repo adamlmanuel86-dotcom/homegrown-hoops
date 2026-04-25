@@ -7,8 +7,9 @@ import {
   useListTeams,
   useGetPlayerSeasons,
   useGetPlayerStatsBySeason,
+  useGetIsoBallProfile,
 } from "@workspace/api-client-react";
-import { User, Trophy, Calendar, School, ExternalLink, ChevronDown } from "lucide-react";
+import { User, Trophy, Calendar, School, ExternalLink, ChevronDown, Brain, Medal } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 
@@ -58,6 +59,8 @@ export function PublicProfilePage() {
   const { data: teams } = useListTeams();
   const team = teams?.find((t) => t.id === matchedPlayer?.teamId);
   const teamLabel = team?.name ?? "Unaffiliated / No Team";
+
+  const { data: isoBallData } = useGetIsoBallProfile(clerkUserId || null);
 
   // ── Career totals for Legacy Score ─────────────────────────────────────────
   // All game stats are permanently in the DB — allSeasonStats (no season filter)
@@ -505,6 +508,15 @@ export function PublicProfilePage() {
           archetype={displayArchetype}
         />
 
+        {/* Ball Knowledge — only visible after at least 1 Iso Ball session */}
+        {isoBallData && isoBallData.sessionCount > 0 && (
+          <PublicBallKnowledgeBlock
+            totalPoints={isoBallData.totalPoints}
+            sessionCount={isoBallData.sessionCount}
+            level={isoBallData.level}
+          />
+        )}
+
         <div style={{ height: 32 }} />
       </div>
 
@@ -548,6 +560,78 @@ export function PublicProfilePage() {
         >
           Create My Free Profile <ExternalLink style={{ width: 15, height: 15 }} />
         </a>
+      </div>
+    </div>
+  );
+}
+
+function getLevelColor(level: string): string {
+  if (level === "Elite Playmaker")    return "#c084fc";
+  if (level === "High Basketball IQ") return "#fb923c";
+  if (level === "Varsity Vision")     return "#60a5fa";
+  if (level === "Court Aware")        return "#4ade80";
+  return "#94a3b8";
+}
+
+function PublicBallKnowledgeBlock({ totalPoints, sessionCount, level }: { totalPoints: number; sessionCount: number; level: string }) {
+  const levelColor = getLevelColor(level);
+  const isElite = level === "Elite Playmaker";
+  const pct = Math.min(100, Math.round((totalPoints / 800) * 100));
+
+  return (
+    <div
+      style={{
+        borderRadius: 16,
+        border: "1px solid hsl(220, 28%, 16%)",
+        overflow: "hidden",
+        background: "hsl(220, 42%, 7%)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "14px 20px",
+          borderBottom: "1px solid hsl(220, 28%, 16%)",
+          background: "hsl(220, 42%, 9%)",
+        }}
+      >
+        <Brain style={{ width: 18, height: 18, color: levelColor, flexShrink: 0 }} />
+        <span style={{ fontWeight: 700, fontSize: 14, color: "hsl(210, 16%, 85%)" }}>Ball Knowledge</span>
+        {isElite && <Medal style={{ width: 16, height: 16, color: "#c084fc" }} />}
+      </div>
+      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "hsl(215, 16%, 45%)", margin: "0 0 4px" }}>Level</p>
+            <p style={{ fontSize: 18, fontWeight: 900, color: levelColor, margin: 0 }}>{level}</p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "hsl(215, 16%, 45%)", margin: "0 0 4px" }}>Total Points</p>
+            <p style={{ fontSize: 18, fontWeight: 900, color: "hsl(210, 16%, 85%)", margin: 0, fontVariantNumeric: "tabular-nums" }}>{totalPoints.toLocaleString()}</p>
+          </div>
+        </div>
+        {!isElite && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "hsl(215, 16%, 45%)" }}>
+              <span>Progress to Elite Playmaker</span>
+              <span style={{ fontWeight: 700 }}>{totalPoints} / 800 pts</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 4, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, borderRadius: 4, background: levelColor }} />
+            </div>
+          </div>
+        )}
+        {isElite && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 10, border: "1px solid rgba(192,132,252,0.25)", background: "rgba(192,132,252,0.08)", padding: "8px 14px" }}>
+            <Medal style={{ width: 14, height: 14, color: "#c084fc", flexShrink: 0 }} />
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#c084fc" }}>The Playbook Stamp Earned</span>
+          </div>
+        )}
+        <p style={{ fontSize: 11, color: "hsl(215, 16%, 45%)", margin: 0 }}>
+          {sessionCount} {sessionCount === 1 ? "session" : "sessions"} completed on Iso Ball
+        </p>
       </div>
     </div>
   );

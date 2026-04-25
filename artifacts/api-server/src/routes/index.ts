@@ -9,6 +9,7 @@ import adminRouter from "./admin";
 import gameVideosRouter from "./gameVideos";
 import storageRouter from "./storage";
 import cloudinaryRouter from "./cloudinary";
+import isoBallRouter from "./iso-ball";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(adminRouter);
 router.use(gameVideosRouter);
 router.use(storageRouter);
 router.use(cloudinaryRouter);
+router.use(isoBallRouter);
 
 export default router;

@@ -15,7 +15,7 @@ import {
   useListGames,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain } from "lucide-react";
 import { TIDES } from "@/components/recognition";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
@@ -202,6 +202,23 @@ export function AdminPage() {
   const [seasonDeleteConfirmKey, setSeasonDeleteConfirmKey] = useState<string | null>(null);
   const [seasonDeletePending, setSeasonDeletePending] = useState(false);
   const [seasonDeleteError, setSeasonDeleteError] = useState<string | null>(null);
+
+  const [confirmingResetIsoBallId, setConfirmingResetIsoBallId] = useState<string | null>(null);
+  const resetIsoBall = useMutation({
+    mutationFn: async (clerkUserId: string) => {
+      const res = await fetch(`${BASE_URL}/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to reset");
+    },
+    onSuccess: (_data, clerkUserId) => {
+      setConfirmingResetIsoBallId(null);
+      qc.invalidateQueries({ queryKey: ["isoBallProfile", clerkUserId] });
+      qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
+      qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+    },
+  });
 
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [newTeam, setNewTeam] = useState<TeamEditState>({ name: "", city: "", abbreviation: "", primaryColor: "#FF6B00", secondaryColor: "#132237" });
@@ -975,6 +992,7 @@ export function AdminPage() {
                 (tideProfile?.tides ?? profile?.tides ?? []).map((t: { id: string }) => t.id)
               );
               const isTidesExpanded = expandedTidePlayerId === profileNumericId;
+              const isResettingIsoBall = confirmingResetIsoBallId === u.clerkUserId;
 
               return (
                 <div key={u.clerkUserId} className="border-b border-border last:border-0">
@@ -1028,12 +1046,53 @@ export function AdminPage() {
                               {isTidesExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                             </button>
                             <button onClick={() => startEditProfile(u.clerkUserId, profile?.teamId, profile?.verified ?? false)} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors touch-manipulation">Edit</button>
+                            <button
+                              onClick={() => setConfirmingResetIsoBallId(isResettingIsoBall ? null : u.clerkUserId)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all touch-manipulation ${isResettingIsoBall ? "border-purple-500/40 bg-purple-500/10 text-purple-300" : "border-border hover:border-purple-500/30 hover:bg-purple-500/5 text-muted-foreground hover:text-purple-300"}`}
+                            >
+                              <Brain className="h-3.5 w-3.5" />
+                              Reset IQ
+                            </button>
                             <button onClick={() => setConfirmingDeleteProfileId(u.clerkUserId)} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors touch-manipulation">Delete</button>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
+
+                  {/* ── Reset Ball Knowledge Drawer ── */}
+                  {isResettingIsoBall && !isEditing && !isConfirming && (
+                    <div className="mx-4 mb-4 rounded-xl overflow-hidden border border-purple-500/20 bg-purple-950/20">
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-purple-500/10 border-b border-purple-500/20">
+                        <Brain className="h-3.5 w-3.5 text-purple-400 flex-shrink-0" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Reset Ball Knowledge</span>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-start gap-2.5">
+                          <AlertTriangle className="h-4 w-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                          <p className="text-xs text-purple-200/80 leading-relaxed">
+                            This will reset this player's Ball Knowledge score to zero and remove The Playbook Stamp if earned. This cannot be undone. Are you sure?
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => resetIsoBall.mutate(u.clerkUserId)}
+                            disabled={resetIsoBall.isPending}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 active:scale-95 text-white transition-all touch-manipulation disabled:opacity-50"
+                          >
+                            <Brain className="h-3.5 w-3.5" />
+                            {resetIsoBall.isPending ? "Resetting…" : "Yes, reset"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingResetIsoBallId(null)}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold border border-border hover:bg-muted active:scale-95 transition-all touch-manipulation"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* ── Admin Override Tides Drawer ── */}
                   {isTidesExpanded && !isEditing && !isConfirming && (
