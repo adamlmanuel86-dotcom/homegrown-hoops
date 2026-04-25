@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Brain, ChevronLeft, RotateCcw, Zap, Trophy, Timer, BookOpen, Medal } from "lucide-react";
+import { Brain, ChevronLeft, RotateCcw, Zap, Trophy, Timer, BookOpen, Medal, Lock, Info } from "lucide-react";
 import { useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetIsoBallLeaderboard } from "@workspace/api-client-react";
@@ -89,6 +89,8 @@ const DIFF_META: Record<Difficulty, { label: string; color: string; bg: string; 
 };
 
 const LABELS: [AnswerKey, string][] = [["A", "A"], ["B", "B"], ["C", "C"], ["D", "D"]];
+const DAILY_SESSION_LIMIT = 5;
+const COOLDOWN_SECONDS = 60;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -128,15 +130,34 @@ function getBallKnowledgeLevel(pts: number): string {
 }
 
 function getLevelColor(level: string): string {
-  if (level === "Elite Playmaker")   return "#c084fc";
+  if (level === "Elite Playmaker")    return "#c084fc";
   if (level === "High Basketball IQ") return "#fb923c";
-  if (level === "Varsity Vision")    return "#60a5fa";
-  if (level === "Court Aware")       return "#4ade80";
+  if (level === "Varsity Vision")     return "#60a5fa";
+  if (level === "Court Aware")        return "#4ade80";
   return "#94a3b8";
 }
 
 const TIMER_SECS = 15;
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+
+type DailyStatus = {
+  sessionsByDifficulty: Record<string, number>;
+  lastSessionAt: string | null;
+  cooldownSecondsLeft: number;
+};
+
+type SessionResponse = {
+  success: boolean;
+  pointsEarned: number;
+  deduped: number;
+  totalPoints: number;
+  level: string;
+  reason: string | null;
+  sessionsToday: number;
+  dailySessionsLeft: number;
+  locked: boolean;
+  cooldownSecondsLeft?: number;
+};
 
 export function IsoBallPage() {
   const { isSignedIn, user } = useUser();
@@ -145,6 +166,8 @@ export function IsoBallPage() {
   const [screen, setScreen] = useState<"landing" | "quiz" | "results">("landing");
   const [difficulty, setDifficulty] = useState<Difficulty>("rookie");
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [originalIndices, setOriginalIndices] = useState<number[]>([]);
+  const [correctIndices, setCorrectIndices] = useState<number[]>([]);
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState<AnswerKey | null>(null);
   const [correct, setCorrect] = useState(0);
@@ -156,11 +179,49 @@ export function IsoBallPage() {
 
   const [sessionSaved, setSessionSaved] = useState(false);
   const [sessionPtsEarned, setSessionPtsEarned] = useState<number | null>(null);
+  const [sessionDeduped, setSessionDeduped] = useState<number | null>(null);
+  const [sessionReason, setSessionReason] = useState<string | null>(null);
   const [newTotalPoints, setNewTotalPoints] = useState<number | null>(null);
   const [newLevel, setNewLevel] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
 
+  const [dailyStatus, setDailyStatus] = useState<Record<string, number>>({ rookie: 0, varsity: 0, elite: 0 });
+  const [statusLoaded, setStatusLoaded] = useState(false);
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const { data: leaderboard, isLoading: lbLoading } = useGetIsoBallLeaderboard();
+
+  // Fetch daily status for signed-in users on mount
+  useEffect(() => {
+    if (!isSignedIn) { setStatusLoaded(true); return; }
+    fetch(`${BASE_URL}/api/iso-ball/daily-status`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data: DailyStatus) => {
+        setDailyStatus(data.sessionsByDifficulty);
+        if (data.cooldownSecondsLeft > 0) {
+          startCooldown(data.cooldownSecondsLeft);
+        }
+        setStatusLoaded(true);
+      })
+      .catch(() => setStatusLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
+
+  function startCooldown(seconds: number) {
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    setCooldownLeft(Math.ceil(seconds));
+    cooldownRef.current = setInterval(() => {
+      setCooldownLeft((t) => {
+        if (t <= 1) {
+          clearInterval(cooldownRef.current!);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+  }
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -172,7 +233,10 @@ export function IsoBallPage() {
     const newBest = Math.max(bestStreak, newStreak);
     setStreak(newStreak);
     setBestStreak(newBest);
-    if (wasCorrect) setCorrect((c) => c + 1);
+    if (wasCorrect) {
+      setCorrect((c) => c + 1);
+      setCorrectIndices((ci) => [...ci, originalIndices[qIndex]]);
+    }
 
     setTimeout(() => {
       if (qIndex + 1 >= questions.length) {
@@ -184,7 +248,7 @@ export function IsoBallPage() {
         setTimeLeft(TIMER_SECS);
       }
     }, 900);
-  }, [qIndex, questions.length, streak, bestStreak, stopTimer]);
+  }, [qIndex, questions.length, streak, bestStreak, stopTimer, originalIndices]);
 
   const handleAnswer = useCallback((key: AnswerKey) => {
     if (answered) return;
@@ -197,10 +261,7 @@ export function IsoBallPage() {
     if (screen !== "quiz" || answered) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
-        if (t <= 1) {
-          advance(false);
-          return 0;
-        }
+        if (t <= 1) { advance(false); return 0; }
         return t - 1;
       });
     }, 1000);
@@ -211,6 +272,8 @@ export function IsoBallPage() {
   useEffect(() => {
     if (screen !== "results" || !isSignedIn) return;
 
+    startCooldown(COOLDOWN_SECONDS);
+
     let cancelled = false;
     async function save() {
       try {
@@ -218,15 +281,24 @@ export function IsoBallPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ difficulty, score: correct }),
+          body: JSON.stringify({ difficulty, correctQuestionIndices: correctIndices }),
         });
         if (!res.ok) throw new Error("Failed");
-        const data = await res.json() as { pointsEarned: number; totalPoints: number; level: string };
+        const data = await res.json() as SessionResponse;
         if (cancelled) return;
         setSessionPtsEarned(data.pointsEarned);
+        setSessionDeduped(data.deduped ?? 0);
+        setSessionReason(data.reason);
         setNewTotalPoints(data.totalPoints);
         setNewLevel(data.level);
         setSessionSaved(true);
+        setDailyStatus((prev) => ({
+          ...prev,
+          [difficulty]: data.sessionsToday ?? (prev[difficulty] + 1),
+        }));
+        if (data.reason === "cooldown" && data.cooldownSecondsLeft) {
+          startCooldown(data.cooldownSecondsLeft);
+        }
         qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
         qc.invalidateQueries({ queryKey: ["isoBallProfile", user?.id] });
       } catch {
@@ -239,8 +311,12 @@ export function IsoBallPage() {
   }, [screen]);
 
   function startQuiz(diff: Difficulty) {
+    const pool = QUESTIONS[diff].map((q, i) => ({ q, origIdx: i }));
+    const shuffled = shuffle(pool).slice(0, 10);
     setDifficulty(diff);
-    setQuestions(shuffle(QUESTIONS[diff]).slice(0, 10));
+    setQuestions(shuffled.map((x) => x.q));
+    setOriginalIndices(shuffled.map((x) => x.origIdx));
+    setCorrectIndices([]);
     setQIndex(0);
     setSelected(null);
     setCorrect(0);
@@ -250,14 +326,12 @@ export function IsoBallPage() {
     setTimeLeft(TIMER_SECS);
     setSessionSaved(false);
     setSessionPtsEarned(null);
+    setSessionDeduped(null);
+    setSessionReason(null);
     setNewTotalPoints(null);
     setNewLevel(null);
     setSaveError(false);
     setScreen("quiz");
-  }
-
-  function restart() {
-    startQuiz(difficulty);
   }
 
   function goLanding() {
@@ -290,33 +364,70 @@ export function IsoBallPage() {
           )}
         </div>
 
+        {/* Difficulty cards */}
         <div className="grid gap-4">
           {(["rookie", "varsity", "elite"] as Difficulty[]).map((diff) => {
             const m = DIFF_META[diff];
+            const sessionsToday = dailyStatus[diff] ?? 0;
+            const isLocked = isSignedIn && statusLoaded && sessionsToday >= DAILY_SESSION_LIMIT;
+            const onCooldown = isSignedIn && cooldownLeft > 0;
+
             return (
-              <button
-                key={diff}
-                onClick={() => startQuiz(diff)}
-                className="w-full text-left rounded-2xl p-5 border transition-all hover:scale-[1.01] active:scale-[0.99]"
-                style={{ background: m.bg, borderColor: m.ring }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-xl font-black uppercase tracking-wider" style={{ color: m.color, fontFamily: "'Anton', sans-serif" }}>
-                      {m.label}
+              <div key={diff} className="relative">
+                <button
+                  onClick={() => !isLocked && startQuiz(diff)}
+                  disabled={isLocked}
+                  className="w-full text-left rounded-2xl p-5 border transition-all hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ background: m.bg, borderColor: isLocked ? "rgba(255,255,255,0.08)" : m.ring }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="text-xl font-black uppercase tracking-wider flex items-center gap-2" style={{ color: isLocked ? "rgba(255,255,255,0.35)" : m.color, fontFamily: "'Anton', sans-serif" }}>
+                        {m.label}
+                        {isLocked && <Lock className="h-4 w-4" />}
+                      </div>
+                      {isLocked ? (
+                        <div className="text-sm font-semibold text-muted-foreground/70">
+                          Come back tomorrow to keep earning
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">{m.tagline}</div>
+                      )}
                     </div>
-                    <div className="text-sm text-muted-foreground">{m.tagline}</div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: m.color }}>
-                      Play <Zap className="h-4 w-4" />
+                    <div className="flex flex-col items-end gap-1">
+                      {isLocked ? (
+                        <div className="text-xs text-muted-foreground/50 font-semibold">
+                          {sessionsToday}/{DAILY_SESSION_LIMIT} sessions
+                        </div>
+                      ) : onCooldown ? (
+                        <div className="flex items-center gap-1 text-xs font-bold" style={{ color: "rgba(255,255,255,0.4)" }}>
+                          <Timer className="h-3.5 w-3.5" /> {cooldownLeft}s
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: m.color }}>
+                          Play <Zap className="h-4 w-4" />
+                        </div>
+                      )}
+                      {!isLocked && (
+                        <span className="text-xs text-muted-foreground">{m.pts} pts/correct</span>
+                      )}
+                      {isSignedIn && !isLocked && statusLoaded && sessionsToday > 0 && (
+                        <span className="text-xs text-muted-foreground/50">{sessionsToday}/{DAILY_SESSION_LIMIT} today</span>
+                      )}
                     </div>
-                    <span className="text-xs text-muted-foreground">{m.pts} pts/correct</span>
                   </div>
-                </div>
-              </button>
+                </button>
+              </div>
             );
           })}
+        </div>
+
+        {/* Daily earning note */}
+        <div className="flex items-start gap-2.5 rounded-xl border border-white/6 bg-white/3 px-4 py-3">
+          <Info className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground/60 leading-relaxed">
+            Ball Knowledge points are earned once per question per day — come back daily to keep climbing.
+          </p>
         </div>
 
         {/* The Playbook Leaderboard */}
@@ -469,6 +580,7 @@ export function IsoBallPage() {
   const perfLabel = getPerformance(correct, difficulty);
   const ringColor = correct >= 8 ? "#4ade80" : correct >= 6 ? "#fb923c" : "#f87171";
   const pointsEarnedThisSession = correct * DIFF_META[difficulty].pts;
+  const isOnCooldown = isSignedIn && cooldownLeft > 0;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center">
@@ -514,7 +626,7 @@ export function IsoBallPage() {
       {/* Ball Knowledge points earned */}
       {isSignedIn ? (
         <div
-          className="rounded-xl border p-4 space-y-1"
+          className="rounded-xl border p-4 space-y-1.5"
           style={{
             borderColor: sessionSaved ? "rgba(192,132,252,0.3)" : "rgba(255,255,255,0.08)",
             background: sessionSaved ? "rgba(192,132,252,0.08)" : "rgba(255,255,255,0.04)",
@@ -523,21 +635,39 @@ export function IsoBallPage() {
           {sessionSaved ? (
             <>
               <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#c084fc" }}>Ball Knowledge</p>
-              <p className="text-lg font-black">
-                +{sessionPtsEarned} pts earned
-              </p>
-              {newTotalPoints !== null && newLevel && (
-                <p className="text-sm text-muted-foreground">
-                  Total: <span className="font-bold text-foreground">{newTotalPoints.toLocaleString()} pts</span>
-                  {" · "}
-                  <span className="font-bold" style={{ color: getLevelColor(newLevel) }}>{newLevel}</span>
+
+              {sessionReason === "daily_limit" ? (
+                <p className="text-sm font-semibold text-muted-foreground">
+                  No points — daily session limit reached
                 </p>
-              )}
-              {newLevel === "Elite Playmaker" && (
-                <div className="flex items-center justify-center gap-1.5 mt-1">
-                  <Medal className="h-4 w-4" style={{ color: "#c084fc" }} />
-                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c084fc" }}>The Playbook Stamp Earned</span>
-                </div>
+              ) : sessionReason === "cooldown" ? (
+                <p className="text-sm font-semibold text-muted-foreground">
+                  No points — played too quickly
+                </p>
+              ) : (
+                <>
+                  <p className="text-lg font-black">
+                    +{sessionPtsEarned} pts earned
+                    {(sessionDeduped ?? 0) > 0 && (
+                      <span className="text-sm font-normal text-muted-foreground ml-2">
+                        ({sessionDeduped} already earned today)
+                      </span>
+                    )}
+                  </p>
+                  {newTotalPoints !== null && newLevel && (
+                    <p className="text-sm text-muted-foreground">
+                      Total: <span className="font-bold text-foreground">{newTotalPoints.toLocaleString()} pts</span>
+                      {" · "}
+                      <span className="font-bold" style={{ color: getLevelColor(newLevel) }}>{newLevel}</span>
+                    </p>
+                  )}
+                  {newLevel === "Elite Playmaker" && (
+                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                      <Medal className="h-4 w-4" style={{ color: "#c084fc" }} />
+                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c084fc" }}>The Playbook Stamp Earned</span>
+                    </div>
+                  )}
+                </>
               )}
             </>
           ) : saveError ? (
@@ -548,7 +678,7 @@ export function IsoBallPage() {
           ) : (
             <>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ball Knowledge</p>
-              <p className="text-xs text-muted-foreground animate-pulse">Saving +{pointsEarnedThisSession} pts…</p>
+              <p className="text-xs text-muted-foreground animate-pulse">Saving…</p>
             </>
           )}
         </div>
@@ -564,10 +694,20 @@ export function IsoBallPage() {
 
       <div className="flex flex-col gap-3">
         <button
-          onClick={restart}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+          onClick={() => startQuiz(difficulty)}
+          disabled={isOnCooldown}
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RotateCcw className="h-4 w-4" /> Play Again — {meta.label}
+          {isOnCooldown ? (
+            <>
+              <Timer className="h-4 w-4" />
+              Next play in {cooldownLeft}s
+            </>
+          ) : (
+            <>
+              <RotateCcw className="h-4 w-4" /> Play Again — {meta.label}
+            </>
+          )}
         </button>
         <button
           onClick={goLanding}

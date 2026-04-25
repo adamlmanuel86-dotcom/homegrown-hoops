@@ -1,7 +1,12 @@
 import { Router, type IRouter } from "express";
-import { eq, sum, count, desc, inArray } from "drizzle-orm";
+import { eq, sum, count, desc, inArray, and, gte } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, isoBallSessionsTable, userProfilesTable } from "@workspace/db";
+import {
+  db,
+  isoBallSessionsTable,
+  isoBallDailyQuestionsTable,
+  userProfilesTable,
+} from "@workspace/db";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
 const router: IRouter = Router();
@@ -11,6 +16,18 @@ const POINTS_PER_CORRECT: Record<string, number> = {
   varsity: 15,
   elite: 20,
 };
+
+const DAILY_SESSION_LIMIT = 5;
+const COOLDOWN_SECONDS = 60;
+
+function todayUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function todayStartUTC(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
 
 export function getBallKnowledgeLevel(totalPoints: number): string {
   if (totalPoints >= 800) return "Elite Playmaker";
@@ -53,6 +70,52 @@ async function ensurePlaybookStamp(clerkUserId: string, totalPoints: number) {
   }
 }
 
+// GET /iso-ball/daily-status — auth required; returns session counts + cooldown info
+router.get("/iso-ball/daily-status", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.json({
+      sessionsByDifficulty: { rookie: 0, varsity: 0, elite: 0 },
+      lastSessionAt: null,
+      cooldownSecondsLeft: 0,
+    });
+    return;
+  }
+
+  const todayStart = todayStartUTC();
+
+  const sessionRows = await db
+    .select({ difficulty: isoBallSessionsTable.difficulty, cnt: count() })
+    .from(isoBallSessionsTable)
+    .where(
+      and(
+        eq(isoBallSessionsTable.clerkUserId, userId),
+        gte(isoBallSessionsTable.playedAt, todayStart),
+      )
+    )
+    .groupBy(isoBallSessionsTable.difficulty);
+
+  const sessionsByDifficulty: Record<string, number> = { rookie: 0, varsity: 0, elite: 0 };
+  for (const row of sessionRows) {
+    sessionsByDifficulty[row.difficulty] = Number(row.cnt);
+  }
+
+  const [lastSession] = await db
+    .select({ playedAt: isoBallSessionsTable.playedAt })
+    .from(isoBallSessionsTable)
+    .where(eq(isoBallSessionsTable.clerkUserId, userId))
+    .orderBy(desc(isoBallSessionsTable.playedAt))
+    .limit(1);
+
+  const lastSessionAt = lastSession?.playedAt?.toISOString() ?? null;
+  const secondsSinceLast = lastSession
+    ? (Date.now() - lastSession.playedAt.getTime()) / 1000
+    : Infinity;
+  const cooldownSecondsLeft = Math.max(0, Math.ceil(COOLDOWN_SECONDS - secondsSinceLast));
+
+  res.json({ sessionsByDifficulty, lastSessionAt, cooldownSecondsLeft });
+});
+
 // POST /iso-ball/sessions — save a session (auth required)
 router.post("/iso-ball/sessions", async (req, res) => {
   const { userId } = getAuth(req);
@@ -61,19 +124,116 @@ router.post("/iso-ball/sessions", async (req, res) => {
     return;
   }
 
-  const { difficulty, score } = req.body as { difficulty: string; score: number };
+  const { difficulty, correctQuestionIndices } = req.body as {
+    difficulty: string;
+    correctQuestionIndices: number[];
+  };
 
   if (!difficulty || !POINTS_PER_CORRECT[difficulty]) {
     res.status(400).json({ error: "Invalid difficulty" });
     return;
   }
-  if (typeof score !== "number" || score < 0 || score > 10) {
-    res.status(400).json({ error: "Invalid score" });
+  if (
+    !Array.isArray(correctQuestionIndices) ||
+    correctQuestionIndices.length > 10 ||
+    correctQuestionIndices.some((i) => typeof i !== "number" || i < 0 || i > 99)
+  ) {
+    res.status(400).json({ error: "Invalid correctQuestionIndices" });
     return;
   }
 
-  const pointsEarned = score * POINTS_PER_CORRECT[difficulty];
+  const todayStart = todayStartUTC();
+  const today = todayUTC();
 
+  // ── Cooldown check ─────────────────────────────────────────────────────────
+  const [lastSession] = await db
+    .select({ playedAt: isoBallSessionsTable.playedAt })
+    .from(isoBallSessionsTable)
+    .where(eq(isoBallSessionsTable.clerkUserId, userId))
+    .orderBy(desc(isoBallSessionsTable.playedAt))
+    .limit(1);
+
+  const secondsSinceLast = lastSession
+    ? (Date.now() - lastSession.playedAt.getTime()) / 1000
+    : Infinity;
+
+  if (secondsSinceLast < COOLDOWN_SECONDS) {
+    const [totalsRow] = await db
+      .select({ total: sum(isoBallSessionsTable.pointsEarned) })
+      .from(isoBallSessionsTable)
+      .where(eq(isoBallSessionsTable.clerkUserId, userId));
+    const totalPoints = Number(totalsRow?.total ?? 0);
+
+    res.json({
+      success: true,
+      pointsEarned: 0,
+      deduped: 0,
+      totalPoints,
+      level: getBallKnowledgeLevel(totalPoints),
+      reason: "cooldown",
+      cooldownSecondsLeft: Math.ceil(COOLDOWN_SECONDS - secondsSinceLast),
+      sessionsToday: 0,
+      dailySessionsLeft: 0,
+      locked: false,
+    });
+    return;
+  }
+
+  // ── Daily session limit check ───────────────────────────────────────────────
+  const [todayCount] = await db
+    .select({ cnt: count() })
+    .from(isoBallSessionsTable)
+    .where(
+      and(
+        eq(isoBallSessionsTable.clerkUserId, userId),
+        eq(isoBallSessionsTable.difficulty, difficulty),
+        gte(isoBallSessionsTable.playedAt, todayStart),
+      )
+    );
+
+  const sessionsToday = Number(todayCount?.cnt ?? 0);
+
+  if (sessionsToday >= DAILY_SESSION_LIMIT) {
+    const [totalsRow] = await db
+      .select({ total: sum(isoBallSessionsTable.pointsEarned) })
+      .from(isoBallSessionsTable)
+      .where(eq(isoBallSessionsTable.clerkUserId, userId));
+    const totalPoints = Number(totalsRow?.total ?? 0);
+
+    res.json({
+      success: true,
+      pointsEarned: 0,
+      deduped: 0,
+      totalPoints,
+      level: getBallKnowledgeLevel(totalPoints),
+      reason: "daily_limit",
+      sessionsToday,
+      dailySessionsLeft: 0,
+      locked: true,
+    });
+    return;
+  }
+
+  // ── Per-question deduplication ──────────────────────────────────────────────
+  const alreadyEarned = await db
+    .select({ questionIndex: isoBallDailyQuestionsTable.questionIndex })
+    .from(isoBallDailyQuestionsTable)
+    .where(
+      and(
+        eq(isoBallDailyQuestionsTable.clerkUserId, userId),
+        eq(isoBallDailyQuestionsTable.difficulty, difficulty),
+        eq(isoBallDailyQuestionsTable.date, today),
+      )
+    );
+
+  const alreadyEarnedSet = new Set(alreadyEarned.map((r) => r.questionIndex));
+  const newCorrectIndices = correctQuestionIndices.filter((i) => !alreadyEarnedSet.has(i));
+  const dedupedCount = correctQuestionIndices.length - newCorrectIndices.length;
+
+  const pointsEarned = newCorrectIndices.length * POINTS_PER_CORRECT[difficulty];
+  const score = correctQuestionIndices.length;
+
+  // ── Save session ────────────────────────────────────────────────────────────
   await db.insert(isoBallSessionsTable).values({
     clerkUserId: userId,
     difficulty,
@@ -81,21 +241,43 @@ router.post("/iso-ball/sessions", async (req, res) => {
     pointsEarned,
   });
 
-  // Get new total
-  const [totals] = await db
+  if (newCorrectIndices.length > 0) {
+    await db.insert(isoBallDailyQuestionsTable).values(
+      newCorrectIndices.map((qi) => ({
+        clerkUserId: userId,
+        difficulty,
+        questionIndex: qi,
+        date: today,
+      }))
+    );
+  }
+
+  // ── Total points + stamp ────────────────────────────────────────────────────
+  const [totalsRow] = await db
     .select({ total: sum(isoBallSessionsTable.pointsEarned) })
     .from(isoBallSessionsTable)
     .where(eq(isoBallSessionsTable.clerkUserId, userId));
 
-  const totalPoints = Number(totals?.total ?? 0);
-
+  const totalPoints = Number(totalsRow?.total ?? 0);
   await ensurePlaybookStamp(userId, totalPoints);
 
   const level = getBallKnowledgeLevel(totalPoints);
-  res.json({ success: true, pointsEarned, totalPoints, level });
+  const newSessionsToday = sessionsToday + 1;
+
+  res.json({
+    success: true,
+    pointsEarned,
+    deduped: dedupedCount,
+    totalPoints,
+    level,
+    reason: null,
+    sessionsToday: newSessionsToday,
+    dailySessionsLeft: Math.max(0, DAILY_SESSION_LIMIT - newSessionsToday),
+    locked: newSessionsToday >= DAILY_SESSION_LIMIT,
+  });
 });
 
-// GET /iso-ball/profile/:clerkUserId — public: get a user's ball knowledge totals
+// GET /iso-ball/profile/:clerkUserId — public
 router.get("/iso-ball/profile/:clerkUserId", async (req, res) => {
   const { clerkUserId } = req.params;
 
@@ -114,7 +296,7 @@ router.get("/iso-ball/profile/:clerkUserId", async (req, res) => {
   res.json({ totalPoints, sessionCount, level });
 });
 
-// GET /iso-ball/leaderboard — public: top players by total points
+// GET /iso-ball/leaderboard — public
 router.get("/iso-ball/leaderboard", async (req, res) => {
   const rows = await db
     .select({
@@ -186,6 +368,10 @@ router.delete("/iso-ball/sessions/:clerkUserId", async (req, res) => {
   await db
     .delete(isoBallSessionsTable)
     .where(eq(isoBallSessionsTable.clerkUserId, clerkUserId));
+
+  await db
+    .delete(isoBallDailyQuestionsTable)
+    .where(eq(isoBallDailyQuestionsTable.clerkUserId, clerkUserId));
 
   await ensurePlaybookStamp(clerkUserId, 0);
 
