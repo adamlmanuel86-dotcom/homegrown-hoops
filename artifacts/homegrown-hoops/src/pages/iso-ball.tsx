@@ -197,7 +197,7 @@ function getLevelColor(level: string): string {
   return "#94a3b8";
 }
 
-const TIMER_SECS = 15;
+const TIMER_SECS = 20;
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 type DailyStatus = {
