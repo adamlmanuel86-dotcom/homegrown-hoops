@@ -312,7 +312,7 @@ export function ProfilePage() {
 
       <RecognitionBlock
         stamps={profile.stamps ?? []}
-        tides={displayTides}
+        tides={allTides}
         archetype={displayArchetype}
       />
     </div>

@@ -487,7 +487,7 @@ export function PublicProfilePage() {
         {/* Recognition — stamps always career-wide; tides + archetype season-filtered */}
         <RecognitionBlock
           stamps={profile.stamps ?? []}
-          tides={displayTides}
+          tides={allTides}
           archetype={displayArchetype}
         />
 

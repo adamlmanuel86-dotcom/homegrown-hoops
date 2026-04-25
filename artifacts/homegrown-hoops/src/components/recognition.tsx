@@ -547,7 +547,13 @@ export function StampsSection({ earned }: { earned: RecognitionEntry[] }) {
 // ─── Tides Section ─────────────────────────────────────────────────────────────
 export function TidesSection({ earned }: { earned: RecognitionEntry[] }) {
   const [selected, setSelected] = useState<(typeof TIDES)[number] | null>(null);
-  const earnedMap = new Map(earned.map((e) => [e.id, e]));
+
+  const earnedMap = new Map<string, RecognitionEntry>();
+  const countMap = new Map<string, number>();
+  for (const e of earned) {
+    if (!earnedMap.has(e.id)) earnedMap.set(e.id, e);
+    countMap.set(e.id, (countMap.get(e.id) ?? 0) + 1);
+  }
 
   return (
     <>
@@ -555,7 +561,7 @@ export function TidesSection({ earned }: { earned: RecognitionEntry[] }) {
         {/* Header */}
         <div className="flex items-center gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400/70">Season Awards</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400/70">Career Awards</p>
             <h2
               className="text-2xl font-black uppercase leading-none text-foreground"
               style={{ fontFamily: "'Anton', sans-serif", letterSpacing: "0.04em" }}
@@ -565,7 +571,7 @@ export function TidesSection({ earned }: { earned: RecognitionEntry[] }) {
           </div>
           <div className="flex-1 h-px bg-gradient-to-r from-blue-400/40 to-transparent ml-1" />
           <span className="text-xs font-bold text-muted-foreground">
-            {earned.length}/{TIDES.length}
+            {earnedMap.size}/{TIDES.length}
           </span>
         </div>
 
@@ -573,7 +579,8 @@ export function TidesSection({ earned }: { earned: RecognitionEntry[] }) {
         <div className="grid grid-cols-2 gap-2.5">
           {TIDES.map((tide) => {
             const entry = earnedMap.get(tide.id) ?? null;
-            const isEarned = entry !== null;
+            const count = countMap.get(tide.id) ?? 0;
+            const isEarned = count > 0;
             const Icon = tide.icon;
             return (
               <button
@@ -594,6 +601,21 @@ export function TidesSection({ earned }: { earned: RecognitionEntry[] }) {
                 onClick={() => setSelected(tide)}
                 aria-label={`${tide.label} — ${isEarned ? "earned" : "locked"}`}
               >
+                {/* Counter badge */}
+                {count > 1 && (
+                  <span
+                    className="absolute top-1.5 right-1.5 text-[9px] font-black leading-none px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: `${tide.color}22`,
+                      border: `1px solid ${tide.color}55`,
+                      color: tide.color,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    ×{count}
+                  </span>
+                )}
+
                 {/* Icon */}
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
