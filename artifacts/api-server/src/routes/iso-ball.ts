@@ -13,8 +13,8 @@ const router: IRouter = Router();
 
 const POINTS_PER_CORRECT: Record<string, number> = {
   rookie: 10,
-  varsity: 15,
-  elite: 20,
+  varsity: 20,
+  elite: 35,
 };
 
 const DAILY_SESSION_LIMIT = 5;
@@ -70,19 +70,19 @@ async function ensurePlaybookStamp(clerkUserId: string, totalPoints: number) {
   }
 }
 
-// GET /iso-ball/daily-status — auth required; returns session counts + cooldown info
+// GET /iso-ball/daily-status — auth required; returns session counts + per-difficulty cooldowns
 router.get("/iso-ball/daily-status", async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) {
     res.json({
       sessionsByDifficulty: { rookie: 0, varsity: 0, elite: 0 },
-      lastSessionAt: null,
-      cooldownSecondsLeft: 0,
+      cooldownByDifficulty: { rookie: 0, varsity: 0, elite: 0 },
     });
     return;
   }
 
   const todayStart = todayStartUTC();
+  const difficulties = ["rookie", "varsity", "elite"] as const;
 
   const sessionRows = await db
     .select({ difficulty: isoBallSessionsTable.difficulty, cnt: count() })
@@ -100,20 +100,30 @@ router.get("/iso-ball/daily-status", async (req, res) => {
     sessionsByDifficulty[row.difficulty] = Number(row.cnt);
   }
 
-  const [lastSession] = await db
-    .select({ playedAt: isoBallSessionsTable.playedAt })
+  // Per-difficulty cooldown: last session time for each difficulty
+  const lastSessionRows = await db
+    .select({ difficulty: isoBallSessionsTable.difficulty, playedAt: isoBallSessionsTable.playedAt })
     .from(isoBallSessionsTable)
     .where(eq(isoBallSessionsTable.clerkUserId, userId))
-    .orderBy(desc(isoBallSessionsTable.playedAt))
-    .limit(1);
+    .orderBy(desc(isoBallSessionsTable.playedAt));
 
-  const lastSessionAt = lastSession?.playedAt?.toISOString() ?? null;
-  const secondsSinceLast = lastSession
-    ? (Date.now() - lastSession.playedAt.getTime()) / 1000
-    : Infinity;
-  const cooldownSecondsLeft = Math.max(0, Math.ceil(COOLDOWN_SECONDS - secondsSinceLast));
+  const lastByDiff: Record<string, Date | null> = { rookie: null, varsity: null, elite: null };
+  for (const row of lastSessionRows) {
+    if (difficulties.includes(row.difficulty as typeof difficulties[number]) && !lastByDiff[row.difficulty]) {
+      lastByDiff[row.difficulty] = row.playedAt;
+    }
+  }
 
-  res.json({ sessionsByDifficulty, lastSessionAt, cooldownSecondsLeft });
+  const cooldownByDifficulty: Record<string, number> = { rookie: 0, varsity: 0, elite: 0 };
+  for (const diff of difficulties) {
+    const last = lastByDiff[diff];
+    if (last) {
+      const secs = (Date.now() - last.getTime()) / 1000;
+      cooldownByDifficulty[diff] = Math.max(0, Math.ceil(COOLDOWN_SECONDS - secs));
+    }
+  }
+
+  res.json({ sessionsByDifficulty, cooldownByDifficulty });
 });
 
 // POST /iso-ball/sessions — save a session (auth required)
@@ -145,11 +155,16 @@ router.post("/iso-ball/sessions", async (req, res) => {
   const todayStart = todayStartUTC();
   const today = todayUTC();
 
-  // ── Cooldown check ─────────────────────────────────────────────────────────
+  // ── Cooldown check (per-difficulty) ────────────────────────────────────────
   const [lastSession] = await db
     .select({ playedAt: isoBallSessionsTable.playedAt })
     .from(isoBallSessionsTable)
-    .where(eq(isoBallSessionsTable.clerkUserId, userId))
+    .where(
+      and(
+        eq(isoBallSessionsTable.clerkUserId, userId),
+        eq(isoBallSessionsTable.difficulty, difficulty),
+      )
+    )
     .orderBy(desc(isoBallSessionsTable.playedAt))
     .limit(1);
 

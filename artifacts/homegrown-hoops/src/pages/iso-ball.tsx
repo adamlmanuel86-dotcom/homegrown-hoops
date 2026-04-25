@@ -84,8 +84,8 @@ const QUESTIONS: Record<Difficulty, Question[]> = {
 
 const DIFF_META: Record<Difficulty, { label: string; color: string; bg: string; ring: string; tagline: string; pts: number }> = {
   rookie:  { label: "ROOKIE",  color: "#4ade80", bg: "rgba(74,222,128,0.1)",  ring: "rgba(74,222,128,0.4)",  tagline: "Learn the fundamentals",           pts: 10 },
-  varsity: { label: "VARSITY", color: "#fb923c", bg: "rgba(251,146,60,0.1)",  ring: "rgba(251,146,60,0.4)",  tagline: "Prove your court sense",            pts: 15 },
-  elite:   { label: "ELITE",   color: "#c084fc", bg: "rgba(192,132,252,0.1)", ring: "rgba(192,132,252,0.4)", tagline: "Separate yourself from the field",  pts: 20 },
+  varsity: { label: "VARSITY", color: "#fb923c", bg: "rgba(251,146,60,0.1)",  ring: "rgba(251,146,60,0.4)",  tagline: "Prove your court sense",            pts: 20 },
+  elite:   { label: "ELITE",   color: "#c084fc", bg: "rgba(192,132,252,0.1)", ring: "rgba(192,132,252,0.4)", tagline: "Separate yourself from the field",  pts: 35 },
 };
 
 const LABELS: [AnswerKey, string][] = [["A", "A"], ["B", "B"], ["C", "C"], ["D", "D"]];
@@ -142,8 +142,7 @@ const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 type DailyStatus = {
   sessionsByDifficulty: Record<string, number>;
-  lastSessionAt: string | null;
-  cooldownSecondsLeft: number;
+  cooldownByDifficulty?: Record<string, number>;
 };
 
 type SessionResponse = {
@@ -187,10 +186,28 @@ export function IsoBallPage() {
 
   const [dailyStatus, setDailyStatus] = useState<Record<string, number>>({ rookie: 0, varsity: 0, elite: 0 });
   const [statusLoaded, setStatusLoaded] = useState(false);
-  const [cooldownLeft, setCooldownLeft] = useState(0);
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [cooldownByDiff, setCooldownByDiff] = useState<Record<Difficulty, number>>({ rookie: 0, varsity: 0, elite: 0 });
+  const cooldownRefs = useRef<Record<Difficulty, ReturnType<typeof setInterval> | null>>({ rookie: null, varsity: null, elite: null });
 
   const { data: leaderboard, isLoading: lbLoading } = useGetIsoBallLeaderboard();
+
+  function startDiffCooldown(diff: Difficulty, seconds: number) {
+    if (cooldownRefs.current[diff]) clearInterval(cooldownRefs.current[diff]!);
+    const rounded = Math.ceil(seconds);
+    if (rounded <= 0) return;
+    setCooldownByDiff((prev) => ({ ...prev, [diff]: rounded }));
+    cooldownRefs.current[diff] = setInterval(() => {
+      setCooldownByDiff((prev) => {
+        const t = prev[diff];
+        if (t <= 1) {
+          clearInterval(cooldownRefs.current[diff]!);
+          cooldownRefs.current[diff] = null;
+          return { ...prev, [diff]: 0 };
+        }
+        return { ...prev, [diff]: t - 1 };
+      });
+    }, 1000);
+  }
 
   // Fetch daily status for signed-in users on mount
   useEffect(() => {
@@ -199,29 +216,17 @@ export function IsoBallPage() {
       .then((r) => r.json())
       .then((data: DailyStatus) => {
         setDailyStatus(data.sessionsByDifficulty);
-        if (data.cooldownSecondsLeft > 0) {
-          startCooldown(data.cooldownSecondsLeft);
+        if (data.cooldownByDifficulty) {
+          (["rookie", "varsity", "elite"] as Difficulty[]).forEach((d) => {
+            const secs = data.cooldownByDifficulty?.[d] ?? 0;
+            if (secs > 0) startDiffCooldown(d, secs);
+          });
         }
         setStatusLoaded(true);
       })
       .catch(() => setStatusLoaded(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
-
-  function startCooldown(seconds: number) {
-    if (cooldownRef.current) clearInterval(cooldownRef.current);
-    setCooldownLeft(Math.ceil(seconds));
-    cooldownRef.current = setInterval(() => {
-      setCooldownLeft((t) => {
-        if (t <= 1) {
-          clearInterval(cooldownRef.current!);
-          cooldownRef.current = null;
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-  }
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -272,7 +277,8 @@ export function IsoBallPage() {
   useEffect(() => {
     if (screen !== "results" || !isSignedIn) return;
 
-    startCooldown(COOLDOWN_SECONDS);
+    // Start per-difficulty cooldown immediately when results appear
+    startDiffCooldown(difficulty, COOLDOWN_SECONDS);
 
     let cancelled = false;
     async function save() {
@@ -285,7 +291,13 @@ export function IsoBallPage() {
         });
         if (!res.ok) throw new Error("Failed");
         const data = await res.json() as SessionResponse;
-        if (cancelled) return;
+
+        // Always invalidate cache — safe to call even if component has unmounted
+        qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
+        qc.invalidateQueries({ queryKey: ["isoBallProfile", user?.id] });
+
+        if (cancelled) return; // Only skip state updates on unmounted component
+
         setSessionPtsEarned(data.pointsEarned);
         setSessionDeduped(data.deduped ?? 0);
         setSessionReason(data.reason);
@@ -296,11 +308,10 @@ export function IsoBallPage() {
           ...prev,
           [difficulty]: data.sessionsToday ?? (prev[difficulty] + 1),
         }));
+        // Sync server cooldown if it differs from client estimate
         if (data.reason === "cooldown" && data.cooldownSecondsLeft) {
-          startCooldown(data.cooldownSecondsLeft);
+          startDiffCooldown(difficulty, data.cooldownSecondsLeft);
         }
-        qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
-        qc.invalidateQueries({ queryKey: ["isoBallProfile", user?.id] });
       } catch {
         if (!cancelled) setSaveError(true);
       }
@@ -370,7 +381,7 @@ export function IsoBallPage() {
             const m = DIFF_META[diff];
             const sessionsToday = dailyStatus[diff] ?? 0;
             const isLocked = isSignedIn && statusLoaded && sessionsToday >= DAILY_SESSION_LIMIT;
-            const onCooldown = isSignedIn && cooldownLeft > 0;
+            const diffCooldown = isSignedIn ? (cooldownByDiff[diff] ?? 0) : 0;
 
             return (
               <div key={diff} className="relative">
@@ -399,9 +410,9 @@ export function IsoBallPage() {
                         <div className="text-xs text-muted-foreground/50 font-semibold">
                           {sessionsToday}/{DAILY_SESSION_LIMIT} sessions
                         </div>
-                      ) : onCooldown ? (
+                      ) : diffCooldown > 0 ? (
                         <div className="flex items-center gap-1 text-xs font-bold" style={{ color: "rgba(255,255,255,0.4)" }}>
-                          <Timer className="h-3.5 w-3.5" /> {cooldownLeft}s
+                          <Timer className="h-3.5 w-3.5" /> {diffCooldown}s
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: m.color }}>
@@ -580,7 +591,8 @@ export function IsoBallPage() {
   const perfLabel = getPerformance(correct, difficulty);
   const ringColor = correct >= 8 ? "#4ade80" : correct >= 6 ? "#fb923c" : "#f87171";
   const pointsEarnedThisSession = correct * DIFF_META[difficulty].pts;
-  const isOnCooldown = isSignedIn && cooldownLeft > 0;
+  const diffCooldownLeft = isSignedIn ? (cooldownByDiff[difficulty] ?? 0) : 0;
+  const isOnCooldown = diffCooldownLeft > 0;
 
   return (
     <div className="max-w-xl mx-auto px-4 py-12 space-y-8 text-center">
@@ -626,43 +638,49 @@ export function IsoBallPage() {
       {/* Ball Knowledge points earned */}
       {isSignedIn ? (
         <div
-          className="rounded-xl border p-4 space-y-1.5"
+          className="rounded-xl border p-5 space-y-2 text-left"
           style={{
-            borderColor: sessionSaved ? "rgba(192,132,252,0.3)" : "rgba(255,255,255,0.08)",
-            background: sessionSaved ? "rgba(192,132,252,0.08)" : "rgba(255,255,255,0.04)",
+            borderColor: sessionSaved && !sessionReason ? "rgba(192,132,252,0.4)" : "rgba(255,255,255,0.08)",
+            background: sessionSaved && !sessionReason ? "rgba(192,132,252,0.08)" : "rgba(255,255,255,0.04)",
           }}
         >
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#c084fc" }}>Ball Knowledge</p>
+
           {sessionSaved ? (
             <>
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#c084fc" }}>Ball Knowledge</p>
-
               {sessionReason === "daily_limit" ? (
                 <p className="text-sm font-semibold text-muted-foreground">
-                  No points — daily session limit reached
+                  Daily session limit reached — no points awarded. Come back tomorrow.
                 </p>
               ) : sessionReason === "cooldown" ? (
                 <p className="text-sm font-semibold text-muted-foreground">
-                  No points — played too quickly
+                  Played too quickly — no points awarded. Wait for the cooldown before replaying.
                 </p>
               ) : (
                 <>
-                  <p className="text-lg font-black">
-                    +{sessionPtsEarned} pts earned
-                    {(sessionDeduped ?? 0) > 0 && (
-                      <span className="text-sm font-normal text-muted-foreground ml-2">
-                        ({sessionDeduped} already earned today)
-                      </span>
-                    )}
-                  </p>
-                  {newTotalPoints !== null && newLevel && (
-                    <p className="text-sm text-muted-foreground">
-                      Total: <span className="font-bold text-foreground">{newTotalPoints.toLocaleString()} pts</span>
-                      {" · "}
-                      <span className="font-bold" style={{ color: getLevelColor(newLevel) }}>{newLevel}</span>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-2xl font-black" style={{ color: "#c084fc" }}>
+                      +{sessionPtsEarned} pts
+                    </span>
+                    <span className="text-sm text-muted-foreground font-medium">saved to your profile</span>
+                  </div>
+                  {(sessionDeduped ?? 0) > 0 && (
+                    <p className="text-xs text-muted-foreground/70">
+                      {sessionDeduped} question{sessionDeduped === 1 ? "" : "s"} already earned today — {sessionDeduped! * DIFF_META[difficulty].pts} pts skipped
                     </p>
                   )}
+                  {newTotalPoints !== null && newLevel && (
+                    <div className="mt-1 pt-2 border-t border-white/8 flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">New total</span>
+                      <span className="text-base font-black tabular-nums">
+                        {newTotalPoints.toLocaleString()} pts
+                        {" "}
+                        <span className="text-sm font-bold" style={{ color: getLevelColor(newLevel) }}>· {newLevel}</span>
+                      </span>
+                    </div>
+                  )}
                   {newLevel === "Elite Playmaker" && (
-                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                    <div className="flex items-center gap-1.5 pt-1">
                       <Medal className="h-4 w-4" style={{ color: "#c084fc" }} />
                       <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#c084fc" }}>The Playbook Stamp Earned</span>
                     </div>
@@ -671,15 +689,9 @@ export function IsoBallPage() {
               )}
             </>
           ) : saveError ? (
-            <>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ball Knowledge</p>
-              <p className="text-xs text-muted-foreground">+{pointsEarnedThisSession} pts (could not save — try again later)</p>
-            </>
+            <p className="text-xs text-muted-foreground">Could not save score — try again later.</p>
           ) : (
-            <>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ball Knowledge</p>
-              <p className="text-xs text-muted-foreground animate-pulse">Saving…</p>
-            </>
+            <p className="text-xs text-muted-foreground animate-pulse">Saving +{pointsEarnedThisSession} pts…</p>
           )}
         </div>
       ) : (
@@ -701,7 +713,7 @@ export function IsoBallPage() {
           {isOnCooldown ? (
             <>
               <Timer className="h-4 w-4" />
-              Next play in {cooldownLeft}s
+              Next {meta.label} play in {diffCooldownLeft}s
             </>
           ) : (
             <>
