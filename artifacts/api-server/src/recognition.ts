@@ -5,6 +5,7 @@ import {
   gamesTable,
   userProfilesTable,
   playersTable,
+  teamsTable,
 } from "@workspace/db";
 import type { ArchetypeHistoryEntry } from "@workspace/db";
 
@@ -561,9 +562,10 @@ export async function applyTeamTides(
 
 export async function resetTeamSeason(
   teamId: number,
-  season?: string
+  newSeasonName?: string,
+  closingSeason?: string
 ): Promise<{ season: string; playersArchived: number }> {
-  const resolvedSeason = season ?? (await getTeamCurrentSeason(teamId));
+  const resolvedSeason = closingSeason ?? (await getTeamCurrentSeason(teamId));
   if (!resolvedSeason) return { season: "", playersArchived: 0 };
 
   // ── Archive: save the closing season's archetype for each player, then
@@ -604,6 +606,15 @@ export async function resetTeamSeason(
   // Stamps are permanent career achievements — untouched.
   // Tides remain on each profile, tagged with their season, permanently viewable.
   // Game stats remain in game_player_stats permanently — no rows are deleted.
+
+  // Mark the new active season on the team so Season History knows immediately
+  // which season is "current" — even before any games are created.
+  if (newSeasonName) {
+    await db
+      .update(teamsTable)
+      .set({ currentSeason: newSeasonName })
+      .where(eq(teamsTable.id, teamId));
+  }
 
   return { season: resolvedSeason, playersArchived };
 }

@@ -12,6 +12,7 @@ export const teamsTable = pgTable("teams", {
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color").notNull().default("#FF6B00"),
   secondaryColor: text("secondary_color").notNull().default("#132237"),
+  currentSeason: text("current_season"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -330,13 +330,15 @@ export function AdminPage() {
       const res = await fetch(`${BASE_URL}/api/admin/teams/${teamId}/new-season-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ newSeasonName: newSeasonName.trim() }),
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       setNewSeasonResetDone(true);
       loadTideProfiles();
       await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
       await qc.invalidateQueries({ queryKey: ["/api/games"] });
+      // Refresh season history so the new season shows as Active immediately
+      if (seasonHistoryTeamId !== null) loadTeamSeasons(seasonHistoryTeamId);
     } catch (e: unknown) {
       setNewSeasonResetError(e instanceof Error ? e.message : "Unknown error");
     } finally {

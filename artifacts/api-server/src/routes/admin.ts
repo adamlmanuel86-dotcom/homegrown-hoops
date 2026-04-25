@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ne, isNull, or, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable, teamsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason, getTeamCurrentSeason } from "../recognition";
@@ -262,8 +262,8 @@ router.post("/admin/teams/:teamId/new-season-reset", async (req, res): Promise<v
   const teamId = parseInt(req.params.teamId);
   if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
 
-  const { season } = req.body as { season?: string };
-  const result = await resetTeamSeason(teamId, season);
+  const { season, newSeasonName } = req.body as { season?: string; newSeasonName?: string };
+  const result = await resetTeamSeason(teamId, newSeasonName, season);
   res.json({ success: true, ...result });
 });
 
@@ -278,13 +278,23 @@ router.get("/admin/teams/:teamId/seasons", async (req, res): Promise<void> => {
   const teamId = parseInt(req.params.teamId);
   if (isNaN(teamId)) { res.status(400).json({ error: "Invalid team id" }); return; }
 
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+
   const rows = await db
     .select({ season: gamesTable.season })
     .from(gamesTable)
     .where(or(eq(gamesTable.homeTeamId, teamId), eq(gamesTable.awayTeamId, teamId)));
 
-  const all = [...new Set(rows.map((r) => r.season))].sort((a, b) => b.localeCompare(a));
-  const currentSeason = all[0] ?? null;
+  const gameSeasons = [...new Set(rows.map((r) => r.season))];
+
+  // The explicitly stored currentSeason (set during Start New Season) is the
+  // authoritative active season. Fall back to the most recent game season.
+  const currentSeason = team?.currentSeason ?? gameSeasons.sort((a, b) => b.localeCompare(a))[0] ?? null;
+
+  // Include the new active season in the list even if no games exist yet
+  const allSet = new Set(gameSeasons);
+  if (currentSeason) allSet.add(currentSeason);
+  const all = [...allSet].sort((a, b) => b.localeCompare(a));
 
   res.json({ seasons: all, currentSeason });
 });

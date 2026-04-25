@@ -142,17 +142,14 @@ export function ProfilePage() {
       }
     : undefined;
 
-  // ── Tides for selected season ──────────────────────────────────────────────
-  // When no season is selected, show tides for the current (most recent) season
-  // only. Tides accumulate permanently with season tags; the season selector
-  // lets the user browse past seasons.
+  // ── Tides ─────────────────────────────────────────────────────────────────
+  // Career view (no season selected): show all tides ever earned, with counter
+  // badges for multiple wins across seasons.
+  // Season view (season selected): show only that season's tides.
   const allTides = profile.tides ?? [];
-  const currentSeason = seasons.length > 0 ? seasons[0] : null;
-  const displayTides = selectedSeason
+  const tidesForBlock = selectedSeason
     ? allTides.filter((t) => t.season === selectedSeason)
-    : currentSeason
-    ? allTides.filter((t) => t.season === currentSeason)
-    : [];
+    : allTides;
 
   // ── Archetype for selected season (from history) or current ──
   const displayArchetype = selectedSeason
@@ -312,7 +309,7 @@ export function ProfilePage() {
 
       <RecognitionBlock
         stamps={profile.stamps ?? []}
-        tides={allTides}
+        tides={tidesForBlock}
         archetype={displayArchetype}
       />
     </div>
