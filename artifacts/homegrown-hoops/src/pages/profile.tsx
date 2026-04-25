@@ -230,6 +230,13 @@ export function ProfilePage() {
           primaryColor={team?.primaryColor ?? "#B45309"}
           secondaryColor={team?.secondaryColor ?? "#1E3A5F"}
         />
+        {isoBallData && isoBallData.sessionCount > 0 && (
+          <BallKnowledgeBlock
+            totalPoints={isoBallData.totalPoints}
+            sessionCount={isoBallData.sessionCount}
+            level={isoBallData.level}
+          />
+        )}
         <button
           onClick={handleShare}
           className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
@@ -332,15 +339,6 @@ export function ProfilePage() {
         tides={tidesForBlock}
         archetype={displayArchetype}
       />
-
-      {/* Ball Knowledge — only visible after at least 1 Iso Ball session */}
-      {isoBallData && isoBallData.sessionCount > 0 && (
-        <BallKnowledgeBlock
-          totalPoints={isoBallData.totalPoints}
-          sessionCount={isoBallData.sessionCount}
-          level={isoBallData.level}
-        />
-      )}
     </div>
   );
 }
