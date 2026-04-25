@@ -211,12 +211,9 @@ export interface GamePlayerStat {
   id: number;
   gameId: number;
   playerId: number;
-  /** @nullable */
-  points: number | null;
-  /** @nullable */
-  rebounds: number | null;
-  /** @nullable */
-  assists: number | null;
+  points: number;
+  rebounds: number;
+  assists: number;
   steals: number;
   blocks: number;
   turnovers: number;
@@ -231,12 +228,9 @@ export interface GamePlayerStat {
 
 export interface UpsertGamePlayerStatBody {
   playerId: number;
-  /** @nullable */
-  points: number | null;
-  /** @nullable */
-  rebounds: number | null;
-  /** @nullable */
-  assists: number | null;
+  points: number;
+  rebounds: number;
+  assists: number;
   steals: number;
   blocks: number;
   turnovers: number;
@@ -254,8 +248,6 @@ export interface PlayerLeaderEntry {
   firstName: string;
   lastName: string;
   /** @nullable */
-  number?: string | null;
-  /** @nullable */
   teamName?: string | null;
   /** @nullable */
   teamAbbreviation?: string | null;
@@ -266,6 +258,8 @@ export interface StatLeaders {
   points: PlayerLeaderEntry[];
   rebounds: PlayerLeaderEntry[];
   assists: PlayerLeaderEntry[];
+  steals: PlayerLeaderEntry[];
+  blocks: PlayerLeaderEntry[];
 }
 
 export interface StatsSummary {
@@ -291,21 +285,6 @@ export interface RecognitionEntry {
   season?: string;
 }
 
-export interface CareerStatsSnapshot {
-  gamesPlayed: number;
-  points: number;
-  rebounds: number;
-  assists: number;
-  steals: number;
-  blocks: number;
-  threesMade: number;
-}
-
-export interface ArchetypeHistoryEntry {
-  season: string;
-  archetype: string;
-}
-
 export interface UserProfile {
   id: number;
   clerkUserId: string;
@@ -328,14 +307,6 @@ export interface UserProfile {
   tides: RecognitionEntry[];
   /** @nullable */
   archetype?: string | null;
-  /** @nullable */
-  avatarUrl?: string | null;
-  /** @nullable */
-  number?: string | null;
-  /** Career stat totals accumulated from all completed seasons (snapshotted at each season reset). */
-  careerStats?: CareerStatsSnapshot | null;
-  /** Archetype assigned at the end of each completed season. */
-  archetypeHistory?: ArchetypeHistoryEntry[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -367,10 +338,6 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
-  /** @nullable */
-  avatarUrl?: string | null;
-  /** @nullable */
-  number?: string | null;
 }
 
 export interface UpdateUserProfileBody {
@@ -386,10 +353,6 @@ export interface UpdateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
-  /** @nullable */
-  avatarUrl?: string | null;
-  /** @nullable */
-  number?: string | null;
 }
 
 export interface AdminUpdateProfileBody {

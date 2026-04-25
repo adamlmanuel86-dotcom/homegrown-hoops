@@ -12,9 +12,8 @@ import {
   useAddGameVideo,
   useDeleteGameVideo,
   useUpsertGamePlayerStats,
-  useDeleteGamePlayerStat,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
@@ -55,7 +54,12 @@ export function GameDetailPage() {
   const addGameVideo = useAddGameVideo();
   const deleteGameVideo = useDeleteGameVideo();
   const upsertGamePlayerStats = useUpsertGamePlayerStats();
-  const deleteGamePlayerStat = useDeleteGamePlayerStat();
+  const deleteGamePlayerStat = useMutation({
+    mutationFn: async ({ id: gameId, playerId }: { id: number; playerId: number }) => {
+      const res = await fetch(`${BASE_URL}/api/games/${gameId}/player-stats/${playerId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Failed to delete stat: ${res.status}`);
+    },
+  });
 
   const [editingScore, setEditingScore] = useState(false);
   const [confirmingDeleteStatPlayerId, setConfirmingDeleteStatPlayerId] = useState<number | null>(null);

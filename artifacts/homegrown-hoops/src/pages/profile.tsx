@@ -159,10 +159,12 @@ export function ProfilePage() {
     ? (profile.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype ?? "Uncharted"
     : profile.archetype;
 
-  // Profile view adjusted for the selected season (stamps always career-wide)
+  // Profile view adjusted for the selected season.
+  // tides: keep ALL career-wide tides so PlayerCard Legacy Score counts correctly.
+  // RecognitionBlock receives displayTides separately for the season-filtered grid.
+  // Stamps are always career-wide — never filtered.
   const displayProfile = {
     ...profile,
-    tides: displayTides,
     archetype: displayArchetype,
   };
 

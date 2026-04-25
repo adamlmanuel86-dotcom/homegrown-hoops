@@ -9,4 +9,6 @@
 export interface RecognitionEntry {
   id: string;
   earnedAt: string;
+  /** Season this recognition was earned in, e.g. "2025-26". Present on tides awarded from the 2025-26 season onward. */
+  season?: string;
 }

@@ -223,13 +223,9 @@ export const GetPlayerStatsResponse = zod.object({
   playerId: zod.number(),
   gamesPlayed: zod.number(),
   totalPoints: zod.number(),
-  totalRebounds: zod.number(),
-  totalAssists: zod.number(),
-  totalThreesMade: zod.number(),
   avgPoints: zod.number(),
   avgRebounds: zod.number(),
   avgAssists: zod.number(),
-  avgThreesMade: zod.number(),
   avgSteals: zod.number(),
   avgBlocks: zod.number(),
   avgTurnovers: zod.number(),
@@ -340,9 +336,9 @@ export const GetGamePlayerStatsResponseItem = zod.object({
   id: zod.number(),
   gameId: zod.number(),
   playerId: zod.number(),
-  points: zod.number().nullable(),
-  rebounds: zod.number().nullable(),
-  assists: zod.number().nullable(),
+  points: zod.number(),
+  rebounds: zod.number(),
+  assists: zod.number(),
   steals: zod.number(),
   blocks: zod.number(),
   turnovers: zod.number(),
@@ -367,9 +363,9 @@ export const UpsertGamePlayerStatsParams = zod.object({
 
 export const UpsertGamePlayerStatsBodyItem = zod.object({
   playerId: zod.number(),
-  points: zod.number().nullable(),
-  rebounds: zod.number().nullable(),
-  assists: zod.number().nullable(),
+  points: zod.number(),
+  rebounds: zod.number(),
+  assists: zod.number(),
   steals: zod.number(),
   blocks: zod.number(),
   turnovers: zod.number(),
@@ -389,9 +385,9 @@ export const UpsertGamePlayerStatsResponseItem = zod.object({
   id: zod.number(),
   gameId: zod.number(),
   playerId: zod.number(),
-  points: zod.number().nullable(),
-  rebounds: zod.number().nullable(),
-  assists: zod.number().nullable(),
+  points: zod.number(),
+  rebounds: zod.number(),
+  assists: zod.number(),
   steals: zod.number(),
   blocks: zod.number(),
   turnovers: zod.number(),
@@ -416,7 +412,6 @@ export const GetStatLeadersResponse = zod.object({
       playerId: zod.number(),
       firstName: zod.string(),
       lastName: zod.string(),
-      number: zod.string().nullish(),
       teamName: zod.string().nullish(),
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
@@ -427,7 +422,6 @@ export const GetStatLeadersResponse = zod.object({
       playerId: zod.number(),
       firstName: zod.string(),
       lastName: zod.string(),
-      number: zod.string().nullish(),
       teamName: zod.string().nullish(),
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
@@ -438,18 +432,26 @@ export const GetStatLeadersResponse = zod.object({
       playerId: zod.number(),
       firstName: zod.string(),
       lastName: zod.string(),
-      number: zod.string().nullish(),
       teamName: zod.string().nullish(),
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
     }),
   ),
-  threesMade: zod.array(
+  steals: zod.array(
     zod.object({
       playerId: zod.number(),
       firstName: zod.string(),
       lastName: zod.string(),
-      number: zod.string().nullish(),
+      teamName: zod.string().nullish(),
+      teamAbbreviation: zod.string().nullish(),
+      value: zod.number(),
+    }),
+  ),
+  blocks: zod.array(
+    zod.object({
+      playerId: zod.number(),
+      firstName: zod.string(),
+      lastName: zod.string(),
       teamName: zod.string().nullish(),
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
@@ -490,7 +492,7 @@ export const ListAdminUsersResponseItem = zod.object({
   clerkUserId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
@@ -512,7 +514,7 @@ export const UpdateUserRoleResponse = zod.object({
   clerkUserId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
@@ -532,17 +534,29 @@ export const ListProfilesResponseItem = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   tides: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   archetype: zod.string().nullish(),
@@ -571,17 +585,27 @@ export const GetMyProfileResponse = zod.object({
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   tides: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   archetype: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  number: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -597,8 +621,6 @@ export const CreateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
-  avatarUrl: zod.string().nullish(),
-  number: zod.string().nullish(),
 });
 
 /**
@@ -612,8 +634,6 @@ export const UpdateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
-  avatarUrl: zod.string().nullish(),
-  number: zod.string().nullish(),
 });
 
 export const UpdateMyProfileResponse = zod.object({
@@ -628,22 +648,32 @@ export const UpdateMyProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   tides: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   archetype: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  number: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -667,22 +697,32 @@ export const GetProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   tides: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   archetype: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  number: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -711,17 +751,29 @@ export const UpdateProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player", "parent"]),
+  role: zod.enum(["admin", "coach", "player"]),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   tides: zod.array(
     zod.object({
       id: zod.string(),
       earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
     }),
   ),
   archetype: zod.string().nullish(),

@@ -1200,6 +1200,9 @@ components:
           type: string
         earnedAt:
           type: string
+        season:
+          type: string
+          description: Season this recognition was earned in, e.g. "2025-26". Present on tides awarded from the 2025-26 season onward.
       required:
         - id
         - earnedAt

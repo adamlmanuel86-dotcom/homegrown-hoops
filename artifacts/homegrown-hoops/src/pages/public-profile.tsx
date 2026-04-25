@@ -116,8 +116,10 @@ export function PublicProfilePage() {
     ? (profile?.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype ?? "Uncharted"
     : profile?.archetype;
 
+  // tides: keep ALL career-wide tides so PlayerCard Legacy Score counts correctly.
+  // RecognitionBlock receives displayTides separately for the season-filtered grid.
   const displayProfile = profile
-    ? { ...profile, tides: displayTides, archetype: displayArchetype }
+    ? { ...profile, archetype: displayArchetype }
     : null;
 
   if (isLoading) {
