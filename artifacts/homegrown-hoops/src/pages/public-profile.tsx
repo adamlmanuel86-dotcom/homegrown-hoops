@@ -42,12 +42,13 @@ export function PublicProfilePage() {
   });
   const seasons = seasonsData?.seasons ?? [];
 
-  // Auto-select the most recent season once data loads
+  // Auto-select the team's active season (or most recent with game data) once loaded
   useEffect(() => {
-    if (seasons.length > 0 && selectedSeason === null) {
-      setSelectedSeason(seasons[0]);
+    if (seasonsData && selectedSeason === null) {
+      const target = seasonsData.activeSeason ?? seasonsData.seasons[0] ?? null;
+      if (target) setSelectedSeason(target);
     }
-  }, [seasons, selectedSeason]);
+  }, [seasonsData, selectedSeason]);
 
   // Season-specific stats (for display when a season is selected)
   const { data: seasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
@@ -309,8 +310,8 @@ export function PublicProfilePage() {
                   outline: "none",
                 }}
               >
-                {seasons.map((s, i) => (
-                  <option key={s} value={s}>{s}{i === 0 ? " · Current" : ""}</option>
+                {seasons.map((s) => (
+                  <option key={s} value={s}>{s}{s === seasonsData?.activeSeason ? " · Current" : ""}</option>
                 ))}
                 <option value="">Career · All Seasons</option>
               </select>
@@ -327,7 +328,7 @@ export function PublicProfilePage() {
                 }}
               />
             </div>
-            {selectedSeason && selectedSeason !== seasons[0] && (
+            {selectedSeason && selectedSeason !== seasonsData?.activeSeason && (
               <span style={{ fontSize: 11, color: "hsl(215, 16%, 45%)" }}>
                 Archived season · Legacy Score always shows career total
               </span>

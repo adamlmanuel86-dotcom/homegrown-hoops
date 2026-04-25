@@ -4,6 +4,7 @@ import type { PlayerStats } from "./generated/api.schemas";
 
 export interface PlayerSeasons {
   seasons: string[];
+  activeSeason: string | null;
 }
 
 export const getPlayerStatsBySeason = async (

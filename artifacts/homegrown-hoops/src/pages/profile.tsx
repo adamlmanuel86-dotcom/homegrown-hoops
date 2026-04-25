@@ -63,12 +63,13 @@ export function ProfilePage() {
   });
   const seasons = seasonsData?.seasons ?? [];
 
-  // Auto-select the most recent season once data loads
+  // Auto-select the team's active season (or most recent with game data) once loaded
   useEffect(() => {
-    if (seasons.length > 0 && selectedSeason === null) {
-      setSelectedSeason(seasons[0]);
+    if (seasonsData && selectedSeason === null) {
+      const target = seasonsData.activeSeason ?? seasonsData.seasons[0] ?? null;
+      if (target) setSelectedSeason(target);
     }
-  }, [seasons, selectedSeason]);
+  }, [seasonsData, selectedSeason]);
 
   // Season-specific stats (for display when a season is selected)
   const { data: seasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
@@ -198,14 +199,14 @@ export function ProfilePage() {
               onChange={(e) => setSelectedSeason(e.target.value || null)}
               className="appearance-none bg-white/8 border border-white/12 text-sm font-semibold text-foreground rounded-xl px-4 py-2 pr-9 cursor-pointer hover:bg-white/12 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              {seasons.map((s, i) => (
-                <option key={s} value={s}>{s}{i === 0 ? " · Current" : ""}</option>
+              {seasons.map((s) => (
+                <option key={s} value={s}>{s}{s === seasonsData?.activeSeason ? " · Current" : ""}</option>
               ))}
               <option value="">Career · All Seasons</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           </div>
-          {selectedSeason && selectedSeason !== seasons[0] && (
+          {selectedSeason && selectedSeason !== seasonsData?.activeSeason && (
             <span className="text-xs text-muted-foreground">
               Archived season · Legacy Score always shows career total
             </span>

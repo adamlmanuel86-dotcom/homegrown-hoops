@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, playersTable, gamePlayerStatsTable, gamesTable } from "@workspace/db";
+import { db, playersTable, gamePlayerStatsTable, gamesTable, teamsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import {
   CreatePlayerBody,
@@ -90,8 +90,21 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
     .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
     .where(eq(gamePlayerStatsTable.playerId, playerId));
 
-  const seasons = [...new Set(rows.map((r) => r.season).filter(Boolean))].sort().reverse();
-  res.json({ seasons });
+  const gameSeasons = [...new Set(rows.map((r) => r.season).filter(Boolean))];
+
+  // Look up the player's team to get the authoritative active season
+  const [player] = await db.select({ teamId: playersTable.teamId }).from(playersTable).where(eq(playersTable.id, playerId));
+  const [team] = player?.teamId
+    ? await db.select({ currentSeason: teamsTable.currentSeason }).from(teamsTable).where(eq(teamsTable.id, player.teamId))
+    : [];
+  const activeSeason = team?.currentSeason ?? gameSeasons.sort().reverse()[0] ?? null;
+
+  // Always include the active season in the list even if no games have been played yet
+  const allSeasons = new Set(gameSeasons);
+  if (activeSeason) allSeasons.add(activeSeason);
+  const seasons = [...allSeasons].sort().reverse();
+
+  res.json({ seasons, activeSeason });
 });
 
 router.get("/players/:id/stats", async (req, res): Promise<void> => {
