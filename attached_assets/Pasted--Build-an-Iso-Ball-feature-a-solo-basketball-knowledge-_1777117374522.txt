@@ -1,0 +1,64 @@
+*“Build an Iso Ball feature — a solo basketball knowledge challenge. Add Iso Ball as a clearly visible tab in the main navigation. When opened the player sees a clean landing page with the Iso Ball name, a brief description saying ‘Test your basketball IQ. Three levels. Ten questions. How deep is your knowledge?’ and three difficulty buttons — Rookie, Varsity and Elite. When a difficulty is selected the player plays 10 randomly selected questions from that tier with a 15 second countdown timer per question shown as a visible countdown bar. Each question displays with 4 large tappable multiple choice buttons. When a player taps an answer immediately show the button green with a checkmark if correct or red with an X if wrong and reveal which answer was correct before automatically moving to the next question after 2 seconds. If the timer runs out with no answer selected show it as wrong and reveal the correct answer. After all 10 questions show a results screen with their score out of 10, total Ball Knowledge points earned this session, their updated Ball Knowledge Level with a satisfying progress bar animation, and a Play Again button. Ball Knowledge Level displays on the player profile page and player card as a separate score from Legacy Score labeled Ball Knowledge. Ball Knowledge points per correct answer: Rookie equals 10 points, Varsity equals 20 points, Elite equals 35 points. Award The Playbook Stamp when a player reaches 500 Ball Knowledge points. Questions are randomized each session. Store all questions in the database using exactly this question bank and no other source:
+ROOKIE TIER:
+Q1: How many players from each team are on the court at one time? A)4 B)6 C)5 D)7 Answer:C
+Q2: How many seconds does a player have in the key before a violation? A)2 B)3 C)4 D)5 Answer:B
+Q3: A player catches a pass takes two steps and shoots a layup. Is this travelling? A)Yes always B)No the two step rule allows this C)Only in the paint D)Only if dribbling first Answer:B
+Q4: What does a referee making a T shape with their hands mean? A)Timeout B)Technical foul C)Travelling D)Ten second violation Answer:B
+Q5: How many seconds does a team have to advance past halfcourt? A)5 B)15 C)8 D)10 Answer:C
+Q6: What happens when a team accumulates too many fouls in a quarter? A)Nothing B)Technical foul shot C)Bonus free throws on non shooting fouls D)Coach ejected Answer:C
+Q7: How many fouls does a player need to foul out? A)4 B)5 C)6 D)3 Answer:B
+Q8: What is a fast break? A)Quick timeout B)Pushing ball up court before defense sets C)Foul on defender D)Coach drawn play Answer:B
+Q9: What does boxing out mean? A)Fighting B)Positioning body between opponent and basket for rebound C)Setting screen D)Dribbling with two hands Answer:B
+Q10: What is a double dribble? A)Dribbling two hands simultaneously or stopping and restarting dribble B)Bouncing too hard C)Behind the back dribble D)Dribbling out of bounds Answer:A
+Q11: What is an assist? A)Helping injured player B)Pass directly leading to made basket C)Defensive play D)Coaching timeout Answer:B
+Q12: What is a turnover? A)Defensive rotation B)Offense loses possession to defense C)Shot off rim D)Substitution Answer:B
+Q13: Where must a player stand when shooting a free throw? A)Anywhere behind three point line B)On free throw line without stepping over until ball hits rim C)Inside key D)Baseline Answer:B
+Q14: What is a jump ball? A)Player jumping for pass B)Two players gain possession simultaneously and referee tosses ball between them C)Shot attempt D)Type of foul Answer:B
+Q15: What does man to man defense mean? A)Only men play defense B)Each defender guards one specific offensive player C)All defend ball handler D)Defenders switch every play Answer:B
+Q16: What is a rebound? A)Recovering missed shot B)Second chance free throw C)Pass off floor D)Running back on defense Answer:A
+Q17: What is the shot clock for? A)Time substitutions B)Limit possession time before shot attempt C)Track player time D)Count to halftime Answer:B
+Q18: What is an offensive foul? A)Foul on defense B)Foul by offensive player C)Any foul in paint D)Foul on three point shot Answer:B
+Q19: What does shooting pocket mean? A)Standing in their way B)Position where player naturally catches and shoots in one fluid motion C)Defensive technique D)Court location Answer:B
+Q20: What is goaltending? A)Playing goalkeeper B)Illegally interfering with shot on downward arc or on rim C)Standing under basket D)Blocking pass Answer:B
+VARSITY TIER:
+Q1: A team inbounds from halfcourt down 2 with 2 seconds left. Pass hits backboard and goes in. Ruling? A)3 points B)2 points overtime C)No basket D)Technical foul Answer:C
+Q2: What is a pick and roll? A)Catch and shoot B)Offensive player sets screen then cuts to basket C)Defensive trap D)Players switch positions Answer:B
+Q3: What does help defense mean? A)Asking teammate advice B)Defender leaves assignment to assist beaten teammate C)Intentional foul D)Sagging off corner man Answer:B
+Q4: Difference between blocking and charging foul? A)No difference B)Blocking offense charging defense C)Blocking when defender has no position charging when defender established position and offense runs into them D)Charging only in paint Answer:C
+Q5: What is a skip pass? A)Bounce pass B)Pass directly across court to weak side skipping defenders C)No look pass D)Behind back pass Answer:B
+Q6: In 2-3 zone what do the numbers represent? A)Two guards at top three across baseline B)Two forwards three guards C)Two shot clock seconds three pointers D)Two at halfcourt three in paint Answer:A
+Q7: What is motion offense? A)Set play every possession B)Free flowing system reading defense without predetermined plays C)Fast break only D)Isolation offense Answer:B
+Q8: What is a back screen? A)Screening behind ball handler B)Screen on defender between screener and basket allowing teammate to cut toward ball C)Baseline screen D)Halfcourt screen Answer:B
+Q9: What is an and one? A)Three point shot B)Fouled while making shot earns one free throw C)Isolation play D)Bonus free throw Answer:B
+Q10: What does transition defense mean? A)Switch man to zone B)Getting back quickly when team loses possession C)Post defense D)Switching assignments Answer:B
+Q11: What is a give and go? A)Pass to teammate and immediately cut to basket for return pass B)Turnover C)Defensive switch D)Timeout play Answer:A
+Q12: What does weak side mean? A)Side with weakest player B)Side of court away from ball C)Side nearest bench D)Side nearest halfcourt Answer:B
+Q13: What is a closeout? A)Ending game B)Defender sprints toward offensive player who received pass to contest shot while staying under control C)Full court press D)Double team Answer:B
+Q14: What is the high post used for in offense? A)Just standing there B)Player at free throw line area creates scoring opportunities and acts as offensive hub C)Inbound plays only D)Defensive position Answer:B
+Q15: What does running a play off timeout mean? A)Coach draws up specific play to run immediately after timeout B)Players rest C)Switch to zone D)Best player improvises Answer:A
+Q16: What is a defensive rotation? A)Substituting defenders B)Defenders shift positions responding to offensive movement to maintain coverage C)Zone to man switch D)Practice drill Answer:B
+Q17: What does penetrate and kick mean? A)Kicking ball intentionally B)Ball handler drives into paint drawing defenders then passes to open perimeter player C)Fast break play D)Post entry Answer:B
+Q18: What is a hedge in pick and roll defense? A)Hiding behind screen B)Big defender steps up aggressively to slow ball handler off screen giving teammate recovery time C)Zone adjustment D)Post double team Answer:B
+Q19: What does playing off the ball mean? A)Not touching ball B)Movement cutting and positioning of players without the ball C)Defense only D)Standing in corner Answer:B
+Q20: What is a secondary break? A)Halftime B)After initial fast break opportunity offense continues pushing pace with quick structured actions before defense fully sets C)Second timeout D)Substitution pattern Answer:B
+ELITE TIER:
+Q1: In 2-3 zone skip pass to weak side corner. Which defender contests? A)Top left guard B)Center C)Weak side wing D)Strong side forward Answer:C
+Q2: Advantage of dribble hand off over pick and roll? A)Faster B)Screener becomes ball handler option harder to switch C)Less spacing needed D)End game only Answer:B
+Q3: What is a horns set? A)Two bigs at elbows guards in corners B)Fast break play C)Full court press D)Isolation Answer:A
+Q4: Purpose of DHO? A)Slow pace B)Create guard advantage forcing difficult defensive decision C)Get ball to post D)Run clock Answer:B
+Q5: What is a scramble switch? A)Practice drill B)Emergency defensive adjustment switching assignments when screen breaks coverage C)Offensive set D)Press break Answer:B
+Q6: Why is shooting off the catch effective? A)No difference B)One motion requiring less time harder to contest C)More accurate D)Three pointers only Answer:B
+Q7: Playing the gaps in zone defense means? A)Standing between offensive players denying lanes creating deflections B)Playing behind zone C)Post double D)Trapping ball handler Answer:A
+Q8: Paint touches create offense means? A)Fouling strategy B)Ball in paint forces collapse creating open perimeter shots C)Post always shoots D)Driving draws fouls Answer:B
+Q9: What is a flare screen? A)Halfcourt screen B)Screen away from ball freeing shooter moving toward three point line or corner C)Baseline screen D)Post screen Answer:B
+Q10: What does icing a pick and roll mean? A)Freezing ball handler B)Defender forces ball handler away from screen toward sideline while big protects paint C)Double team screener D)Switch every screen Answer:B
+Q11: What is a dunker spot? A)Where best dunker stands B)Position inside paint near baseline opposite ball stretching defense creating lob or dump off options C)Low post D)Short corner Answer:B
+Q12: What is chin action? A)Defensive signal B)Point guard dribbles toward big at elbow triggering cuts and screens C)Fast break D)Press break Answer:B
+Q13: What is nail position in defense? A)Halfcourt B)Help defender at middle of free throw line ready to help on drives from either side C)Weakest position D)Post guard Answer:B
+Q14: Difference between pin down screen and curl cut? A)No difference B)Pin down frees player cutting from baseline toward ball while curl means cutter wraps around screen toward basket C)Pin down zone only D)Curl is defensive Answer:B
+Q15: Going under a screen on defense means? A)Ducking B)Defender goes behind screener on basket side giving space to prevent turning corner C)Switching D)Hard hedge Answer:B
+Q16: What is a short roll? A)Small player screens B)Screener stops short in paint after pick as secondary ball handler option C)Quick post pass D)Fast break Answer:B
+Q17: What does early offense mean? A)Starting game early B)Pushing pace immediately after made basket or rebound before defense sets C)Specific play D)Quick timeout Answer:B
+Q18: What is a trip wire in full court pressure? A)Tripping players B)Designated spot where defender turns ball handler or forces dribble pickup triggering teammate trap C)Zone defense D)Half court trap Answer:B
+Q19: What does spacing mean and why does it matter? A)Bench distance B)Deliberate positioning stretching defense creating driving lanes and passing angles C)Distance from three point line D)NBA only concept Answer:B
+Q20: What is a ghost screen? A)Invisible screen B)Player acts like setting screen then peels away as ball handler uses fake screen to attack while screener becomes immediate scoring option C)Out of bounds screen D)Halfcourt screen Answer:B”**

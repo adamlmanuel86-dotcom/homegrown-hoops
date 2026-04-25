@@ -20,6 +20,7 @@ import { PublicProfilePage } from "@/pages/public-profile";
 import { AdminPage } from "@/pages/admin";
 import { OurStoryPage } from "@/pages/our-story";
 import { ArchetypesPage } from "@/pages/archetypes";
+import { IsoBallPage } from "@/pages/iso-ball";
 import { OnboardingPage } from "@/pages/onboarding";
 import { CustomSignUpPage } from "@/pages/sign-up";
 import { TermsPage } from "@/pages/terms";
@@ -247,6 +248,7 @@ function Router() {
             <Route path="/admin" component={AdminPage} />
             <Route path="/our-story" component={OurStoryPage} />
             <Route path="/archetypes" component={ArchetypesPage} />
+            <Route path="/iso-ball" component={IsoBallPage} />
             <Route path="/terms" component={TermsPage} />
             <Route path="/privacy" component={PrivacyPage} />
             <Route component={NotFound} />
