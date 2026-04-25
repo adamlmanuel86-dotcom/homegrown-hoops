@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "wouter";
 import { useUser } from "@clerk/react";
 import {
@@ -63,7 +63,14 @@ export function ProfilePage() {
   });
   const seasons = seasonsData?.seasons ?? [];
 
-  // Season-specific stats (for display when a past season is selected)
+  // Auto-select the most recent season once data loads
+  useEffect(() => {
+    if (seasons.length > 0 && selectedSeason === null) {
+      setSelectedSeason(seasons[0]);
+    }
+  }, [seasons, selectedSeason]);
+
+  // Season-specific stats (for display when a season is selected)
   const { data: seasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
     query: { enabled: !!playerId && !!selectedSeason },
   });
@@ -151,9 +158,13 @@ export function ProfilePage() {
     ? allTides.filter((t) => t.season === selectedSeason)
     : allTides;
 
-  // ── Archetype for selected season (from history) or current ──
+  // ── Archetype for selected season ──
+  // Prefers the archived history entry for that season. Falls back to the
+  // live profile.archetype if this is the current (not-yet-archived) season.
   const displayArchetype = selectedSeason
-    ? (profile.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype ?? "Uncharted"
+    ? (profile.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype
+      ?? profile.archetype
+      ?? "Uncharted"
     : profile.archetype;
 
   // Profile view adjusted for the selected season.
@@ -177,9 +188,9 @@ export function ProfilePage() {
         <ChevronLeft className="h-4 w-4" /> Back
       </Link>
 
-      {/* Season selector — only shown when the player has historical data */}
+      {/* Season selector */}
       {seasons.length > 0 && (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Season</span>
           <div className="relative">
             <select
@@ -187,16 +198,21 @@ export function ProfilePage() {
               onChange={(e) => setSelectedSeason(e.target.value || null)}
               className="appearance-none bg-white/8 border border-white/12 text-sm font-semibold text-foreground rounded-xl px-4 py-2 pr-9 cursor-pointer hover:bg-white/12 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              <option value="">Current Season</option>
-              {seasons.map((s) => (
-                <option key={s} value={s}>{s}</option>
+              {seasons.map((s, i) => (
+                <option key={s} value={s}>{s}{i === 0 ? " · Current" : ""}</option>
               ))}
+              <option value="">Career · All Seasons</option>
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           </div>
-          {!isCurrent && (
+          {selectedSeason && selectedSeason !== seasons[0] && (
             <span className="text-xs text-muted-foreground">
-              Viewing {seasonLabel} · Legacy Score always shows career total
+              Archived season · Legacy Score always shows career total
+            </span>
+          )}
+          {!selectedSeason && (
+            <span className="text-xs text-muted-foreground">
+              All-time · Tides show career wins with counters
             </span>
           )}
         </div>

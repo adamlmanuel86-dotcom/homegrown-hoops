@@ -12,7 +12,7 @@ export const getPlayerStatsBySeason = async (
   options?: RequestInit
 ): Promise<PlayerStats> => {
   return customFetch<PlayerStats>(
-    `/players/${id}/stats?season=${encodeURIComponent(season)}`,
+    `/api/players/${id}/stats?season=${encodeURIComponent(season)}`,
     { method: "GET", ...options }
   );
 };
@@ -21,7 +21,7 @@ export const getPlayerSeasons = async (
   id: number,
   options?: RequestInit
 ): Promise<PlayerSeasons> => {
-  return customFetch<PlayerSeasons>(`/players/${id}/seasons`, {
+  return customFetch<PlayerSeasons>(`/api/players/${id}/seasons`, {
     method: "GET",
     ...options,
   });

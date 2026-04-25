@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import {
   useGetProfile,
@@ -42,7 +42,14 @@ export function PublicProfilePage() {
   });
   const seasons = seasonsData?.seasons ?? [];
 
-  // Season-specific stats (for display when a past season is selected)
+  // Auto-select the most recent season once data loads
+  useEffect(() => {
+    if (seasons.length > 0 && selectedSeason === null) {
+      setSelectedSeason(seasons[0]);
+    }
+  }, [seasons, selectedSeason]);
+
+  // Season-specific stats (for display when a season is selected)
   const { data: seasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
     query: { enabled: !!playerId && !!selectedSeason },
   });
@@ -108,8 +115,12 @@ export function PublicProfilePage() {
     : allTides;
 
   // ── Archetype for selected season ──────────────────────────────────────────
+  // Prefers the archived history entry. Falls back to live profile.archetype
+  // when viewing the current (not-yet-archived) season.
   const displayArchetype = selectedSeason
-    ? (profile?.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype ?? "Uncharted"
+    ? (profile?.archetypeHistory ?? []).find((h) => h.season === selectedSeason)?.archetype
+      ?? profile?.archetype
+      ?? "Uncharted"
     : profile?.archetype;
 
   // tides: keep ALL career-wide tides so PlayerCard Legacy Score counts correctly.
@@ -264,6 +275,7 @@ export function PublicProfilePage() {
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
               alignItems: "center",
               gap: 12,
               marginBottom: 24,
@@ -297,10 +309,10 @@ export function PublicProfilePage() {
                   outline: "none",
                 }}
               >
-                <option value="">Current Season</option>
-                {seasons.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {seasons.map((s, i) => (
+                  <option key={s} value={s}>{s}{i === 0 ? " · Current" : ""}</option>
                 ))}
+                <option value="">Career · All Seasons</option>
               </select>
               <ChevronDown
                 style={{
@@ -315,9 +327,14 @@ export function PublicProfilePage() {
                 }}
               />
             </div>
-            {selectedSeason && (
+            {selectedSeason && selectedSeason !== seasons[0] && (
               <span style={{ fontSize: 11, color: "hsl(215, 16%, 45%)" }}>
-                Legacy Score always shows career total
+                Archived season · Legacy Score always shows career total
+              </span>
+            )}
+            {!selectedSeason && (
+              <span style={{ fontSize: 11, color: "hsl(215, 16%, 45%)" }}>
+                All-time · Tides show career wins with counters
               </span>
             )}
           </div>
