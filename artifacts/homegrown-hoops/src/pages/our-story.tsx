@@ -2,6 +2,7 @@ import { HomegrownHoopsLogo } from "@/components/logo";
 
 const paragraphs = [
   "Homegrown Hoops is Atlantic Canada's home for youth basketball.",
+  "The best teams need every role filled. Homegrown Hoops was built to recognize all of them.",
   "Every game filmed and uploaded to the platform. Every point, rebound and assist tracked and displayed on your own player profile.",
   "Earn Stamps for standout performances. Earn your Archetype — are you The Current? The Vortex? The Mainstay? Every player starts Uncharted and earns their identity through real performance.",
   "At the end of every season the best performers earn Tides — the highest honours on the platform. The Crest goes to one player. Will it be you?",

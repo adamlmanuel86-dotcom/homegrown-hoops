@@ -669,6 +669,10 @@ export function OnboardingPage() {
             transition: "opacity 1.2s ease 0.1s",
           }}
         >
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, textAlign: "center", lineHeight: 1.6, margin: 0, letterSpacing: "0.01em" }}>
+            Homegrown Hoops isn't about stat chasing. It is about your contribution. Every role matters here.
+          </p>
+
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", lineHeight: 1.6, margin: 0 }}>
             Your card updates after every game. Earn Stamps, claim your Archetype, build your Legacy.
           </p>
