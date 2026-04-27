@@ -23,7 +23,9 @@ export function PublicProfilePage() {
     query: { enabled: !!clerkUserId },
   });
 
-  const { data: players } = useListPlayers();
+  const { data: players } = useListPlayers(undefined, {
+    query: { staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
+  });
   const matchedPlayer = players?.find(
     (p) =>
       p.firstName.toLowerCase() === (profile?.firstName ?? "").toLowerCase() &&
@@ -34,7 +36,7 @@ export function PublicProfilePage() {
 
   // All-season stats (for career Legacy Score)
   const { data: allSeasonStats } = useGetPlayerStats(playerId, {
-    query: { enabled: !!playerId },
+    query: { enabled: !!playerId, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   });
 
   // Available seasons

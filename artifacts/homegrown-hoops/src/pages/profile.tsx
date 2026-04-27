@@ -44,7 +44,9 @@ export function ProfilePage() {
     query: { enabled: !!clerkUserId },
   });
 
-  const { data: players } = useListPlayers();
+  const { data: players } = useListPlayers(undefined, {
+    query: { staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
+  });
   const matchedPlayer = players?.find(
     (p) =>
       p.firstName.toLowerCase() === (profile?.firstName ?? "").toLowerCase() &&
@@ -55,7 +57,7 @@ export function ProfilePage() {
 
   // All-season stats (used for career Legacy Score on top of the careerStats snapshot)
   const { data: allSeasonStats } = useGetPlayerStats(playerId, {
-    query: { enabled: !!playerId },
+    query: { enabled: !!playerId, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   });
 
   // Available seasons for this player
