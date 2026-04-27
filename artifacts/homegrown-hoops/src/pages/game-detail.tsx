@@ -194,8 +194,36 @@ export function GameDetailPage() {
 
       await upsertGamePlayerStats.mutateAsync({ id, data: stats });
       await updateGame.mutateAsync({ id, data: { status: game?.status ?? "final" } });
+
+      // Invalidate game-specific queries
       await qc.invalidateQueries({ queryKey: [`/api/games/${id}/player-stats`] });
       await qc.invalidateQueries({ queryKey: [`/api/games/${id}`] });
+
+      // For every edited player, invalidate their career stats, player record,
+      // season-specific stats (custom hook key), and seasons list
+      await Promise.all(
+        stats.map((s) =>
+          Promise.all([
+            qc.invalidateQueries({ queryKey: [`/api/players/${s.playerId}/stats`] }),
+            qc.invalidateQueries({ queryKey: [`/api/players/${s.playerId}`] }),
+            qc.invalidateQueries({ queryKey: ["playerStats", s.playerId] }),
+            qc.invalidateQueries({ queryKey: ["playerSeasons", s.playerId] }),
+          ])
+        )
+      );
+
+      // Invalidate all profile queries (stamps, tides, archetype live here).
+      // Use a predicate so every /api/profiles/* URL is caught regardless of clerkUserId.
+      await qc.invalidateQueries({
+        predicate: (query) => {
+          const first = query.queryKey[0];
+          return typeof first === "string" && first.startsWith("/api/profiles");
+        },
+      });
+
+      // Invalidate the stat leaders leaderboard
+      await qc.invalidateQueries({ queryKey: ["/api/stats/leaders"] });
+
       setStatSaveSuccess(true);
       setTimeout(() => setStatSaveSuccess(false), 3000);
     } catch {
