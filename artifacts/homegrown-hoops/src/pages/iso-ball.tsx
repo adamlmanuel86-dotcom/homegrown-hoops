@@ -55,6 +55,46 @@ const QUESTIONS: Record<Difficulty, Question[]> = {
     { q: "What does 'shooting pocket' mean?", opts: ["The spot on the court from which a player takes the majority of their attempts", "A defensive technique for taking away a shooter's preferred hand side", "The position where a player naturally catches and shoots in one fluid motion", "The gap between two defenders that an offensive player targets for a drive"], ans: "C" },
     // Q20 → D
     { q: "What is goaltending?", opts: ["Blocking a shot attempt cleanly from behind the three-point line", "Standing in the paint for more than three seconds while waiting for a pass", "Swatting a shot out of a player's hands before they fully release the ball", "Illegally interfering with a shot on its downward arc or while it is on the rim"], ans: "D" },
+    // Q21 → B
+    { q: "What is a free throw?", opts: ["A throw from halfcourt", "An uncontested shot from the free throw line awarded after certain fouls", "A pass to a teammate", "A shot with no defenders nearby"], ans: "B" },
+    // Q22 → A
+    { q: "What does it mean when a referee signals with both arms crossed above their head?", opts: ["Game over", "Jump ball", "Timeout", "Technical foul"], ans: "A" },
+    // Q23 → C
+    { q: "How many timeouts does each team typically get per game in youth basketball?", opts: ["2", "3", "5", "1"], ans: "C" },
+    // Q24 → B
+    { q: "What is a slam dunk?", opts: ["A three point shot", "When a player jumps and throws the ball directly through the hoop from above", "A behind the back pass", "A half court shot"], ans: "B" },
+    // Q25 → B
+    { q: "What does it mean to be called for a carry or palm?", opts: ["Carrying an injured player", "When a player turns their hand under the ball while dribbling stopping the balls momentum", "Throwing the ball too hard", "Catching a pass with one hand"], ans: "B" },
+    // Q26 → B
+    { q: "What is the purpose of the three point line?", opts: ["To mark out of bounds", "To separate shots worth two points from shots worth three points", "To show where the free throw lane starts", "To mark halfcourt"], ans: "B" },
+    // Q27 → B
+    { q: "What does it mean when a player is called for a lane violation on a free throw?", opts: ["They stepped out of bounds", "They entered the lane too early before the ball hits the rim", "They missed the free throw", "They bounced the ball before shooting"], ans: "B" },
+    // Q28 → B
+    { q: "What is a no look pass?", opts: ["A pass thrown behind the back", "A pass where the passer looks in a different direction from where they are throwing to fool the defense", "A bounce pass", "A lob pass"], ans: "B" },
+    // Q29 → B
+    { q: "What does it mean to set a screen?", opts: ["Blocking a shot", "When an offensive player legally stands in the path of a defender to free up a teammate", "Calling a timeout", "Switching defensive assignments"], ans: "B" },
+    // Q30 → C
+    { q: "What is a point guard typically responsible for?", opts: ["Scoring as many points as possible", "Rebounding", "Running the offense directing the team and handling the ball", "Defending the opposing center"], ans: "C" },
+    // Q31 → B
+    { q: "What happens when the ball goes out of bounds?", opts: ["The other team gets a free throw", "The team that did not touch the ball last gets possession and inbounds the ball", "The game stops and restarts with a jump ball", "The player who touched it last gets a foul"], ans: "B" },
+    // Q32 → B
+    { q: "What is a layup?", opts: ["A shot taken from halfcourt", "A close range shot where a player uses the backboard or lays the ball up toward the basket off one foot", "A dunk", "A free throw"], ans: "B" },
+    // Q33 → B
+    { q: "What does the term paint refer to in basketball?", opts: ["The color of the court", "The rectangular key area in front of the basket", "The three point line", "The halfcourt line"], ans: "B" },
+    // Q34 → B
+    { q: "What is a buzzer beater?", opts: ["A shot that hits the backboard loudly", "A shot made just as the game clock or shot clock expires", "A shot taken from halfcourt", "A free throw made under pressure"], ans: "B" },
+    // Q35 → B
+    { q: "What does it mean to be called for a backcourt violation?", opts: ["Playing too rough", "When a team advances the ball past halfcourt then passes it back across the halfcourt line", "Standing out of bounds", "Taking too long to inbound"], ans: "B" },
+    // Q36 → C
+    { q: "What is a shooting guard typically known for?", opts: ["Running the offense", "Rebounding and defending", "Scoring from the perimeter and off the catch", "Setting screens for teammates"], ans: "C" },
+    // Q37 → B
+    { q: "What does it mean to crash the boards?", opts: ["Running into another player", "Aggressively pursuing rebounds after a shot", "Driving hard to the basket", "Setting a screen near the basket"], ans: "B" },
+    // Q38 → C
+    { q: "What is a power forward typically responsible for?", opts: ["Running the offense", "Three point shooting", "Physical play near the basket rebounding and defending bigger players", "Full court defense"], ans: "C" },
+    // Q39 → B
+    { q: "What does it mean when a team is in the bonus?", opts: ["They are winning by a large margin", "They have accumulated enough team fouls that the other team shoots free throws on every foul", "They have scored a bonus three point shot", "They have an extra timeout"], ans: "B" },
+    // Q40 → C
+    { q: "What is a center typically responsible for?", opts: ["Bringing the ball up the court", "Three point shooting", "Protecting the rim rebounding and scoring near the basket", "Full court pressure defense"], ans: "C" },
   ],
   varsity: [
     // V1 → A
@@ -97,6 +137,46 @@ const QUESTIONS: Record<Difficulty, Question[]> = {
     { q: "What does 'playing off the ball' mean?", opts: ["Deliberately avoiding receiving the ball to give your teammates more room to operate", "A defensive concept where players without a ball assignment sag toward the paint to protect the rim", "The movement, cutting, screening, and positioning of players who do not currently have the ball", "Stationing your best shooters in the corners to stretch the defense and create driving lanes"], ans: "C" },
     // V20 → D
     { q: "What is a secondary break?", opts: ["The halftime intermission during which the coaching staff makes their primary adjustments", "A second timeout called right after the first to extend preparation before a final play", "A substitution pattern designed to keep fresh legs on the floor during the final two minutes", "After the initial fast break transition, the offense continues attacking quickly before the defense can fully set"], ans: "D" },
+    // V21 → B
+    { q: "What is a pick and fade compared to a pick and roll?", opts: ["There is no difference", "In a pick and fade the screener steps back toward the three point line after setting the screen instead of rolling to the basket", "A pick and fade is only used in zone offense", "The screener falls down"], ans: "B" },
+    // V22 → B
+    { q: "What does it mean to run early offense?", opts: ["Starting the game before scheduled time", "Pushing the pace immediately after gaining possession to attack before the defense is set", "Running a set play every possession", "Calling timeout quickly"], ans: "B" },
+    // V23 → B
+    { q: "What is a zone offense designed to do?", opts: ["Match up against man defense", "Create gaps and ball movement that exploits the spaces and rotations of a zone defense", "Speed up the game", "Isolate the best player"], ans: "B" },
+    // V24 → B
+    { q: "What is basketball IQ?", opts: ["A player's scoring average", "A player's ability to read the game make smart decisions and understand situations quickly", "A player's physical attributes", "A measure of how long a player has played"], ans: "B" },
+    // V25 → B
+    { q: "What does it mean to play with pace?", opts: ["Running as fast as possible", "Controlling the tempo deliberately choosing when to push and when to slow down to create advantages", "Always running a fast break", "Slowing the game down every possession"], ans: "B" },
+    // V26 → B
+    { q: "What is an offensive rebound putback?", opts: ["A defensive rebound", "When a player grabs their own team's missed shot and scores immediately", "A second free throw", "A shot off an inbound pass"], ans: "B" },
+    // V27 → B
+    { q: "What does weak side help mean in defense?", opts: ["The weakest defender helping", "A defender on the side away from the ball positioning to help if the ball handler beats their teammate", "A zone adjustment", "Switching assignments"], ans: "B" },
+    // V28 → B
+    { q: "What is a baseline drive?", opts: ["Driving toward halfcourt", "An offensive player attacking along the baseline toward the basket usually from the wing or corner", "A fast break", "A post move"], ans: "B" },
+    // V29 → B
+    { q: "What does it mean to deny the ball?", opts: ["Refusing to pass", "A defender actively positioning to prevent a pass from reaching their assigned offensive player", "Stealing the ball", "Blocking a shot"], ans: "B" },
+    // V30 → B
+    { q: "What is a pull up jumper?", opts: ["A shot taken while falling backward", "When a ball handler stops their dribble suddenly and rises to shoot a jump shot off the dribble", "A three point shot", "A free throw"], ans: "B" },
+    // V31 → B
+    { q: "What does it mean to play off two feet compared to one foot?", opts: ["Using both hands", "Jumping from two feet provides more power and control especially for contact finishes while one foot allows quicker release and more momentum", "There is no difference", "Two feet is only for dunking"], ans: "B" },
+    // V32 → B
+    { q: "What is a defensive breakdown?", opts: ["A halftime analysis", "When the defense fails to rotate correctly leaving an offensive player open due to miscommunication or missed assignment", "A timeout called by the defense", "Switching from zone to man"], ans: "B" },
+    // V33 → B
+    { q: "What does it mean to set good screens?", opts: ["Screening as many players as possible", "Setting a legal screen with a wide base and solid contact that actually frees up a teammate rather than a lazy or moving screen", "Screening only in the post", "Screening near halfcourt"], ans: "B" },
+    // V34 → B
+    { q: "What is a defensive stance?", opts: ["Standing straight up", "A low balanced position with feet wide knees bent and hands active that allows a defender to move quickly in any direction", "Crossing your arms", "Standing behind the offensive player"], ans: "B" },
+    // V35 → B
+    { q: "What does push the pace mean?", opts: ["Pushing another player", "Actively trying to advance the ball quickly and create fast break opportunities before the defense can set up", "Running a specific play", "Calling a quick timeout"], ans: "B" },
+    // V36 → B
+    { q: "What is a mid range shot?", opts: ["A three pointer", "A jump shot taken between the three point line and the paint area", "A free throw", "A layup"], ans: "B" },
+    // V37 → B
+    { q: "What does it mean to read the defense?", opts: ["Studying the opponent's jersey numbers", "Recognizing what the defense is doing and making the correct offensive decision based on what is available", "Calling a play", "Passing to the open player every time"], ans: "B" },
+    // V38 → B
+    { q: "What is a hockey assist in basketball?", opts: ["A penalty", "The pass made to the player who makes the pass that directly leads to a basket — two passes before the score", "A full court pass", "A no look pass"], ans: "B" },
+    // V39 → B
+    { q: "What does it mean to be a good teammate off the ball?", opts: ["Cheering loudly", "Moving with purpose setting screens communicating and positioning to create opportunities even when you do not have the ball", "Staying out of the way", "Standing in the corner"], ans: "B" },
+    // V40 → B
+    { q: "What is a late clock situation?", opts: ["When the game clock is broken", "When very little time remains on the shot clock or game clock requiring quick decisive offensive action", "The last quarter", "Overtime"], ans: "B" },
   ],
   elite: [
     // E1 → A
@@ -139,6 +219,46 @@ const QUESTIONS: Record<Difficulty, Question[]> = {
     { q: "What does 'spacing' mean and why does it matter?", opts: ["The physical distance between players on the bench during a timeout to allow the coach to walk and communicate freely", "How far each player stands from the three-point line to maximize their ability to catch and shoot", "Deliberately positioning offensive players to stretch the defense, creating driving lanes, post gaps, and passing angles", "Keeping all five players spread evenly across the halfcourt so no two teammates are within ten feet of each other"], ans: "C" },
     // E20 → D
     { q: "What is a ghost screen?", opts: ["A screen set so quickly and subtly that illegal contact goes undetected by the referee", "A screen set out of bounds to legally free a receiver on a sideline inbound play", "A screen set near halfcourt designed to free a cutter for a full-court lob pass to the rim", "A player fakes setting a screen and peels away — the ball handler attacks off the fake while the screener opens up as an immediate scoring option"], ans: "D" },
+    // E21 → B
+    { q: "What is a Spain pick and roll?", opts: ["A European fast break", "A play where a screener sets a back screen on the rolling big man's defender as they roll creating a layup opportunity", "A defensive scheme", "A press break"], ans: "B" },
+    // E22 → B
+    { q: "What does it mean to play the level of the screen?", opts: ["Matching the height of the screener", "A defensive technique where the on ball defender fights over the screen at exactly the height it is set rather than going under or dramatically over it", "Setting a screen at a specific spot", "Hedging hard on every screen"], ans: "B" },
+    // E23 → B
+    { q: "What is a drop coverage in pick and roll defense?", opts: ["Dropping the ball", "The big defender drops back toward the paint allowing the ball handler a mid range shot while protecting against the roll and drive", "A full zone", "Switching every screen"], ans: "B" },
+    // E24 → B
+    { q: "What does it mean to play the three quarter deny?", opts: ["Denying three point shots only", "A defensive position three quarters of the way between the defender's player and the ball actively working to deny the pass while staying close enough to recover", "A zone adjustment", "Playing behind the offensive player"], ans: "B" },
+    // E25 → B
+    { q: "What is a pistol action in basketball offense?", opts: ["A fast aggressive style", "A two man action combining a dribble hand off with a pick and roll that can be initiated from various spots", "A full court press", "An isolation play"], ans: "B" },
+    // E26 → B
+    { q: "What does loading the leg mean for a shooter?", opts: ["Getting tired", "The slight downward dip or gathering motion a shooter uses before rising that generates power and rhythm", "A shooting foul", "Standing on one leg"], ans: "B" },
+    // E27 → B
+    { q: "What is a floppy action?", opts: ["Playing without energy", "An off ball action where a player cuts off staggered screens on either side of the lane and can go either direction keeping the defense guessing", "A post entry", "A transition play"], ans: "B" },
+    // E28 → B
+    { q: "What does it mean to play downhill?", opts: ["Playing on a sloped court", "Attacking aggressively toward the basket using speed and momentum rather than resetting or pulling back", "A defensive technique", "Slowing the game down"], ans: "B" },
+    // E29 → B
+    { q: "What is a blocker mover offense?", opts: ["A physical style", "A system where some players set screens as blockers while others use those screens as movers to get open shots", "A fast break system", "An isolation offense"], ans: "B" },
+    // E30 → B
+    { q: "What does it mean to play with a high motor?", opts: ["Running fast breaks only", "Playing with relentless effort on every possession never taking plays off and consistently going hard for loose balls rebounds and stops", "Playing physically", "Shooting quickly"], ans: "B" },
+    // E31 → B
+    { q: "What is a read and react offense?", opts: ["Reading the coach's signals", "A system where players react to what each pass or action triggers rather than running set plays making it adaptable against any defense", "A fast break system", "An isolation offense"], ans: "B" },
+    // E32 → B
+    { q: "What does shot selection mean and why does it matter?", opts: ["Choosing which player shoots", "The discipline of only taking shots that are high percentage and within your skill set rather than forcing difficult shots", "Shooting as often as possible", "Only taking three pointers"], ans: "B" },
+    // E33 → B
+    { q: "What is a zone buster offense?", opts: ["An aggressive offense", "Specific principles designed to attack zones including skip passes high low passing baseline cuts and placing shooters in the gaps", "A fast break offense", "A stall offense"], ans: "B" },
+    // E34 → B
+    { q: "What does it mean to be a connector player?", opts: ["A player who connects passes", "A versatile player who can play multiple positions and connect different parts of the offense making them valuable in multiple lineups", "A point guard only role", "A defensive specialist"], ans: "B" },
+    // E35 → B
+    { q: "What is a secondary break in transition?", opts: ["A halftime break", "After the initial fast break the offense continues pushing pace with structured actions including a trailer for a three point shot", "A timeout play", "A set half court play"], ans: "B" },
+    // E36 → B
+    { q: "What does it mean to take what the defense gives you?", opts: ["Stealing the ball", "Making smart decisions based on how the defense is positioned rather than forcing predetermined actions — drive if they give the drive shoot if they give the three", "Playing aggressively", "Running set plays regardless"], ans: "B" },
+    // E37 → B
+    { q: "What is a defensive anchor and what makes someone effective in that role?", opts: ["The slowest defender", "The last line of defense typically a big who communicates switches protects the rim and organizes the defense combining size awareness and vocal leadership", "The most physical player", "The player guarding the point guard"], ans: "B" },
+    // E38 → B
+    { q: "What does it mean to play with purpose off the ball?", opts: ["Running randomly", "Every movement has intention — cutting at the right time setting useful screens positioning in spaces that stress the defense and being ready to shoot immediately on receiving a pass", "Standing in the corner waiting", "Following the ball handler everywhere"], ans: "B" },
+    // E39 → B
+    { q: "What is a defensive shell drill and what does it teach?", opts: ["A shooting drill", "A foundational drill where players practice positioning help rotations and communication against offensive movement teaching principles of team defense", "A one on one drill", "A conditioning drill"], ans: "B" },
+    // E40 → B
+    { q: "What does it mean when a coach says trust the process?", opts: ["Following a specific play", "Believing that consistent effort correct habits and team principles produce results over time even when immediate results are not visible", "Running the same play every time", "Listening to the coach always"], ans: "B" },
   ],
 };
 
