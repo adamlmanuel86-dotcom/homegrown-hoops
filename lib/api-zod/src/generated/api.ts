@@ -448,7 +448,7 @@ export const GetStatLeadersResponse = zod.object({
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
     }),
-  ),
+  ).optional(),
   blocks: zod.array(
     zod.object({
       playerId: zod.number(),
@@ -458,7 +458,7 @@ export const GetStatLeadersResponse = zod.object({
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
     }),
-  ),
+  ).optional(),
 });
 
 /**
