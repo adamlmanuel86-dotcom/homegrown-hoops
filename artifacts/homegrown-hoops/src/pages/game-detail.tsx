@@ -193,7 +193,9 @@ export function GameDetailPage() {
       }
 
       await upsertGamePlayerStats.mutateAsync({ id, data: stats });
+      await updateGame.mutateAsync({ id, data: { status: game?.status ?? "final" } });
       await qc.invalidateQueries({ queryKey: [`/api/games/${id}/player-stats`] });
+      await qc.invalidateQueries({ queryKey: [`/api/games/${id}`] });
       setStatSaveSuccess(true);
       setTimeout(() => setStatSaveSuccess(false), 3000);
     } catch {
