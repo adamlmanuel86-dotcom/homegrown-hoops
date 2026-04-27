@@ -228,21 +228,27 @@ export function GameDetailPage() {
       // before forcing a hard refetch so the player card always shows fresh data.
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Hard-refetch all player-related queries so the player card receives
-      // fresh career stats, profile, stamps, tides and archetype immediately.
+      // Hard-refetch the players list first so profile.tsx can resolve playerId
+      // from matchedPlayer before the career stats refetch runs.
+      await qc.refetchQueries({ queryKey: ["/api/players"], type: "all" });
+
+      // Hard-refetch all player-related queries (type:'all' ensures inactive
+      // queries — i.e. the profile page when it is not currently mounted — are
+      // also force-fetched so the player card shows fresh data on next render).
       await Promise.all(
         stats.map((s) =>
           Promise.all([
-            qc.refetchQueries({ queryKey: [`/api/players/${s.playerId}/stats`] }),
-            qc.refetchQueries({ queryKey: [`/api/players/${s.playerId}`] }),
-            qc.refetchQueries({ queryKey: ["playerStats", s.playerId] }),
-            qc.refetchQueries({ queryKey: ["playerSeasons", s.playerId] }),
+            qc.refetchQueries({ queryKey: [`/api/players/${s.playerId}/stats`], type: "all" }),
+            qc.refetchQueries({ queryKey: [`/api/players/${s.playerId}`],       type: "all" }),
+            qc.refetchQueries({ queryKey: ["playerStats", s.playerId],          type: "all" }),
+            qc.refetchQueries({ queryKey: ["playerSeasons", s.playerId],        type: "all" }),
           ])
         )
       );
 
       // Hard-refetch all profile queries (stamps, tides, archetype).
       await qc.refetchQueries({
+        type: "all",
         predicate: (query) => {
           const first = query.queryKey[0];
           return typeof first === "string" && first.startsWith("/api/profiles");
@@ -250,7 +256,7 @@ export function GameDetailPage() {
       });
 
       // Hard-refetch stat leaders leaderboard.
-      await qc.refetchQueries({ queryKey: ["/api/stats/leaders"] });
+      await qc.refetchQueries({ queryKey: ["/api/stats/leaders"], type: "all" });
 
       setStatSaveSuccess(true);
       setTimeout(() => setStatSaveSuccess(false), 3000);
