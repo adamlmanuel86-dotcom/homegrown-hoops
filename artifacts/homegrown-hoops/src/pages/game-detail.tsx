@@ -224,6 +224,34 @@ export function GameDetailPage() {
       // Invalidate the stat leaders leaderboard
       await qc.invalidateQueries({ queryKey: ["/api/stats/leaders"] });
 
+      // Wait 500 ms to give the backend time to finish all recognition/aggregation
+      // before forcing a hard refetch so the player card always shows fresh data.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Hard-refetch all player-related queries so the player card receives
+      // fresh career stats, profile, stamps, tides and archetype immediately.
+      await Promise.all(
+        stats.map((s) =>
+          Promise.all([
+            qc.refetchQueries({ queryKey: [`/api/players/${s.playerId}/stats`] }),
+            qc.refetchQueries({ queryKey: [`/api/players/${s.playerId}`] }),
+            qc.refetchQueries({ queryKey: ["playerStats", s.playerId] }),
+            qc.refetchQueries({ queryKey: ["playerSeasons", s.playerId] }),
+          ])
+        )
+      );
+
+      // Hard-refetch all profile queries (stamps, tides, archetype).
+      await qc.refetchQueries({
+        predicate: (query) => {
+          const first = query.queryKey[0];
+          return typeof first === "string" && first.startsWith("/api/profiles");
+        },
+      });
+
+      // Hard-refetch stat leaders leaderboard.
+      await qc.refetchQueries({ queryKey: ["/api/stats/leaders"] });
+
       setStatSaveSuccess(true);
       setTimeout(() => setStatSaveSuccess(false), 3000);
     } catch {
