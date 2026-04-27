@@ -357,11 +357,18 @@ export function PlayerCard({
     return typeof n === "number" && Number.isFinite(n) ? n.toFixed(1) : "—";
   };
 
+  const threePointAvg =
+    stats?.avgThreesMade ??
+    (stats as { avgThreePointersMade?: number | string; threePointAvg?: number | string } | undefined)?.avgThreePointersMade ??
+    (stats as { avgThreePointersMade?: number | string; threePointAvg?: number | string } | undefined)?.threePointAvg ??
+    (stats as { totalThreesMade?: number | string; threesMade?: number | string; gamesPlayed?: number } | undefined)?.totalThreesMade ??
+    (stats as { totalThreesMade?: number | string; threesMade?: number | string; gamesPlayed?: number } | undefined)?.threesMade;
+
   const statItems = [
     { label: "PPG", value: fmtAvg(stats?.avgPoints) },
     { label: "RPG", value: fmtAvg(stats?.avgRebounds) },
     { label: "APG", value: fmtAvg(stats?.avgAssists) },
-    { label: "3PG", value: fmtAvg(stats?.avgThreesMade) },
+    { label: "3PG", value: fmtAvg(threePointAvg) },
   ];
 
   return (
