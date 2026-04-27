@@ -8,7 +8,7 @@ import {
 
 const router: IRouter = Router();
 
-async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade", limit = 5) {
+async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade", limit = 100) {
   const col = gamePlayerStatsTable[field];
   const rows = await db
     .select({
@@ -25,11 +25,10 @@ async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade
     .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
     .groupBy(playersTable.id, playersTable.firstName, playersTable.lastName, playersTable.number, teamsTable.name, teamsTable.abbreviation)
     .orderBy(desc(sql<number>`AVG(${col})`))
-    .limit(limit * 5); // fetch extra so we can filter zeros and still have enough
+    .limit(limit);
 
   return rows
     .map(r => ({ ...r, value: Math.round(Number(r.value) * 10) / 10 }))
-    .filter(r => r.value > 0)  // only players with at least one non-zero game
     .slice(0, limit);
 }
 
