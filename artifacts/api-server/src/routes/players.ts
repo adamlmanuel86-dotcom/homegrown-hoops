@@ -116,6 +116,9 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
   const playerId = params.data.id;
   const season = typeof req.query.season === "string" ? req.query.season : undefined;
 
+  // Never let a browser or proxy cache career stats — always return a live DB read.
+  res.set("Cache-Control", "no-store, no-cache");
+
   const rows = season
     ? await db
         .select({ stat: gamePlayerStatsTable })
