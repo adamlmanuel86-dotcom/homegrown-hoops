@@ -10,7 +10,7 @@ import {
   useGetPlayerStatsBySeason,
   useGetIsoBallProfile,
 } from "@workspace/api-client-react";
-import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal } from "lucide-react";
+import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 
@@ -21,6 +21,7 @@ export function ProfilePage() {
   const { user, isSignedIn } = useUser();
   const [copied, setCopied] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   async function handleShare() {
     const url = `${window.location.origin}${BASE_URL}/p/${clerkUserId}`;
@@ -40,11 +41,28 @@ export function ProfilePage() {
     setTimeout(() => setCopied(false), 3000);
   }
 
-  const { data: profile, isLoading } = useGetProfile(clerkUserId, {
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchProfile(),
+        refetchPlayers(),
+        refetchStats(),
+        refetchSeasons(),
+        refetchSeasonStats(),
+        refetchTeams(),
+        refetchIsoBall(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const { data: profile, isLoading, refetch: refetchProfile } = useGetProfile(clerkUserId, {
     query: { enabled: !!clerkUserId },
   });
 
-  const { data: players } = useListPlayers(undefined, {
+  const { data: players, refetch: refetchPlayers } = useListPlayers(undefined, {
     query: { staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   });
   const matchedPlayer = players?.find(
@@ -56,12 +74,12 @@ export function ProfilePage() {
   const playerId = matchedPlayer?.id ?? 0;
 
   // All-season stats (used for career Legacy Score on top of the careerStats snapshot)
-  const { data: allSeasonStats } = useGetPlayerStats(playerId, {
+  const { data: allSeasonStats, refetch: refetchStats } = useGetPlayerStats(playerId, {
     query: { enabled: !!playerId, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   });
 
   // Available seasons for this player
-  const { data: seasonsData } = useGetPlayerSeasons(playerId, {
+  const { data: seasonsData, refetch: refetchSeasons } = useGetPlayerSeasons(playerId, {
     query: { enabled: !!playerId },
   });
   const seasons = seasonsData?.seasons ?? [];
@@ -75,17 +93,17 @@ export function ProfilePage() {
   }, [seasonsData, selectedSeason]);
 
   // Season-specific stats (for display when a season is selected)
-  const { data: seasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
+  const { data: seasonStats, refetch: refetchSeasonStats } = useGetPlayerStatsBySeason(playerId, selectedSeason, {
     query: { enabled: !!playerId && !!selectedSeason },
   });
 
-  const { data: teams } = useListTeams();
+  const { data: teams, refetch: refetchTeams } = useListTeams();
   const team = teams?.find((t) => t.id === matchedPlayer?.teamId);
   const teamLabel = team?.name ?? "Unaffiliated / No Team";
 
   const isOwner = isSignedIn && user?.id === clerkUserId;
 
-  const { data: isoBallData } = useGetIsoBallProfile(clerkUserId || null);
+  const { data: isoBallData, refetch: refetchIsoBall } = useGetIsoBallProfile(clerkUserId || null);
 
   if (isLoading) {
     return (
@@ -187,12 +205,22 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
-      <Link
-        href="/players"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4" /> Back
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/players"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back
+        </Link>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          aria-label="Refresh profile"
+          className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/8 transition-colors disabled:opacity-40"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+        </button>
+      </div>
 
       {/* Season selector */}
       {seasons.length > 0 && (
