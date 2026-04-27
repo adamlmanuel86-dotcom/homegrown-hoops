@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, gt } from "drizzle-orm";
 import { db, gamePlayerStatsTable, playersTable, teamsTable, gamesTable } from "@workspace/db";
 import {
   GetStatLeadersResponse,
@@ -18,12 +18,13 @@ async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade
       number: playersTable.number,
       teamName: teamsTable.name,
       teamAbbreviation: teamsTable.abbreviation,
-      value: sql<number>`COALESCE(AVG(${col}), 0)`,
+      value: sql<number>`AVG(${col})`,
     })
     .from(gamePlayerStatsTable)
     .innerJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
     .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
     .groupBy(playersTable.id, playersTable.firstName, playersTable.lastName, playersTable.number, teamsTable.name, teamsTable.abbreviation)
+    .having(gt(sql<number>`AVG(${col})`, 0))
     .orderBy(desc(sql<number>`AVG(${col})`))
     .limit(limit);
 
