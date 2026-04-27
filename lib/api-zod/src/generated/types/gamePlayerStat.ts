@@ -10,9 +10,9 @@ export interface GamePlayerStat {
   id: number;
   gameId: number;
   playerId: number;
-  points: number;
-  rebounds: number;
-  assists: number;
+  points: number | null;
+  rebounds: number | null;
+  assists: number | null;
   steals: number;
   blocks: number;
   turnovers: number;
