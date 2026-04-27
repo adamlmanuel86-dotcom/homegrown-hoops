@@ -67,7 +67,18 @@ export function GameDetailPage() {
   const [deleteModalPlayerId, setDeleteModalPlayerId] = useState<number | null>(null);
 
   // ── Stat entry ──────────────────────────────────────────────────────────────
-  type StatRow = { points: string; rebounds: string; assists: string; threesMade: string };
+  type StatRow = {
+    points: string;     pointsUnknown: boolean;
+    rebounds: string;   reboundsUnknown: boolean;
+    assists: string;    assistsUnknown: boolean;
+    threesMade: string; threesMadeUnknown: boolean;
+  };
+  const defaultStatRow: StatRow = {
+    points: "", pointsUnknown: false,
+    rebounds: "", reboundsUnknown: false,
+    assists: "", assistsUnknown: false,
+    threesMade: "", threesMadeUnknown: false,
+  };
   const [showStatEntry, setShowStatEntry] = useState(false);
   const [statInputs, setStatInputs] = useState<Record<number, StatRow>>({});
   const [savingStats, setSavingStats] = useState(false);
@@ -100,10 +111,14 @@ export function GameDetailPage() {
     if (playerStats) {
       for (const s of playerStats) {
         initial[s.playerId] = {
-          points:     s.points     !== null ? String(s.points)     : "",
-          rebounds:   s.rebounds   !== null ? String(s.rebounds)   : "",
-          assists:    s.assists    !== null ? String(s.assists)    : "",
-          threesMade: s.threesMade !== 0    ? String(s.threesMade) : "",
+          points:            s.points     !== null ? String(s.points)     : "",
+          pointsUnknown:     s.points     === null,
+          rebounds:          s.rebounds   !== null ? String(s.rebounds)   : "",
+          reboundsUnknown:   s.rebounds   === null,
+          assists:           s.assists    !== null ? String(s.assists)    : "",
+          assistsUnknown:    s.assists    === null,
+          threesMade:        s.threesMade !== null ? String(s.threesMade) : "",
+          threesMadeUnknown: s.threesMade === null,
         };
       }
     }
@@ -113,11 +128,18 @@ export function GameDetailPage() {
     setShowStatEntry(true);
   }
 
-  function updateStatInput(playerId: number, field: keyof StatRow, value: string) {
+  function updateStatInput(playerId: number, field: keyof StatRow, value: string | boolean) {
     setStatInputs((prev) => ({
       ...prev,
-      [playerId]: { ...(prev[playerId] ?? { points: "", rebounds: "", assists: "", threesMade: "" }), [field]: value },
+      [playerId]: { ...(prev[playerId] ?? defaultStatRow), [field]: value },
     }));
+  }
+
+  function toggleStatUnknown(playerId: number, unknownField: "pointsUnknown" | "reboundsUnknown" | "assistsUnknown" | "threesMadeUnknown") {
+    setStatInputs((prev) => {
+      const row = prev[playerId] ?? defaultStatRow;
+      return { ...prev, [playerId]: { ...row, [unknownField]: !row[unknownField] } };
+    });
   }
 
   async function handleStatSave() {
@@ -128,32 +150,39 @@ export function GameDetailPage() {
       const teamPlayerIds = new Set(
         [...(players?.filter((p) => p.teamId === game?.homeTeamId || p.teamId === game?.awayTeamId) ?? [])].map((p) => p.id)
       );
-      // Include a player if they have at least one field explicitly typed (even "0")
-      // An all-blank row means "not entered" and is excluded
+      // Include a player if they have at least one field explicitly typed or marked Unknown
       const stats = [...teamPlayerIds]
         .filter((pid) => {
-          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "", threesMade: "" };
-          return row.points !== "" || row.rebounds !== "" || row.assists !== "" || row.threesMade !== "";
+          const row = statInputs[pid] ?? defaultStatRow;
+          return (
+            row.points !== "" || row.pointsUnknown ||
+            row.rebounds !== "" || row.reboundsUnknown ||
+            row.assists !== "" || row.assistsUnknown ||
+            row.threesMade !== "" || row.threesMadeUnknown
+          );
         })
         .map((pid) => {
-          const row = statInputs[pid] ?? { points: "", rebounds: "", assists: "", threesMade: "" };
-          const parseField = (s: string): number | null => s === "" ? null : (parseInt(s) || 0);
-          const parseInt0 = (s: string): number => s === "" ? 0 : (parseInt(s) || 0);
+          const row = statInputs[pid] ?? defaultStatRow;
+          // Unknown → null; blank (not unknown) → null for pts/reb/ast, 0 for 3PM
+          const parseNullable = (s: string, unknown: boolean): number | null =>
+            unknown ? null : (s === "" ? null : (parseInt(s) || 0));
+          const parse3PM = (s: string, unknown: boolean): number | null =>
+            unknown ? null : (s === "" ? 0 : (parseInt(s) || 0));
           return {
-            playerId:              pid,
-            points:                parseField(row.points),
-            rebounds:              parseField(row.rebounds),
-            assists:               parseField(row.assists),
-            steals:                0,
-            blocks:                0,
-            turnovers:             0,
-            minutesPlayed:         0,
-            fieldGoalsMade:        0,
-            fieldGoalsAttempted:   0,
-            threesMade:            parseInt0(row.threesMade),
-            threesAttempted:       0,
-            freeThrowsMade:        0,
-            freeThrowsAttempted:   0,
+            playerId:            pid,
+            points:              parseNullable(row.points,    row.pointsUnknown),
+            rebounds:            parseNullable(row.rebounds,  row.reboundsUnknown),
+            assists:             parseNullable(row.assists,   row.assistsUnknown),
+            steals:              0,
+            blocks:              0,
+            turnovers:           0,
+            minutesPlayed:       0,
+            fieldGoalsMade:      0,
+            fieldGoalsAttempted: 0,
+            threesMade:          parse3PM(row.threesMade, row.threesMadeUnknown),
+            threesAttempted:     0,
+            freeThrowsMade:      0,
+            freeThrowsAttempted: 0,
           };
         });
 
@@ -765,18 +794,42 @@ export function GameDetailPage() {
                                   )}
                                   {player.firstName} {player.lastName}
                                 </td>
-                                {(["points", "rebounds", "assists", "threesMade"] as const).map((field) => (
-                                  <td key={field} className="px-2 py-1.5 text-center">
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      placeholder="–"
-                                      value={row[field]}
-                                      onChange={(e) => updateStatInput(player.id, field, e.target.value)}
-                                      className="w-16 border border-border rounded-md px-2 py-1.5 text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-background text-foreground"
-                                    />
-                                  </td>
-                                ))}
+                                {([
+                                  { field: "points"     as const, unknownField: "pointsUnknown"     as const },
+                                  { field: "rebounds"   as const, unknownField: "reboundsUnknown"   as const },
+                                  { field: "assists"    as const, unknownField: "assistsUnknown"    as const },
+                                  { field: "threesMade" as const, unknownField: "threesMadeUnknown" as const },
+                                ]).map(({ field, unknownField }) => {
+                                  const isUnknown = row[unknownField] as boolean;
+                                  return (
+                                    <td key={field} className="px-2 py-1.5 text-center">
+                                      <div className="flex flex-col items-center gap-1">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          placeholder="–"
+                                          value={isUnknown ? "" : row[field]}
+                                          disabled={isUnknown}
+                                          onChange={(e) => updateStatInput(player.id, field, e.target.value)}
+                                          className={`w-16 border rounded-md px-2 py-1.5 text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all ${
+                                            isUnknown
+                                              ? "border-border/40 bg-muted/60 text-muted-foreground cursor-not-allowed"
+                                              : "border-border bg-background text-foreground"
+                                          }`}
+                                        />
+                                        <label className="flex items-center gap-1 cursor-pointer select-none">
+                                          <input
+                                            type="checkbox"
+                                            checked={isUnknown}
+                                            onChange={() => toggleStatUnknown(player.id, unknownField)}
+                                            className="w-3 h-3 rounded accent-primary"
+                                          />
+                                          <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">N/A</span>
+                                        </label>
+                                      </div>
+                                    </td>
+                                  );
+                                })}
                                 <td className="px-2 py-1.5 text-right">
                                   {hasExistingStats && (
                                     <button
@@ -904,7 +957,7 @@ export function GameDetailPage() {
                               {hasStats && statsRow!.assists !== null ? statsRow!.assists : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             <td className="px-3 py-3 text-center text-secondary font-medium">
-                              {hasStats && statsRow!.threesMade > 0 ? statsRow!.threesMade : <span className="text-muted-foreground font-normal">—</span>}
+                              {hasStats && statsRow!.threesMade !== null ? statsRow!.threesMade : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             {isAdmin && (
                               <td className="px-3 py-3 text-right">

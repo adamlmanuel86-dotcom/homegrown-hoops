@@ -17,7 +17,7 @@ export const gamePlayerStatsTable = pgTable("game_player_stats", {
   minutesPlayed: integer("minutes_played").notNull().default(0),
   fieldGoalsMade: integer("field_goals_made").notNull().default(0),
   fieldGoalsAttempted: integer("field_goals_attempted").notNull().default(0),
-  threesMade: integer("threes_made").notNull().default(0),
+  threesMade: integer("threes_made"),
   threesAttempted: integer("threes_attempted").notNull().default(0),
   freeThrowsMade: integer("free_throws_made").notNull().default(0),
   freeThrowsAttempted: integer("free_throws_attempted").notNull().default(0),

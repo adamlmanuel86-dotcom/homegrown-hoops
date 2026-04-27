@@ -153,19 +153,26 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
     return;
   }
 
-  const totalPoints = rows.reduce((s, r) => s + r.points, 0);
-  const totalRebounds = rows.reduce((s, r) => s + r.rebounds, 0);
-  const totalAssists = rows.reduce((s, r) => s + r.assists, 0);
-  const totalSteals = rows.reduce((s, r) => s + r.steals, 0);
-  const totalBlocks = rows.reduce((s, r) => s + r.blocks, 0);
+  // Only average over games where the specific stat was actually recorded (not null)
+  const ptsRows   = rows.filter(r => r.points    !== null);
+  const rebRows   = rows.filter(r => r.rebounds  !== null);
+  const astRows   = rows.filter(r => r.assists   !== null);
+  const threeRows = rows.filter(r => r.threesMade !== null);
+
+  const totalPoints   = ptsRows.reduce((s, r)   => s + (r.points    ?? 0), 0);
+  const totalRebounds = rebRows.reduce((s, r)   => s + (r.rebounds  ?? 0), 0);
+  const totalAssists  = astRows.reduce((s, r)   => s + (r.assists   ?? 0), 0);
+  const total3m       = threeRows.reduce((s, r) => s + (r.threesMade ?? 0), 0);
+
+  const totalSteals    = rows.reduce((s, r) => s + r.steals, 0);
+  const totalBlocks    = rows.reduce((s, r) => s + r.blocks, 0);
   const totalTurnovers = rows.reduce((s, r) => s + r.turnovers, 0);
-  const totalMinutes = rows.reduce((s, r) => s + r.minutesPlayed, 0);
-  const totalFgm = rows.reduce((s, r) => s + r.fieldGoalsMade, 0);
-  const totalFga = rows.reduce((s, r) => s + r.fieldGoalsAttempted, 0);
-  const total3m = rows.reduce((s, r) => s + r.threesMade, 0);
-  const total3a = rows.reduce((s, r) => s + r.threesAttempted, 0);
-  const totalFtm = rows.reduce((s, r) => s + r.freeThrowsMade, 0);
-  const totalFta = rows.reduce((s, r) => s + r.freeThrowsAttempted, 0);
+  const totalMinutes   = rows.reduce((s, r) => s + r.minutesPlayed, 0);
+  const totalFgm  = rows.reduce((s, r) => s + r.fieldGoalsMade, 0);
+  const totalFga  = rows.reduce((s, r) => s + r.fieldGoalsAttempted, 0);
+  const total3a   = rows.reduce((s, r) => s + r.threesAttempted, 0);
+  const totalFtm  = rows.reduce((s, r) => s + r.freeThrowsMade, 0);
+  const totalFta  = rows.reduce((s, r) => s + r.freeThrowsAttempted, 0);
 
   const round1 = (n: number) => Math.round(n * 10) / 10;
   const pct = (made: number, att: number) => att > 0 ? Math.round((made / att) * 1000) / 10 : 0;
@@ -177,17 +184,17 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
     totalRebounds,
     totalAssists,
     totalThreesMade: total3m,
-    avgPoints: round1(totalPoints / gamesPlayed),
-    avgRebounds: round1(totalRebounds / gamesPlayed),
-    avgAssists: round1(totalAssists / gamesPlayed),
-    avgThreesMade: round1(total3m / gamesPlayed),
-    avgSteals: round1(totalSteals / gamesPlayed),
-    avgBlocks: round1(totalBlocks / gamesPlayed),
+    avgPoints:     ptsRows.length   > 0 ? round1(totalPoints   / ptsRows.length)   : 0,
+    avgRebounds:   rebRows.length   > 0 ? round1(totalRebounds / rebRows.length)   : 0,
+    avgAssists:    astRows.length   > 0 ? round1(totalAssists  / astRows.length)   : 0,
+    avgThreesMade: threeRows.length > 0 ? round1(total3m       / threeRows.length) : 0,
+    avgSteals:    round1(totalSteals    / gamesPlayed),
+    avgBlocks:    round1(totalBlocks    / gamesPlayed),
     avgTurnovers: round1(totalTurnovers / gamesPlayed),
-    avgMinutes: round1(totalMinutes / gamesPlayed),
-    fieldGoalPct: pct(totalFgm, totalFga),
-    threePointPct: pct(total3m, total3a),
-    freeThrowPct: pct(totalFtm, totalFta),
+    avgMinutes:   round1(totalMinutes   / gamesPlayed),
+    fieldGoalPct:  pct(totalFgm, totalFga),
+    threePointPct: pct(total3m,  total3a),
+    freeThrowPct:  pct(totalFtm, totalFta),
   }));
 });
 
