@@ -24,6 +24,35 @@ type GameStat = {
   minutesPlayed: number;
 };
 
+// ─── Career milestone definitions ────────────────────────────────────────────
+type CareerTotals = {
+  points: number;
+  rebounds: number;
+  assists: number;
+  threesMade: number;
+  steals: number;
+  blocks: number;
+};
+
+const MILESTONES: Array<{
+  id: string;
+  stat: (t: CareerTotals) => number;
+  threshold: number;
+  bonusLP: number;
+}> = [
+  { id: "pts_100",  stat: (t) => t.points,    threshold: 100,  bonusLP: 500 },
+  { id: "pts_250",  stat: (t) => t.points,    threshold: 250,  bonusLP: 1000 },
+  { id: "pts_500",  stat: (t) => t.points,    threshold: 500,  bonusLP: 2500 },
+  { id: "pts_1000", stat: (t) => t.points,    threshold: 1000, bonusLP: 5000 },
+  { id: "reb_50",   stat: (t) => t.rebounds,  threshold: 50,   bonusLP: 500 },
+  { id: "reb_100",  stat: (t) => t.rebounds,  threshold: 100,  bonusLP: 1000 },
+  { id: "ast_50",   stat: (t) => t.assists,   threshold: 50,   bonusLP: 500 },
+  { id: "ast_100",  stat: (t) => t.assists,   threshold: 100,  bonusLP: 1000 },
+  { id: "three_50", stat: (t) => t.threesMade,threshold: 50,   bonusLP: 1000 },
+  { id: "stl_50",   stat: (t) => t.steals,    threshold: 50,   bonusLP: 750 },
+  { id: "blk_50",   stat: (t) => t.blocks,    threshold: 50,   bonusLP: 750 },
+];
+
 // ─── Stamp threshold checks ───────────────────────────────────────────────────
 const STAMP_CHECKS: Array<{ id: string; passes: (s: GameStat) => boolean }> = [
   { id: "double_digits", passes: (s) => s.points >= 10 },
@@ -221,9 +250,30 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
 
   newStamps.sort((a, b) => a.earnedAt.localeCompare(b.earnedAt));
 
+  // ── Career milestone check ───────────────────────────────────────────────
+  const careerTotals: CareerTotals = {
+    points:    rows.reduce((s, r) => s + (r.points    ?? 0), 0),
+    rebounds:  rows.reduce((s, r) => s + (r.rebounds  ?? 0), 0),
+    assists:   rows.reduce((s, r) => s + (r.assists   ?? 0), 0),
+    threesMade:rows.reduce((s, r) => s + (r.threesMade?? 0), 0),
+    steals:    rows.reduce((s, r) => s + (r.steals    ?? 0), 0),
+    blocks:    rows.reduce((s, r) => s + (r.blocks    ?? 0), 0),
+  };
+
+  const today = new Date().toISOString().split("T")[0];
+  const existingMilestones = (profile.milestones ?? []) as RecEntry[];
+  const existingMilestoneIds = new Set(existingMilestones.map((m) => m.id));
+  const newMilestones: RecEntry[] = [...existingMilestones];
+
+  for (const { id, stat, threshold } of MILESTONES) {
+    if (!existingMilestoneIds.has(id) && stat(careerTotals) >= threshold) {
+      newMilestones.push({ id, earnedAt: today });
+    }
+  }
+
   await db
     .update(userProfilesTable)
-    .set({ stamps: newStamps, updatedAt: new Date() })
+    .set({ stamps: newStamps, milestones: newMilestones, updatedAt: new Date() })
     .where(eq(userProfilesTable.id, profile.id));
 }
 
@@ -334,7 +384,7 @@ export async function recalculateTides(season: string): Promise<void> {
 
 // ─── 3. Recalculate archetypes for a team ─────────────────────────────────────
 //
-// Rules:
+// Multi-player rules (2+ players with stats on team):
 //  • The Mainstay  — ONE per team: the player with the highest PPG.
 //  • The Vortex    — any player whose RPG is their single highest secondary stat.
 //  • The Current   — any player whose APG is their single highest secondary stat.
@@ -343,6 +393,11 @@ export async function recalculateTides(season: string): Promise<void> {
 //                    distinguished themselves in one category (including ties,
 //                    or when SPG/BPG leads with no named archetype).
 //  • Uncharted     — no games recorded.
+//
+// Solo player rule (exactly 1 player with stats on team):
+//  Self-relative comparison across ALL categories (PPG, RPG, APG, 3PG, SPG, BPG).
+//  Highest → The Mainstay / Vortex / Current / Deep / Warden / Wall.
+//  Tie or all-zero → The Climb.
 //
 // Multiple players may share Vortex/Current/Deep/Climb.
 // Secondary-stat comparison uses: RPG, APG, 3PG, SPG, BPG.
@@ -379,44 +434,60 @@ export async function recalculateArchetypesForTeam(
     avgBlocks:   mean(p.games.map((g) => g.blocks)),
   }));
 
-  // ── Step 1: Find The Mainstay (highest PPG on team, only one) ─────────────
-  let mainstayKey: string | null = null;
-  if (avgs.length > 0) {
-    const top = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
-    mainstayKey = `${top.firstName}|${top.lastName}`;
-  }
-
-  // ── Step 2: Assign each player their archetype ─────────────────────────────
+  // ── Steps 1 & 2: Assign each player their archetype ──────────────────────
   const assignments = new Map<string, string>();
 
-  for (const p of avgs) {
+  if (avgs.length === 1) {
+    // ── Solo player: self-relative comparison across ALL stat categories ──
+    const p = avgs[0];
     const key = `${p.firstName}|${p.lastName}`;
-
-    // Mainstay is exclusive — skip all other checks for this player
-    if (key === mainstayKey) {
-      assignments.set(key, "The Mainstay");
-      continue;
-    }
-
-    // Compare secondary per-game stats. SPG and BPG are included in the
-    // comparison but have no named archetype — if they lead, player gets Climb.
-    const secondaryStats = [
-      { archetype: "The Vortex"  as string | null, value: p.avgRebounds },
-      { archetype: "The Current" as string | null, value: p.avgAssists  },
-      { archetype: "The Deep"    as string | null, value: p.avgThrees   },
-      { archetype: null,                           value: p.avgSteals   },
-      { archetype: null,                           value: p.avgBlocks   },
+    const cats = [
+      { archetype: "The Mainstay", value: p.avgPoints   },
+      { archetype: "The Vortex",   value: p.avgRebounds },
+      { archetype: "The Current",  value: p.avgAssists  },
+      { archetype: "The Deep",     value: p.avgThrees   },
+      { archetype: "The Warden",   value: p.avgSteals   },
+      { archetype: "The Wall",     value: p.avgBlocks   },
     ];
-
-    const maxVal = Math.max(...secondaryStats.map((s) => s.value));
-    const leaders = secondaryStats.filter((s) => Math.abs(s.value - maxVal) <= 1e-10);
-
-    if (leaders.length === 1 && leaders[0].archetype !== null) {
-      // One clear leader with a named archetype
-      assignments.set(key, leaders[0].archetype);
-    } else {
-      // Tied, or leader is SPG/BPG (no named archetype) → The Climb
+    const maxVal = Math.max(...cats.map((c) => c.value));
+    if (maxVal <= 0) {
       assignments.set(key, "The Climb");
+    } else {
+      const leaders = cats.filter((c) => Math.abs(c.value - maxVal) <= 1e-10);
+      assignments.set(key, leaders.length === 1 ? leaders[0].archetype : "The Climb");
+    }
+  } else if (avgs.length > 1) {
+    // ── Multi-player team: existing team-relative logic ───────────────────
+    // Mainstay = highest PPG (exclusive, one per team)
+    const top = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
+    const mainstayKey = `${top.firstName}|${top.lastName}`;
+
+    for (const p of avgs) {
+      const key = `${p.firstName}|${p.lastName}`;
+
+      if (key === mainstayKey) {
+        assignments.set(key, "The Mainstay");
+        continue;
+      }
+
+      // Compare secondary per-game stats. SPG and BPG have no named archetype
+      // in the multi-player context — if they lead, player gets The Climb.
+      const secondaryStats = [
+        { archetype: "The Vortex"  as string | null, value: p.avgRebounds },
+        { archetype: "The Current" as string | null, value: p.avgAssists  },
+        { archetype: "The Deep"    as string | null, value: p.avgThrees   },
+        { archetype: null,                           value: p.avgSteals   },
+        { archetype: null,                           value: p.avgBlocks   },
+      ];
+
+      const maxVal = Math.max(...secondaryStats.map((s) => s.value));
+      const leaders = secondaryStats.filter((s) => Math.abs(s.value - maxVal) <= 1e-10);
+
+      if (leaders.length === 1 && leaders[0].archetype !== null) {
+        assignments.set(key, leaders[0].archetype);
+      } else {
+        assignments.set(key, "The Climb");
+      }
     }
   }
 

@@ -261,7 +261,7 @@ export function ArchetypesPage() {
           Archetypes
         </h1>
         <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
-          Every player has an identity. Play enough games, earn enough stats, and yours reveals itself. Seven paths. Which one is yours?
+          Every player has an identity. Play enough games, earn enough stats, and yours reveals itself. Nine paths. Which one is yours?
         </p>
       </div>
 
@@ -276,14 +276,14 @@ export function ArchetypesPage() {
         <UnchartedCard />
       </section>
 
-      {/* Six earnable archetypes */}
+      {/* Eight earnable archetypes */}
       <section className="space-y-4">
         <div className="flex items-center gap-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70">
             Earnable Archetypes
           </p>
           <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
-          <span className="text-[10px] font-bold text-muted-foreground">6 paths</span>
+          <span className="text-[10px] font-bold text-muted-foreground">8 paths</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {ARCHETYPES.map((arch) => (

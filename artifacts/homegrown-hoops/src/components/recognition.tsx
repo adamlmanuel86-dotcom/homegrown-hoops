@@ -311,6 +311,22 @@ export const ARCHETYPES: {
     accent: "#34D399",
   },
   {
+    id: "The Warden",
+    label: "The Warden",
+    icon: Shield,
+    tagline: "Steals specialist. Earned when steals per game is your single strongest statistical category — a constant disruptive presence on the defensive end.",
+    gradient: "from-violet-900/80 via-purple-800/60 to-violet-900/80",
+    accent: "#8B5CF6",
+  },
+  {
+    id: "The Wall",
+    label: "The Wall",
+    icon: Castle,
+    tagline: "Shot-blocking anchor. Earned when blocks per game is your single strongest statistical category — nothing gets through.",
+    gradient: "from-indigo-900/80 via-blue-800/60 to-indigo-900/80",
+    accent: "#6366F1",
+  },
+  {
     id: "The Spark",
     label: "The Spark",
     icon: Flame,

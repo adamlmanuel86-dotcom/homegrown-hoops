@@ -34,6 +34,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   role: text("role").notNull().default("player"),
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
   tides: json("tides").$type<TideEntry[]>().notNull().default([]),
+  milestones: json("milestones").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
   archetype: text("archetype").default("Uncharted"),
   careerStats: json("career_stats").$type<CareerStats | null>().default(null),
   archetypeHistory: json("archetype_history").$type<ArchetypeHistoryEntry[] | null>().default(null),

@@ -1242,6 +1242,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RecognitionEntry"
+        milestones:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecognitionEntry"
+          description: "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed."
         archetype:
           type: ["string", "null"]
         createdAt:
@@ -1258,6 +1263,7 @@ components:
         - role
         - stamps
         - tides
+        - milestones
         - createdAt
         - updatedAt
 

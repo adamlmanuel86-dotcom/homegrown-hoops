@@ -2,18 +2,35 @@ import { useRef, useCallback, useState } from "react";
 import html2canvas from "html2canvas";
 import {
   Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
+  Shield, Castle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { STAMPS } from "@/components/recognition";
 
 const ARCHETYPE_META: Record<string, { icon: LucideIcon; color: string; label: string }> = {
-  Uncharted:     { icon: Compass,  color: "#94A3B8", label: "Uncharted" },
-  "The Mainstay":{ icon: Anchor,   color: "#60A5FA", label: "The Mainstay" },
-  "The Vortex":  { icon: Wind,     color: "#34D399", label: "The Vortex" },
-  "The Current": { icon: Zap,      color: "#38BDF8", label: "The Current" },
-  "The Deep":    { icon: Target,   color: "#A78BFA", label: "The Deep" },
-  "The Climb":   { icon: Mountain, color: "#F97316", label: "The Climb" },
-  "The Spark":   { icon: Flame,    color: "#F472B6", label: "The Spark" },
+  Uncharted:      { icon: Compass,  color: "#94A3B8", label: "Uncharted" },
+  "The Mainstay": { icon: Anchor,   color: "#60A5FA", label: "The Mainstay" },
+  "The Vortex":   { icon: Wind,     color: "#34D399", label: "The Vortex" },
+  "The Current":  { icon: Zap,      color: "#38BDF8", label: "The Current" },
+  "The Deep":     { icon: Target,   color: "#A78BFA", label: "The Deep" },
+  "The Climb":    { icon: Mountain, color: "#F97316", label: "The Climb" },
+  "The Warden":   { icon: Shield,   color: "#8B5CF6", label: "The Warden" },
+  "The Wall":     { icon: Castle,   color: "#6366F1", label: "The Wall" },
+  "The Spark":    { icon: Flame,    color: "#F472B6", label: "The Spark" },
+};
+
+export const MILESTONE_BONUSES: Record<string, { label: string; bonusLP: number }> = {
+  pts_100:  { label: "100 Career Points",   bonusLP: 500 },
+  pts_250:  { label: "250 Career Points",   bonusLP: 1000 },
+  pts_500:  { label: "500 Career Points",   bonusLP: 2500 },
+  pts_1000: { label: "1,000 Career Points", bonusLP: 5000 },
+  reb_50:   { label: "50 Career Rebounds",  bonusLP: 500 },
+  reb_100:  { label: "100 Career Rebounds", bonusLP: 1000 },
+  ast_50:   { label: "50 Career Assists",   bonusLP: 500 },
+  ast_100:  { label: "100 Career Assists",  bonusLP: 1000 },
+  three_50: { label: "50 Career Threes",    bonusLP: 1000 },
+  stl_50:   { label: "50 Career Steals",    bonusLP: 750 },
+  blk_50:   { label: "50 Career Blocks",    bonusLP: 750 },
 };
 
 export type CardStats = {
@@ -40,6 +57,7 @@ export type CardProfile = {
   avatarUrl?: string | null;
   stamps?: { id: string; earnedAt: string }[] | null;
   tides?: { id: string; earnedAt: string }[] | null;
+  milestones?: { id: string; earnedAt: string }[] | null;
   number?: string | null;
 };
 
@@ -151,10 +169,13 @@ function LegacyScorePopup({
     tov: number; tovLP: number;
     stamps: number; stampLP: number;
     tides: number; tideLP: number;
+    milestoneCount: number; milestoneLP: number;
+    milestoneDetails: { label: string; bonusLP: number }[];
   };
   onClose: () => void;
 }) {
-  const rows: { label: string; value: string; lp: number; color: string }[] = [
+  const [showMilestones, setShowMilestones] = useState(false);
+  const rows: { label: string; value: string; lp: number; color: string; expandable?: boolean }[] = [
     { label: `${breakdown.games} Games Played`, value: "×25", lp: breakdown.gameLP, color: "#4ADE80" },
     { label: `${breakdown.pts} Career Points`, value: "×10", lp: breakdown.ptLP, color: "#F97316" },
     { label: `${breakdown.reb} Career Rebounds`, value: "×15", lp: breakdown.rebLP, color: "#38BDF8" },
@@ -164,6 +185,7 @@ function LegacyScorePopup({
     { label: `${breakdown.tov} Career Turnovers`, value: "×(−10)", lp: breakdown.tovLP, color: "#EF4444" },
     { label: `${breakdown.stamps} Stamps Earned`, value: "×200", lp: breakdown.stampLP, color: "#FBBF24" },
     { label: `${breakdown.tides} Tides Earned`, value: "×1,000", lp: breakdown.tideLP, color: "#A78BFA" },
+    ...(breakdown.milestoneLP > 0 ? [{ label: `${breakdown.milestoneCount} Career Milestone${breakdown.milestoneCount !== 1 ? "s" : ""}`, value: "bonus", lp: breakdown.milestoneLP, color: "#F59E0B", expandable: true }] : []),
   ];
 
   return (
@@ -206,16 +228,32 @@ function LegacyScorePopup({
 
           <div className="space-y-2">
             {rows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5"
-                style={{ background: "hsl(220 28% 12%)", border: "1px solid hsl(220 28% 17%)" }}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white/70">{row.label}</p>
+              <div key={row.label}>
+                <div
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5"
+                  style={{
+                    background: "hsl(220 28% 12%)",
+                    border: "1px solid hsl(220 28% 17%)",
+                    cursor: row.expandable ? "pointer" : undefined,
+                  }}
+                  onClick={row.expandable ? () => setShowMilestones((v) => !v) : undefined}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white/70">{row.label}</p>
+                  </div>
+                  <p className="text-xs font-bold" style={{ color: row.color }}>{row.value}</p>
+                  <p className="text-xs font-bold text-white/90 w-16 text-right">+{row.lp.toLocaleString()}</p>
                 </div>
-                <p className="text-xs font-bold" style={{ color: row.color }}>{row.value}</p>
-                <p className="text-xs font-bold text-white/90 w-16 text-right">+{row.lp.toLocaleString()}</p>
+                {row.expandable && showMilestones && (
+                  <div className="mt-1 ml-3 space-y-1">
+                    {breakdown.milestoneDetails.map((m) => (
+                      <div key={m.label} className="flex items-center justify-between px-3 py-1.5 rounded-lg" style={{ background: "hsl(220 28% 10%)", border: "1px solid #F59E0B22" }}>
+                        <p className="text-xs text-white/60">{m.label}</p>
+                        <p className="text-xs font-bold" style={{ color: "#F59E0B" }}>+{m.bonusLP.toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -225,7 +263,7 @@ function LegacyScorePopup({
             style={{ background: "hsl(220 28% 11%)", border: "1px solid hsl(220 28% 16%)" }}
           >
             <p style={{ color: "hsl(215 16% 65%)" }}>
-              Your Legacy Score grows every game and never resets. You earn 25 points just for showing up. Every point, rebound and assist adds to it. Earn Stamps and Tides for big bonus points. Your Legacy Score is yours forever.
+              Your Legacy Score grows every game and never resets. You earn 25 points just for showing up. Every point, rebound and assist adds to it. Earn Stamps, Tides, and Career Milestones for big bonus points. Your Legacy Score is yours forever.
             </p>
           </div>
         </div>
@@ -277,9 +315,9 @@ export function PlayerCard({
   }
 
   // Legacy Score formula:
-  //   games×25 + pts×10 + reb×15 + ast×20 + stl×35 + blk×35 + tov×(−10) + uniqueStamps×200 + tides×1000
+  //   games×25 + pts×10 + reb×15 + ast×20 + stl×35 + blk×35 + tov×(−10) + uniqueStamps×200 + tides×1000 + milestoneBonus
   // careerTotals is used for the score when provided (career-based, never decreases).
-  // profile.tides and profile.stamps are ALWAYS career-wide (all seasons combined).
+  // profile.tides, profile.stamps, profile.milestones are ALWAYS career-wide.
   const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
   const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
@@ -295,7 +333,13 @@ export function PlayerCard({
   const stampLP = uniqueStampCount * 200;
   const tideLP  = totalTides * 1000;
 
-  const legacyScore = gameLP + ptLP + rebLP + astLP + stlLP + blkLP + tovLP + stampLP + tideLP;
+  const earnedMilestones = (profile.milestones ?? []).map((m) => ({
+    id: m.id,
+    ...(MILESTONE_BONUSES[m.id] ?? { label: m.id, bonusLP: 0 }),
+  }));
+  const milestoneLP = earnedMilestones.reduce((sum, m) => sum + m.bonusLP, 0);
+
+  const legacyScore = gameLP + ptLP + rebLP + astLP + stlLP + blkLP + tovLP + stampLP + tideLP + milestoneLP;
 
   const legacyBreakdown = {
     games: lp?.gamesPlayed   ?? 0, gameLP,
@@ -307,6 +351,9 @@ export function PlayerCard({
     tov:   lp?.totalTurnovers ?? 0, tovLP,
     stamps: uniqueStampCount, stampLP,
     tides:  totalTides, tideLP,
+    milestoneCount: earnedMilestones.length,
+    milestoneLP,
+    milestoneDetails: earnedMilestones,
   };
 
   const meta = ARCHETYPE_META[archetypeKey] ?? ARCHETYPE_META["Uncharted"];

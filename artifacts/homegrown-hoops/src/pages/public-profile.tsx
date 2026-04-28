@@ -12,6 +12,7 @@ import {
 import { User, Trophy, Calendar, School, ExternalLink, ChevronDown, Brain, Medal } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
+import { MILESTONE_BONUSES } from "@/components/player-card";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -363,6 +364,41 @@ export function PublicProfilePage() {
             )}
           </div>
         )}
+
+        {/* Milestone notifications — show for milestones earned in last 30 days */}
+        {(() => {
+          const now = Date.now();
+          const recentMs = 30 * 24 * 60 * 60 * 1000;
+          const recent = (profile?.milestones ?? []).filter((m) => {
+            try { return now - new Date(m.earnedAt).getTime() <= recentMs; } catch { return false; }
+          });
+          if (recent.length === 0) return null;
+          return (
+            <div style={{ marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              {recent.map((m) => {
+                const info = MILESTONE_BONUSES[m.id];
+                if (!info) return null;
+                return (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      borderRadius: 12, padding: "12px 16px",
+                      background: "rgba(245,158,11,0.10)",
+                      border: "1px solid rgba(245,158,11,0.30)",
+                    }}
+                  >
+                    <Trophy style={{ width: 16, height: 16, color: "#F59E0B", flexShrink: 0 }} />
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "#F59E0B", margin: 0 }}>Career Milestone Reached!</p>
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.70)", margin: 0 }}>{info.label} — +{info.bonusLP.toLocaleString()} Legacy Points</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Player Card */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>

@@ -28,6 +28,8 @@ export interface UserProfile {
   role: UserRole;
   stamps: RecognitionEntry[];
   tides: RecognitionEntry[];
+  /** Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed. */
+  milestones: RecognitionEntry[];
   /** @nullable */
   archetype?: string | null;
   createdAt: string;

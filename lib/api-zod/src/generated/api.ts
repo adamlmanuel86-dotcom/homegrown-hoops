@@ -223,16 +223,9 @@ export const GetPlayerStatsResponse = zod.object({
   playerId: zod.number(),
   gamesPlayed: zod.number(),
   totalPoints: zod.number(),
-  totalRebounds: zod.number(),
-  totalAssists: zod.number(),
-  totalThreesMade: zod.number(),
-  totalSteals: zod.number(),
-  totalBlocks: zod.number(),
-  totalTurnovers: zod.number(),
   avgPoints: zod.number(),
   avgRebounds: zod.number(),
   avgAssists: zod.number(),
-  avgThreesMade: zod.number(),
   avgSteals: zod.number(),
   avgBlocks: zod.number(),
   avgTurnovers: zod.number(),
@@ -343,16 +336,16 @@ export const GetGamePlayerStatsResponseItem = zod.object({
   id: zod.number(),
   gameId: zod.number(),
   playerId: zod.number(),
-  points: zod.number().nullable(),
-  rebounds: zod.number().nullable(),
-  assists: zod.number().nullable(),
-  steals: zod.number().nullable(),
-  blocks: zod.number().nullable(),
-  turnovers: zod.number().nullable(),
+  points: zod.number(),
+  rebounds: zod.number(),
+  assists: zod.number(),
+  steals: zod.number(),
+  blocks: zod.number(),
+  turnovers: zod.number(),
   minutesPlayed: zod.number(),
   fieldGoalsMade: zod.number(),
   fieldGoalsAttempted: zod.number(),
-  threesMade: zod.number().nullable(),
+  threesMade: zod.number(),
   threesAttempted: zod.number(),
   freeThrowsMade: zod.number(),
   freeThrowsAttempted: zod.number(),
@@ -370,16 +363,16 @@ export const UpsertGamePlayerStatsParams = zod.object({
 
 export const UpsertGamePlayerStatsBodyItem = zod.object({
   playerId: zod.number(),
-  points: zod.number().nullable(),
-  rebounds: zod.number().nullable(),
-  assists: zod.number().nullable(),
-  steals: zod.number().nullable(),
-  blocks: zod.number().nullable(),
-  turnovers: zod.number().nullable(),
+  points: zod.number(),
+  rebounds: zod.number(),
+  assists: zod.number(),
+  steals: zod.number(),
+  blocks: zod.number(),
+  turnovers: zod.number(),
   minutesPlayed: zod.number(),
   fieldGoalsMade: zod.number(),
   fieldGoalsAttempted: zod.number(),
-  threesMade: zod.number().nullable(),
+  threesMade: zod.number(),
   threesAttempted: zod.number(),
   freeThrowsMade: zod.number(),
   freeThrowsAttempted: zod.number(),
@@ -392,16 +385,16 @@ export const UpsertGamePlayerStatsResponseItem = zod.object({
   id: zod.number(),
   gameId: zod.number(),
   playerId: zod.number(),
-  points: zod.number().nullable(),
-  rebounds: zod.number().nullable(),
-  assists: zod.number().nullable(),
-  steals: zod.number().nullable(),
-  blocks: zod.number().nullable(),
-  turnovers: zod.number().nullable(),
+  points: zod.number(),
+  rebounds: zod.number(),
+  assists: zod.number(),
+  steals: zod.number(),
+  blocks: zod.number(),
+  turnovers: zod.number(),
   minutesPlayed: zod.number(),
   fieldGoalsMade: zod.number(),
   fieldGoalsAttempted: zod.number(),
-  threesMade: zod.number().nullable(),
+  threesMade: zod.number(),
   threesAttempted: zod.number(),
   freeThrowsMade: zod.number(),
   freeThrowsAttempted: zod.number(),
@@ -444,16 +437,6 @@ export const GetStatLeadersResponse = zod.object({
       value: zod.number(),
     }),
   ),
-  threesMade: zod.array(
-    zod.object({
-      playerId: zod.number(),
-      firstName: zod.string(),
-      lastName: zod.string(),
-      teamName: zod.string().nullish(),
-      teamAbbreviation: zod.string().nullish(),
-      value: zod.number(),
-    }),
-  ),
   steals: zod.array(
     zod.object({
       playerId: zod.number(),
@@ -463,7 +446,7 @@ export const GetStatLeadersResponse = zod.object({
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
     }),
-  ).optional(),
+  ),
   blocks: zod.array(
     zod.object({
       playerId: zod.number(),
@@ -473,7 +456,7 @@ export const GetStatLeadersResponse = zod.object({
       teamAbbreviation: zod.string().nullish(),
       value: zod.number(),
     }),
-  ).optional(),
+  ),
 });
 
 /**
@@ -576,6 +559,22 @@ export const ListProfilesResponseItem = zod.object({
         ),
     }),
   ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -622,6 +621,22 @@ export const GetMyProfileResponse = zod.object({
         ),
     }),
   ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -690,6 +705,22 @@ export const UpdateMyProfileResponse = zod.object({
         ),
     }),
   ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -739,6 +770,22 @@ export const GetProfileResponse = zod.object({
         ),
     }),
   ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -793,6 +840,22 @@ export const UpdateProfileResponse = zod.object({
         ),
     }),
   ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
   archetype: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),

@@ -13,6 +13,7 @@ import {
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
+import { MILESTONE_BONUSES } from "@/components/player-card";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -270,6 +271,37 @@ export function ProfilePage() {
           )}
         </div>
       )}
+
+      {/* Milestone notifications — show for milestones earned in last 30 days */}
+      {(() => {
+        const now = Date.now();
+        const recentMs = 30 * 24 * 60 * 60 * 1000;
+        const recent = (profile.milestones ?? []).filter((m) => {
+          try { return now - new Date(m.earnedAt).getTime() <= recentMs; } catch { return false; }
+        });
+        if (recent.length === 0) return null;
+        return (
+          <div className="space-y-2">
+            {recent.map((m) => {
+              const info = MILESTONE_BONUSES[m.id];
+              if (!info) return null;
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.30)" }}
+                >
+                  <Trophy className="h-4 w-4 shrink-0" style={{ color: "#F59E0B" }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold" style={{ color: "#F59E0B" }}>Career Milestone Reached!</p>
+                    <p className="text-xs text-white/70">{info.label} — +{info.bonusLP.toLocaleString()} Legacy Points</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <div className="flex flex-col items-center gap-4">
         <PlayerCard
