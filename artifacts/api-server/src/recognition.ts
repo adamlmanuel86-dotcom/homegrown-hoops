@@ -339,6 +339,20 @@ export async function recalculateTides(season: string): Promise<void> {
 }
 
 // ─── 3. Recalculate archetypes for a team ─────────────────────────────────────
+//
+// Rules:
+//  • The Mainstay  — ONE per team: the player with the highest PPG.
+//  • The Vortex    — any player whose RPG is their single highest secondary stat.
+//  • The Current   — any player whose APG is their single highest secondary stat.
+//  • The Deep      — any player whose 3PG is their single highest secondary stat.
+//  • The Climb     — default for any player with ≥1 game who hasn't clearly
+//                    distinguished themselves in one category (including ties,
+//                    or when SPG/BPG leads with no named archetype).
+//  • Uncharted     — no games recorded.
+//
+// Multiple players may share Vortex/Current/Deep/Climb.
+// Secondary-stat comparison uses: RPG, APG, 3PG, SPG, BPG.
+// PPG drives Mainstay selection only.
 export async function recalculateArchetypesForTeam(
   teamId: number,
   season: string
@@ -346,71 +360,73 @@ export async function recalculateArchetypesForTeam(
   const seasonStats = await getSeasonPlayerStats(season);
   const teamStats = seasonStats.filter((p) => p.teamId === teamId);
 
-  type ArchStats = {
+  // Build per-player averages for everyone in teamStats (has ≥1 game)
+  type PlayerAvgs = {
     firstName: string;
     lastName: string;
+    gamesPlayed: number;
     avgPoints: number;
-    totalRebounds: number;
-    totalAssists: number;
-    totalThrees: number;
-    pointsPerMin: number;
-    improvement: number;
-    avgMinutes: number;
+    avgRebounds: number;
+    avgAssists: number;
+    avgThrees: number;
+    avgSteals: number;
+    avgBlocks: number;
   };
 
-  const stats: ArchStats[] = teamStats.map((p) => {
-    const pts = p.games.map((g) => g.points);
-    const reb = p.games.map((g) => g.rebounds);
-    const ast = p.games.map((g) => g.assists);
-    const threes = p.games.map((g) => g.threesMade);
-    const mins = p.games.map((g) => g.minutesPlayed);
-    const dates = p.games.map((g) => g.gameDate);
-    const totalMin = mins.reduce((s, n) => s + n, 0);
-    const totalPts = pts.reduce((s, n) => s + n, 0);
-    return {
-      firstName: p.firstName,
-      lastName: p.lastName,
-      avgPoints: mean(pts),
-      totalRebounds: reb.reduce((s, n) => s + n, 0),
-      totalAssists: ast.reduce((s, n) => s + n, 0),
-      totalThrees: threes.reduce((s, n) => s + n, 0),
-      pointsPerMin: totalMin > 0 ? totalPts / totalMin : 0,
-      improvement: halfImprovement(dates, pts),
-      avgMinutes: mean(mins),
-    };
-  });
+  const avgs: PlayerAvgs[] = teamStats.map((p) => ({
+    firstName:   p.firstName,
+    lastName:    p.lastName,
+    gamesPlayed: p.games.length,
+    avgPoints:   mean(p.games.map((g) => g.points)),
+    avgRebounds: mean(p.games.map((g) => g.rebounds)),
+    avgAssists:  mean(p.games.map((g) => g.assists)),
+    avgThrees:   mean(p.games.map((g) => g.threesMade)),
+    avgSteals:   mean(p.games.map((g) => g.steals)),
+    avgBlocks:   mean(p.games.map((g) => g.blocks)),
+  }));
 
-  function topOf(
-    key: (s: ArchStats) => number,
-    filter?: (s: ArchStats) => boolean
-  ): ArchStats | null {
-    const pool = filter ? stats.filter(filter) : stats;
-    if (pool.length === 0) return null;
-    return pool.reduce((best, s) => (key(s) > key(best) ? s : best));
+  // ── Step 1: Find The Mainstay (highest PPG on team, only one) ─────────────
+  let mainstayKey: string | null = null;
+  if (avgs.length > 0) {
+    const top = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
+    mainstayKey = `${top.firstName}|${top.lastName}`;
   }
 
-  // Only players with at least one meaningful stat are eligible for archetypes
-  const hasStats = (s: ArchStats) =>
-    s.avgPoints > 0 || s.totalRebounds > 0 || s.totalAssists > 0 || s.totalThrees > 0;
-
-  const candidates: Array<{ archetype: string; winner: ArchStats | null }> = [
-    { archetype: "The Mainstay", winner: topOf((s) => s.avgPoints,     hasStats) },
-    { archetype: "The Vortex",   winner: topOf((s) => s.totalRebounds, hasStats) },
-    { archetype: "The Current",  winner: topOf((s) => s.totalAssists,  hasStats) },
-    { archetype: "The Deep",     winner: topOf((s) => s.totalThrees,   hasStats) },
-    { archetype: "The Spark",    winner: topOf((s) => s.pointsPerMin,  (s) => hasStats(s) && s.avgMinutes < 15) },
-    { archetype: "The Climb",    winner: topOf((s) => s.improvement,   hasStats) },
-  ];
-
+  // ── Step 2: Assign each player their archetype ─────────────────────────────
   const assignments = new Map<string, string>();
-  for (const { archetype, winner } of candidates) {
-    if (!winner) continue;
-    const key = `${winner.firstName}|${winner.lastName}`;
-    if (!assignments.has(key)) {
-      assignments.set(key, archetype);
+
+  for (const p of avgs) {
+    const key = `${p.firstName}|${p.lastName}`;
+
+    // Mainstay is exclusive — skip all other checks for this player
+    if (key === mainstayKey) {
+      assignments.set(key, "The Mainstay");
+      continue;
+    }
+
+    // Compare secondary per-game stats. SPG and BPG are included in the
+    // comparison but have no named archetype — if they lead, player gets Climb.
+    const secondaryStats = [
+      { archetype: "The Vortex"  as string | null, value: p.avgRebounds },
+      { archetype: "The Current" as string | null, value: p.avgAssists  },
+      { archetype: "The Deep"    as string | null, value: p.avgThrees   },
+      { archetype: null,                           value: p.avgSteals   },
+      { archetype: null,                           value: p.avgBlocks   },
+    ];
+
+    const maxVal = Math.max(...secondaryStats.map((s) => s.value));
+    const leaders = secondaryStats.filter((s) => Math.abs(s.value - maxVal) <= 1e-10);
+
+    if (leaders.length === 1 && leaders[0].archetype !== null) {
+      // One clear leader with a named archetype
+      assignments.set(key, leaders[0].archetype);
+    } else {
+      // Tied, or leader is SPG/BPG (no named archetype) → The Climb
+      assignments.set(key, "The Climb");
     }
   }
 
+  // ── Step 3: Persist ────────────────────────────────────────────────────────
   const profiles = await db
     .select()
     .from(userProfilesTable)
@@ -418,6 +434,7 @@ export async function recalculateArchetypesForTeam(
 
   for (const profile of profiles) {
     const key = `${profile.firstName}|${profile.lastName}`;
+    // Players not in assignments have no season stats → Uncharted
     const newArchetype = assignments.get(key) ?? "Uncharted";
     if (profile.archetype !== newArchetype) {
       await db
