@@ -14,6 +14,7 @@ export * from "./createGameBodyStatus";
 export * from "./createPlayerBody";
 export * from "./createTeamBody";
 export * from "./createUserProfileBody";
+export * from "./externalLink";
 export * from "./game";
 export * from "./gamePlayerStat";
 export * from "./gameStatus";

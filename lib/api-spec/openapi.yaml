@@ -957,8 +957,11 @@ components:
           enum: [scheduled, in_progress, final]
         notes:
           type: ["string", "null"]
-        externalUrl:
-          type: ["string", "null"]
+        externalLinks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalLink"
+          description: "Ordered list of external video links for this game."
         createdAt:
           type: string
       required:
@@ -968,6 +971,7 @@ components:
         - gameDate
         - season
         - status
+        - externalLinks
         - createdAt
 
     CreateGameBody:
@@ -992,8 +996,10 @@ components:
           enum: [scheduled, in_progress, final]
         notes:
           type: ["string", "null"]
-        externalUrl:
-          type: ["string", "null"]
+        externalLinks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalLink"
       required:
         - homeTeamId
         - awayTeamId
@@ -1019,8 +1025,10 @@ components:
           enum: [scheduled, in_progress, final]
         notes:
           type: ["string", "null"]
-        externalUrl:
-          type: ["string", "null"]
+        externalLinks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalLink"
 
     GamePlayerStat:
       type: object
@@ -1198,6 +1206,19 @@ components:
     UserRole:
       type: string
       enum: [admin, coach, player]
+
+    ExternalLink:
+      type: object
+      properties:
+        label:
+          type: string
+          description: "Human-readable label for this link, e.g. 'First Half' or 'Full Game'."
+        url:
+          type: string
+          description: "Full URL to the external video."
+      required:
+        - label
+        - url
 
     RecognitionEntry:
       type: object

@@ -64,7 +64,7 @@ export function GameDetailPage() {
   const [editingScore, setEditingScore] = useState(false);
   const [editingFilmInfo, setEditingFilmInfo] = useState(false);
   const [notesInput, setNotesInput] = useState("");
-  const [externalUrlInput, setExternalUrlInput] = useState("");
+  const [externalLinksInput, setExternalLinksInput] = useState<{ label: string; url: string }[]>([]);
   const [filmSaveError, setFilmSaveError] = useState<string | null>(null);
   const [confirmingDeleteStatPlayerId, setConfirmingDeleteStatPlayerId] = useState<number | null>(null);
   const [deletingStatPlayerId, setDeletingStatPlayerId] = useState<number | null>(null);
@@ -295,24 +295,29 @@ export function GameDetailPage() {
 
   function openFilmInfoEditor() {
     setNotesInput(game?.notes ?? "");
-    setExternalUrlInput(game?.externalUrl ?? "");
+    const links = (game?.externalLinks ?? []) as { label: string; url: string }[];
+    setExternalLinksInput(links.length > 0 ? links : [{ label: "", url: "" }]);
     setFilmSaveError(null);
     setEditingFilmInfo(true);
   }
 
   async function handleFilmInfoSave(e: React.FormEvent) {
     e.preventDefault();
-    const url = externalUrlInput.trim();
-    if (url && !/^https?:\/\/.+/.test(url)) {
-      setFilmSaveError("Please enter a valid URL starting with http:// or https://");
-      return;
+    const validLinks = externalLinksInput
+      .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
+      .filter((l) => l.url !== "");
+    for (const l of validLinks) {
+      if (!/^https?:\/\/.+/.test(l.url)) {
+        setFilmSaveError(`"${l.url}" is not a valid URL. URLs must start with http:// or https://`);
+        return;
+      }
     }
     try {
       await updateGame.mutateAsync({
         id,
         data: {
           notes: notesInput.trim() || null,
-          externalUrl: url || null,
+          externalLinks: validLinks,
         },
       });
       await qc.invalidateQueries({ queryKey: [`/api/games/${id}`] });
@@ -649,7 +654,7 @@ export function GameDetailPage() {
       ) : (
         <div className="space-y-5">
           {/* Section heading — visible when there's any film content or admin access */}
-          {(videos && videos.length > 0 || !!game.externalUrl || canUpload || isAdmin) && (
+          {(videos && videos.length > 0 || (game.externalLinks ?? []).length > 0 || canUpload || isAdmin) && (
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Highlights</p>
@@ -662,7 +667,7 @@ export function GameDetailPage() {
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white/60 hover:text-white border border-white/10 hover:border-white/30 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
-                    {game.externalUrl || game.notes ? "Edit Film Info" : "Add Film Info"}
+                    {(game.externalLinks ?? []).length > 0 || game.notes ? "Edit Film Info" : "Add Film Info"}
                   </button>
                 )}
                 {canUpload && !showUploadForm && !editingFilmInfo && (
@@ -679,39 +684,78 @@ export function GameDetailPage() {
 
           {/* Inline admin edit form for film info */}
           {isAdmin && editingFilmInfo && (
-            <form onSubmit={handleFilmInfoSave} className="card-base p-6 space-y-5 border-primary/40">
+            <form onSubmit={handleFilmInfoSave} className="card-base p-6 space-y-6 border-primary/40">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-display text-xl text-secondary">GAME FILM INFO</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">Add a note or link to externally hosted game footage.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Add one or more links to external video footage.</p>
                 </div>
                 <button type="button" onClick={() => setEditingFilmInfo(false)} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="label-upper block mb-2">External Video URL</label>
-                  <input
-                    type="text"
-                    value={externalUrlInput}
-                    onChange={(e) => { setExternalUrlInput(e.target.value); setFilmSaveError(null); }}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">YouTube links show a "Watch on YouTube" button. Any other URL shows a "Watch Film" link.</p>
-                </div>
-                <div>
-                  <label className="label-upper block mb-2">Game Notes</label>
-                  <textarea
-                    value={notesInput}
-                    onChange={(e) => setNotesInput(e.target.value)}
-                    placeholder="Optional notes about this game..."
-                    rows={3}
-                    className="w-full border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
-                  />
-                </div>
+
+              {/* Multi-link inputs */}
+              <div className="space-y-3">
+                <label className="label-upper block">Video Links</label>
+                {externalLinksInput.map((link, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <div className="flex-1 grid grid-cols-[1fr_2fr] gap-2">
+                      <input
+                        type="text"
+                        value={link.label}
+                        onChange={(e) => {
+                          const updated = externalLinksInput.map((l, j) => j === i ? { ...l, label: e.target.value } : l);
+                          setExternalLinksInput(updated);
+                          setFilmSaveError(null);
+                        }}
+                        placeholder="Label (e.g. First Half)"
+                        className="border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      />
+                      <input
+                        type="text"
+                        value={link.url}
+                        onChange={(e) => {
+                          const updated = externalLinksInput.map((l, j) => j === i ? { ...l, url: e.target.value } : l);
+                          setExternalLinksInput(updated);
+                          setFilmSaveError(null);
+                        }}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setExternalLinksInput(externalLinksInput.filter((_, j) => j !== i))}
+                      className="p-2.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-900/20 transition-colors flex-shrink-0 mt-0.5"
+                      title="Remove link"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setExternalLinksInput([...externalLinksInput, { label: "", url: "" }])}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:opacity-80 transition-opacity px-1"
+                >
+                  <span className="text-lg leading-none">+</span> Add another link
+                </button>
+                <p className="text-xs text-muted-foreground">YouTube links show "Watch on YouTube". Any other URL shows "Watch Film".</p>
               </div>
+
+              {/* Notes */}
+              <div>
+                <label className="label-upper block mb-2">Game Notes</label>
+                <textarea
+                  value={notesInput}
+                  onChange={(e) => setNotesInput(e.target.value)}
+                  placeholder="Optional notes about this game..."
+                  rows={3}
+                  className="w-full border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+                />
+              </div>
+
               {filmSaveError && <p className="text-red-500 text-sm font-medium">{filmSaveError}</p>}
               <div className="flex gap-3">
                 <button type="submit" disabled={updateGame.isPending} className="btn-primary">
@@ -811,48 +855,53 @@ export function GameDetailPage() {
             </div>
           )}
 
-          {/* External URL card — same visual weight as an uploaded video */}
-          {!editingFilmInfo && game.externalUrl && (() => {
-            const isYouTube = /youtube\.com|youtu\.be/.test(game.externalUrl);
-            return (
-              <div className="card-base overflow-hidden shadow-[6px_6px_0_0_rgba(0,0,0,1)]">
-                {/* Thumbnail-style banner */}
-                <div
-                  className="w-full aspect-video flex flex-col items-center justify-center gap-5"
-                  style={{ background: "linear-gradient(160deg, hsl(222 42% 7%) 0%, hsl(222 42% 13%) 100%)" }}
-                >
-                  <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center"
-                    style={{ background: isYouTube ? "rgba(255,0,0,0.15)" : "rgba(249,115,22,0.15)" }}
-                  >
-                    {isYouTube
-                      ? <Youtube className="h-10 w-10" style={{ color: "#FF0000" }} />
-                      : <Film className="h-10 w-10 text-primary" />
-                    }
-                  </div>
-                  <a
-                    href={game.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl font-bold text-base transition-all active:scale-95"
-                    style={isYouTube
-                      ? { background: "#FF0000", color: "#fff", boxShadow: "0 4px 20px rgba(255,0,0,0.35)" }
-                      : { background: "hsl(24 95% 50%)", color: "#fff", boxShadow: "0 4px 20px rgba(249,115,22,0.35)" }
-                    }
-                  >
-                    {isYouTube ? <Youtube className="h-5 w-5" /> : <ExternalLink className="h-5 w-5" />}
-                    {isYouTube ? "Watch on YouTube" : "Watch Film"}
-                  </a>
+          {/* External links card — one row per link */}
+          {!editingFilmInfo && (game.externalLinks ?? []).length > 0 && (
+            <div className="card-base overflow-hidden shadow-[6px_6px_0_0_rgba(0,0,0,1)]">
+              {game.notes && (
+                <div className="px-5 py-3.5 border-b border-border bg-muted/20">
+                  <p className="text-sm text-muted-foreground leading-relaxed">{game.notes}</p>
                 </div>
-                {/* Footer row */}
-                {game.notes && (
-                  <div className="px-5 py-4 border-t border-border">
-                    <p className="text-sm text-muted-foreground leading-relaxed">{game.notes}</p>
-                  </div>
-                )}
+              )}
+              <div className="divide-y divide-border">
+                {(game.externalLinks as { label: string; url: string }[]).map((link, i) => {
+                  const isYouTube = /youtube\.com|youtu\.be/.test(link.url);
+                  return (
+                    <div key={i} className="flex items-center gap-4 px-5 py-4">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: isYouTube ? "rgba(255,0,0,0.12)" : "rgba(249,115,22,0.12)" }}
+                      >
+                        {isYouTube
+                          ? <Youtube className="h-5 w-5" style={{ color: "#FF0000" }} />
+                          : <Film className="h-5 w-5 text-primary" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-secondary text-sm truncate">
+                          {link.label || (isYouTube ? "YouTube" : "External Video")}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                      </div>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95"
+                        style={isYouTube
+                          ? { background: "#FF0000", color: "#fff" }
+                          : { background: "hsl(24 95% 50%)", color: "#fff" }
+                        }
+                      >
+                        {isYouTube ? <Youtube className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                        {isYouTube ? "Watch on YouTube" : "Watch Film"}
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })()}
+            </div>
+          )}
 
           {/* Upload form */}
           {canUpload && showUploadForm && (
@@ -941,7 +990,7 @@ export function GameDetailPage() {
           )}
 
           {/* Empty state — only shown when there's truly no film content */}
-          {(!videos || videos.length === 0) && !game.externalUrl && !editingFilmInfo && !showUploadForm && (
+          {(!videos || videos.length === 0) && (game.externalLinks ?? []).length === 0 && !editingFilmInfo && !showUploadForm && (
             <div className="card-base px-6 py-12 text-center">
               <Video className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-sm font-medium text-secondary mb-1">No footage yet</p>

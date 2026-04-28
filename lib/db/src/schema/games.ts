@@ -1,9 +1,11 @@
-import { pgTable, text, serial, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, pgEnum, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { teamsTable } from "./teams";
 
 export const gameStatusEnum = pgEnum("game_status", ["scheduled", "in_progress", "final"]);
+
+export type ExternalLink = { label: string; url: string };
 
 export const gamesTable = pgTable("games", {
   id: serial("id").primaryKey(),
@@ -16,7 +18,7 @@ export const gamesTable = pgTable("games", {
   location: text("location"),
   status: gameStatusEnum("status").notNull().default("scheduled"),
   notes: text("notes"),
-  externalUrl: text("external_url"),
+  externalLinks: json("external_links").$type<ExternalLink[]>().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

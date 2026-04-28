@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CreateGameBodyStatus } from "./createGameBodyStatus";
+import type { ExternalLink } from "./externalLink";
 
 export interface CreateGameBody {
   homeTeamId: number;
@@ -21,6 +22,5 @@ export interface CreateGameBody {
   status: CreateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  externalUrl?: string | null;
+  externalLinks?: ExternalLink[];
 }

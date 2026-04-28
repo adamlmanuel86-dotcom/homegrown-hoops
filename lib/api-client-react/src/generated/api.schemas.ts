@@ -141,6 +141,13 @@ export const GameStatus = {
   final: "final",
 } as const;
 
+export interface ExternalLink {
+  /** Human-readable label for this link, e.g. 'First Half' or 'Full Game'. */
+  label: string;
+  /** Full URL to the external video. */
+  url: string;
+}
+
 export interface Game {
   id: number;
   homeTeamId: number;
@@ -156,8 +163,8 @@ export interface Game {
   status: GameStatus;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  externalUrl?: string | null;
+  /** Ordered list of external video links for this game. */
+  externalLinks: ExternalLink[];
   createdAt: string;
 }
 
@@ -184,8 +191,7 @@ export interface CreateGameBody {
   status: CreateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  externalUrl?: string | null;
+  externalLinks?: ExternalLink[];
 }
 
 export type UpdateGameBodyStatus =
@@ -209,8 +215,7 @@ export interface UpdateGameBody {
   status?: UpdateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  externalUrl?: string | null;
+  externalLinks?: ExternalLink[];
 }
 
 export interface GamePlayerStat {

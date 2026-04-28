@@ -254,7 +254,18 @@ export const ListGamesResponseItem = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
-  externalUrl: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .describe("Ordered list of external video links for this game."),
   createdAt: zod.string(),
 });
 export const ListGamesResponse = zod.array(ListGamesResponseItem);
@@ -272,7 +283,18 @@ export const CreateGameBody = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
-  externalUrl: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .optional(),
 });
 
 /**
@@ -293,7 +315,18 @@ export const GetGameResponse = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
-  externalUrl: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .describe("Ordered list of external video links for this game."),
   createdAt: zod.string(),
 });
 
@@ -312,7 +345,18 @@ export const UpdateGameBody = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]).optional(),
   notes: zod.string().nullish(),
-  externalUrl: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .optional(),
 });
 
 export const UpdateGameResponse = zod.object({
@@ -326,7 +370,18 @@ export const UpdateGameResponse = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
-  externalUrl: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .describe("Ordered list of external video links for this game."),
   createdAt: zod.string(),
 });
 
@@ -484,7 +539,18 @@ export const GetStatsSummaryResponse = zod.object({
       location: zod.string().nullish(),
       status: zod.enum(["scheduled", "in_progress", "final"]),
       notes: zod.string().nullish(),
-      externalUrl: zod.string().nullish(),
+      externalLinks: zod
+        .array(
+          zod.object({
+            label: zod
+              .string()
+              .describe(
+                "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+              ),
+            url: zod.string().describe("Full URL to the external video."),
+          }),
+        )
+        .describe("Ordered list of external video links for this game."),
       createdAt: zod.string(),
     }),
   ),

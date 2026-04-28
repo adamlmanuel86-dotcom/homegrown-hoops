@@ -5,6 +5,7 @@
  * Homegrown Hoops Basketball Stats Tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { ExternalLink } from "./externalLink";
 import type { GameStatus } from "./gameStatus";
 
 export interface Game {
@@ -22,7 +23,7 @@ export interface Game {
   status: GameStatus;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  externalUrl?: string | null;
+  /** Ordered list of external video links for this game. */
+  externalLinks: ExternalLink[];
   createdAt: string;
 }
