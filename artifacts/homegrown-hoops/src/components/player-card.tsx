@@ -21,6 +21,8 @@ export type CardStats = {
   avgRebounds: number | string;
   avgAssists: number | string;
   avgThreesMade?: number | string;
+  avgSteals?: number | string;
+  avgBlocks?: number | string;
   gamesPlayed?: number;
   totalPoints?: number;
   totalRebounds?: number;
@@ -379,11 +381,24 @@ export function PlayerCard({
     (stats as { totalThreesMade?: number | string; threesMade?: number | string; gamesPlayed?: number } | undefined)?.totalThreesMade ??
     (stats as { totalThreesMade?: number | string; threesMade?: number | string; gamesPlayed?: number } | undefined)?.threesMade;
 
+  const toNum = (v: number | string | undefined): number => {
+    const n = typeof v === "string" ? Number(v) : v;
+    return typeof n === "number" && Number.isFinite(n) ? n : 0;
+  };
+
+  const candidateStats = [
+    { label: "RPG", raw: toNum(stats?.avgRebounds) },
+    { label: "APG", raw: toNum(stats?.avgAssists) },
+    { label: "3PG", raw: toNum(threePointAvg) },
+    { label: "SPG", raw: toNum(stats?.avgSteals) },
+    { label: "BPG", raw: toNum(stats?.avgBlocks) },
+  ]
+    .sort((a, b) => b.raw - a.raw)
+    .slice(0, 3);
+
   const statItems = [
     { label: "PPG", value: fmtAvg(stats?.avgPoints) },
-    { label: "RPG", value: fmtAvg(stats?.avgRebounds) },
-    { label: "APG", value: fmtAvg(stats?.avgAssists) },
-    { label: "3PG", value: fmtAvg(threePointAvg) },
+    ...candidateStats.map(({ label, raw }) => ({ label, value: raw.toFixed(1) })),
   ];
 
   return (
