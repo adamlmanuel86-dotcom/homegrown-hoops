@@ -72,12 +72,18 @@ export function GameDetailPage() {
     rebounds: string;   reboundsUnknown: boolean;
     assists: string;    assistsUnknown: boolean;
     threesMade: string; threesMadeUnknown: boolean;
+    steals: string;     stealsUnknown: boolean;
+    blocks: string;     blocksUnknown: boolean;
+    turnovers: string;  turnoversUnknown: boolean;
   };
   const defaultStatRow: StatRow = {
     points: "", pointsUnknown: false,
     rebounds: "", reboundsUnknown: false,
     assists: "", assistsUnknown: false,
     threesMade: "", threesMadeUnknown: false,
+    steals: "", stealsUnknown: false,
+    blocks: "", blocksUnknown: false,
+    turnovers: "", turnoversUnknown: false,
   };
   const [showStatEntry, setShowStatEntry] = useState(false);
   const [statInputs, setStatInputs] = useState<Record<number, StatRow>>({});
@@ -119,6 +125,12 @@ export function GameDetailPage() {
           assistsUnknown:    s.assists    === null,
           threesMade:        s.threesMade !== null ? String(s.threesMade) : "",
           threesMadeUnknown: s.threesMade === null,
+          steals:            s.steals     !== null ? String(s.steals)     : "",
+          stealsUnknown:     s.steals     === null,
+          blocks:            s.blocks     !== null ? String(s.blocks)     : "",
+          blocksUnknown:     s.blocks     === null,
+          turnovers:         s.turnovers  !== null ? String(s.turnovers)  : "",
+          turnoversUnknown:  s.turnovers  === null,
         };
       }
     }
@@ -135,7 +147,7 @@ export function GameDetailPage() {
     }));
   }
 
-  function toggleStatUnknown(playerId: number, unknownField: "pointsUnknown" | "reboundsUnknown" | "assistsUnknown" | "threesMadeUnknown") {
+  function toggleStatUnknown(playerId: number, unknownField: "pointsUnknown" | "reboundsUnknown" | "assistsUnknown" | "threesMadeUnknown" | "stealsUnknown" | "blocksUnknown" | "turnoversUnknown") {
     setStatInputs((prev) => {
       const row = prev[playerId] ?? defaultStatRow;
       return { ...prev, [playerId]: { ...row, [unknownField]: !row[unknownField] } };
@@ -158,7 +170,10 @@ export function GameDetailPage() {
             row.points !== "" || row.pointsUnknown ||
             row.rebounds !== "" || row.reboundsUnknown ||
             row.assists !== "" || row.assistsUnknown ||
-            row.threesMade !== "" || row.threesMadeUnknown
+            row.threesMade !== "" || row.threesMadeUnknown ||
+            row.steals !== "" || row.stealsUnknown ||
+            row.blocks !== "" || row.blocksUnknown ||
+            row.turnovers !== "" || row.turnoversUnknown
           );
         })
         .map((pid) => {
@@ -173,9 +188,9 @@ export function GameDetailPage() {
             points:              parseNullable(row.points,    row.pointsUnknown),
             rebounds:            parseNullable(row.rebounds,  row.reboundsUnknown),
             assists:             parseNullable(row.assists,   row.assistsUnknown),
-            steals:              0,
-            blocks:              0,
-            turnovers:           0,
+            steals:              parseNullable(row.steals,    row.stealsUnknown),
+            blocks:              parseNullable(row.blocks,    row.blocksUnknown),
+            turnovers:           parseNullable(row.turnovers, row.turnoversUnknown),
             minutesPlayed:       0,
             fieldGoalsMade:      0,
             fieldGoalsAttempted: 0,
@@ -840,7 +855,7 @@ export function GameDetailPage() {
                         <thead>
                           <tr className="border-b border-border">
                             <th className="text-left px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground">Player</th>
-                            {["PTS", "REB", "AST", "3PM"].map((h) => (
+                            {["PTS", "REB", "AST", "3PM", "STL", "BLK", "TOV"].map((h) => (
                               <th key={h} className="px-3 py-2 label-upper text-[10px] font-bold text-muted-foreground text-center w-20">{h}</th>
                             ))}
                             <th className="px-2 py-2 w-10" />
@@ -863,6 +878,9 @@ export function GameDetailPage() {
                                   { field: "rebounds"   as const, unknownField: "reboundsUnknown"   as const },
                                   { field: "assists"    as const, unknownField: "assistsUnknown"    as const },
                                   { field: "threesMade" as const, unknownField: "threesMadeUnknown" as const },
+                                  { field: "steals"     as const, unknownField: "stealsUnknown"     as const },
+                                  { field: "blocks"     as const, unknownField: "blocksUnknown"     as const },
+                                  { field: "turnovers"  as const, unknownField: "turnoversUnknown"  as const },
                                 ]).map(({ field, unknownField }) => {
                                   const isUnknown = row[unknownField] as boolean;
                                   return (
@@ -989,7 +1007,7 @@ export function GameDetailPage() {
                     <thead>
                       <tr className="border-b border-border bg-muted/50">
                         <th className="text-left px-4 py-3 label-upper text-[10px]">Player</th>
-                        {["PTS", "REB", "AST", "3PM"].map((col) => (
+                        {["PTS", "REB", "AST", "3PM", "STL", "BLK", "TOV"].map((col) => (
                           <th key={col} className="px-3 py-3 label-upper text-[10px]">{col}</th>
                         ))}
                         {isAdmin && <th className="px-3 py-3 w-10" />}
@@ -1022,6 +1040,15 @@ export function GameDetailPage() {
                             </td>
                             <td className="px-3 py-3 text-center text-secondary font-medium">
                               {hasStats && statsRow!.threesMade !== null ? statsRow!.threesMade : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-center text-secondary font-medium">
+                              {hasStats && statsRow!.steals !== null ? statsRow!.steals : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-center text-secondary font-medium">
+                              {hasStats && statsRow!.blocks !== null ? statsRow!.blocks : <span className="text-muted-foreground font-normal">—</span>}
+                            </td>
+                            <td className="px-3 py-3 text-center text-secondary font-medium">
+                              {hasStats && statsRow!.turnovers !== null ? statsRow!.turnovers : <span className="text-muted-foreground font-normal">—</span>}
                             </td>
                             {isAdmin && (
                               <td className="px-3 py-3 text-right">

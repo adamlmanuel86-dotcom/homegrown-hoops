@@ -13,9 +13,9 @@ export interface GamePlayerStat {
   points: number | null;
   rebounds: number | null;
   assists: number | null;
-  steals: number;
-  blocks: number;
-  turnovers: number;
+  steals: number | null;
+  blocks: number | null;
+  turnovers: number | null;
   minutesPlayed: number;
   fieldGoalsMade: number;
   fieldGoalsAttempted: number;

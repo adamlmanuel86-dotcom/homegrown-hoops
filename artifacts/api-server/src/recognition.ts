@@ -13,10 +13,14 @@ type RecEntry = { id: string; earnedAt: string; season?: string };
 
 type GameStat = {
   gameDate: string;
+  season: string;
   points: number;
   rebounds: number;
   assists: number;
   threesMade: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
   minutesPlayed: number;
 };
 
@@ -39,6 +43,8 @@ const STAMP_CHECKS: Array<{ id: string; passes: (s: GameStat) => boolean }> = [
     id: "full_flood",
     passes: (s) => s.points >= 10 && s.rebounds >= 10 && s.assists >= 10,
   },
+  { id: "lifted",    passes: (s) => s.steals >= 2 },
+  { id: "not_today", passes: (s) => s.blocks >= 2 },
 ];
 
 // ─── Tide IDs automatically calculated ───────────────────────────────────────
@@ -51,6 +57,9 @@ const AUTO_TIDE_IDS = [
   "rising_tide",
   "shoreline",
   "the_crest",
+  "rip_tide",
+  "the_wall",
+  "all_tide",
 ] as const;
 type AutoTideId = (typeof AUTO_TIDE_IDS)[number];
 
@@ -100,10 +109,14 @@ async function getSeasonPlayerStats(season: string) {
       lastName: playersTable.lastName,
       teamId: playersTable.teamId,
       gameDate: gamesTable.gameDate,
+      season: gamesTable.season,
       points: gamePlayerStatsTable.points,
       rebounds: gamePlayerStatsTable.rebounds,
       assists: gamePlayerStatsTable.assists,
       threesMade: gamePlayerStatsTable.threesMade,
+      steals: gamePlayerStatsTable.steals,
+      blocks: gamePlayerStatsTable.blocks,
+      turnovers: gamePlayerStatsTable.turnovers,
       minutesPlayed: gamePlayerStatsTable.minutesPlayed,
     })
     .from(gamePlayerStatsTable)
@@ -134,10 +147,14 @@ async function getSeasonPlayerStats(season: string) {
     }
     map.get(row.playerId)!.games.push({
       gameDate: row.gameDate,
+      season: row.season,
       points: row.points ?? 0,
       rebounds: row.rebounds ?? 0,
       assists: row.assists ?? 0,
-      threesMade: row.threesMade,
+      threesMade: row.threesMade ?? 0,
+      steals: row.steals ?? 0,
+      blocks: row.blocks ?? 0,
+      turnovers: row.turnovers ?? 0,
       minutesPlayed: row.minutesPlayed,
     });
   }
@@ -159,10 +176,14 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
   const rows = await db
     .select({
       gameDate: gamesTable.gameDate,
+      season: gamesTable.season,
       points: gamePlayerStatsTable.points,
       rebounds: gamePlayerStatsTable.rebounds,
       assists: gamePlayerStatsTable.assists,
       threesMade: gamePlayerStatsTable.threesMade,
+      steals: gamePlayerStatsTable.steals,
+      blocks: gamePlayerStatsTable.blocks,
+      turnovers: gamePlayerStatsTable.turnovers,
       minutesPlayed: gamePlayerStatsTable.minutesPlayed,
     })
     .from(gamePlayerStatsTable)
@@ -170,13 +191,19 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
     .where(eq(gamePlayerStatsTable.playerId, playerId));
 
   const newStamps: RecEntry[] = [];
+
+  // Per-game stamp checks
   for (const row of rows) {
     const gameStat: GameStat = {
       gameDate: row.gameDate,
+      season: row.season,
       points: row.points ?? 0,
       rebounds: row.rebounds ?? 0,
       assists: row.assists ?? 0,
-      threesMade: row.threesMade,
+      threesMade: row.threesMade ?? 0,
+      steals: row.steals ?? 0,
+      blocks: row.blocks ?? 0,
+      turnovers: row.turnovers ?? 0,
       minutesPlayed: row.minutesPlayed,
     };
     for (const { id, passes } of STAMP_CHECKS) {
@@ -185,6 +212,25 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
       }
     }
   }
+
+  // Sure Hands — seasonal stamp: avg < 1 turnover per game
+  // Group rows by season, then check the average for each
+  const bySeason = new Map<string, { turnovers: number[]; lastDate: string }>();
+  for (const row of rows) {
+    if (row.turnovers === null) continue; // skip games with unknown turnovers
+    if (!bySeason.has(row.season)) bySeason.set(row.season, { turnovers: [], lastDate: row.gameDate });
+    const entry = bySeason.get(row.season)!;
+    entry.turnovers.push(row.turnovers);
+    if (row.gameDate > entry.lastDate) entry.lastDate = row.gameDate;
+  }
+  for (const [, entry] of bySeason) {
+    if (entry.turnovers.length === 0) continue;
+    const avgTov = entry.turnovers.reduce((s, n) => s + n, 0) / entry.turnovers.length;
+    if (avgTov < 1) {
+      newStamps.push({ id: "sure_hands", earnedAt: entry.lastDate });
+    }
+  }
+
   newStamps.sort((a, b) => a.earnedAt.localeCompare(b.earnedAt));
 
   await db
@@ -205,6 +251,8 @@ export async function recalculateTides(season: string): Promise<void> {
   totalPoints: number;
     totalRebounds: number;
     totalAssists: number;
+    totalSteals: number;
+    totalBlocks: number;
   highestGamePoints: number;
     stdDevPoints: number;
     improvement: number;
@@ -216,6 +264,8 @@ export async function recalculateTides(season: string): Promise<void> {
     const pts = p.games.map((g) => g.points);
     const reb = p.games.map((g) => g.rebounds);
     const ast = p.games.map((g) => g.assists);
+    const stl = p.games.map((g) => g.steals);
+    const blk = p.games.map((g) => g.blocks);
     const dates = p.games.map((g) => g.gameDate);
     const avgPts = mean(pts);
     const avgReb = mean(reb);
@@ -227,6 +277,8 @@ export async function recalculateTides(season: string): Promise<void> {
       totalPoints: pts.reduce((s, n) => s + n, 0),
       totalRebounds: reb.reduce((s, n) => s + n, 0),
       totalAssists: ast.reduce((s, n) => s + n, 0),
+      totalSteals: stl.reduce((s, n) => s + n, 0),
+      totalBlocks: blk.reduce((s, n) => s + n, 0),
       highestGamePoints: pts.length ? Math.max(...pts) : 0,
       stdDevPoints: stdDev(pts),
       improvement: halfImprovement(dates, pts),
@@ -249,6 +301,9 @@ export async function recalculateTides(season: string): Promise<void> {
     rising_tide: topOf((m) => m.improvement),
     shoreline:   topOf((m) => m.gamesPlayed),
     the_crest:   topOf((m) => m.composite),
+    rip_tide:    topOf((m) => m.totalSteals),
+    the_wall:    topOf((m) => m.totalBlocks),
+    all_tide:    topOf((m) => m.totalAssists + m.totalSteals),
   };
 
   const today = new Date().toISOString().split("T")[0];
@@ -390,6 +445,9 @@ const TIDE_LABELS: Record<string, string> = {
   rising_tide: "Rising Tide",
   shoreline:   "Shoreline",
   the_crest:   "The Crest",
+  rip_tide:    "Rip Tide",
+  the_wall:    "The Wall",
+  all_tide:    "All Tide",
 };
 
 export async function getTeamCurrentSeason(teamId: number): Promise<string | null> {
@@ -422,6 +480,8 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
     const pts   = p.games.map((g) => g.points);
     const reb   = p.games.map((g) => g.rebounds);
     const ast   = p.games.map((g) => g.assists);
+    const stl   = p.games.map((g) => g.steals);
+    const blk   = p.games.map((g) => g.blocks);
     const dates = p.games.map((g) => g.gameDate);
     const m     = mean(pts);
     const maxDev = pts.length ? Math.max(...pts.map((v) => Math.abs(v - m))) : 0;
@@ -431,6 +491,8 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
       totalPoints:       pts.reduce((s, n) => s + n, 0),
       totalRebounds:     reb.reduce((s, n) => s + n, 0),
       totalAssists:      ast.reduce((s, n) => s + n, 0),
+      totalSteals:       stl.reduce((s, n) => s + n, 0),
+      totalBlocks:       blk.reduce((s, n) => s + n, 0),
       highestGamePoints: pts.length ? Math.max(...pts) : 0,
       stdDevPoints:      stdDev(pts),
       maxDeviationPts:   maxDev,
@@ -482,6 +544,9 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
     },
     { tideId: "rising_tide", primary: (m) => m.improvement },
     { tideId: "the_crest",   primary: (m) => m.composite },
+    { tideId: "rip_tide",    primary: (m) => m.totalSteals },
+    { tideId: "the_wall",    primary: (m) => m.totalBlocks },
+    { tideId: "all_tide",    primary: (m) => m.totalAssists + m.totalSteals },
   ];
 
   for (const { tideId, primary, secondary } of tidesSpec) {

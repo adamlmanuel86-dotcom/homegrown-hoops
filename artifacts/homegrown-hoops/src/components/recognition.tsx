@@ -3,6 +3,7 @@ import {
   Hash, Square, Eye, Droplets, Target, Zap, Layers, Crown,
   Waves, TrendingUp, Shield, Lightbulb, Activity, MapPin, Sparkles, Mountain,
   Anchor, Wind, Flame, Lock, X, Calendar, Compass, ChevronRight,
+  Swords, ShieldX, Grip, Scissors, Castle, Star,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "wouter";
@@ -89,6 +90,33 @@ export const STAMPS: {
     description: "The triple-double. Double figures in points, rebounds, and assists all in the same game. The rarest and most prestigious Stamp on the platform.",
     howToEarn: "Record 10 or more points, 10 or more rebounds, AND 10 or more assists all in a single game.",
     threshold: "10+ points, 10+ rebounds AND 10+ assists in one game",
+  },
+  {
+    id: "lifted",
+    label: "Lifted",
+    icon: Swords,
+    color: "#EF4444",
+    description: "Pick pocket. Came up with 2 or more steals in a single game — disrupting plays and creating opportunities.",
+    howToEarn: "Record 2 or more steals in a single game.",
+    threshold: "2+ steals in one game",
+  },
+  {
+    id: "not_today",
+    label: "Not Today",
+    icon: ShieldX,
+    color: "#6366F1",
+    description: "Locked the paint down. Rejected 2 or more shots in a single game.",
+    howToEarn: "Record 2 or more blocks in a single game.",
+    threshold: "2+ blocks in one game",
+  },
+  {
+    id: "sure_hands",
+    label: "Sure Hands",
+    icon: Grip,
+    color: "#10B981",
+    description: "Took care of the ball all season. Averaged fewer than 1 turnover per game — a mark of decision-making and ball security.",
+    howToEarn: "Average fewer than 1 turnover per game for the season (minimum 1 game with turnovers recorded).",
+    threshold: "Avg < 1 turnover per game for the season",
   },
 ];
 
@@ -182,6 +210,36 @@ export const TIDES: {
     description: "The player with the highest combined points, rebounds and assists per game.",
     howToEarn: "Finish the season with the highest combined points, rebounds and assists per game.",
     threshold: "Highest combined points + rebounds + assists per game",
+  },
+  {
+    id: "rip_tide",
+    label: "Rip Tide",
+    icon: Scissors,
+    color: "#EF4444",
+    glow: "rgba(239,68,68,0.25)",
+    description: "The player who led the team in total steals for the season. A disruptive force on the defensive end.",
+    howToEarn: "Finish the season with the most total steals on the team.",
+    threshold: "Most total steals for the season",
+  },
+  {
+    id: "the_wall",
+    label: "The Wall",
+    icon: Castle,
+    color: "#6366F1",
+    glow: "rgba(99,102,241,0.25)",
+    description: "The player who led the team in total blocks for the season. Nothing gets through.",
+    howToEarn: "Finish the season with the most total blocks on the team.",
+    threshold: "Most total blocks for the season",
+  },
+  {
+    id: "all_tide",
+    label: "All Tide",
+    icon: Star,
+    color: "#F59E0B",
+    glow: "rgba(245,158,11,0.25)",
+    description: "Led the team in combined assists and steals for the season — making plays on both ends of the floor.",
+    howToEarn: "Finish the season with the highest combined total of assists and steals on the team.",
+    threshold: "Most combined assists + steals for the season",
   },
 ];
 

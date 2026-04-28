@@ -133,16 +133,23 @@ export function ProfilePage() {
   const careerRebounds = allSeasonStats?.totalRebounds ?? 0;
   const careerAssists = allSeasonStats?.totalAssists ?? 0;
 
+  const careerSteals    = allSeasonStats?.totalSteals    ?? 0;
+  const careerBlocks    = allSeasonStats?.totalBlocks    ?? 0;
+  const careerTurnovers = allSeasonStats?.totalTurnovers ?? 0;
+
   const careerTotalsForCard =
     careerGames > 0
       ? {
-          gamesPlayed: careerGames,
-          totalPoints: careerPoints,
-          totalRebounds: careerRebounds,
-          totalAssists: careerAssists,
-          avgPoints: careerPoints / careerGames,
-          avgRebounds: careerRebounds / careerGames,
-          avgAssists: careerAssists / careerGames,
+          gamesPlayed:    careerGames,
+          totalPoints:    careerPoints,
+          totalRebounds:  careerRebounds,
+          totalAssists:   careerAssists,
+          totalSteals:    careerSteals,
+          totalBlocks:    careerBlocks,
+          totalTurnovers: careerTurnovers,
+          avgPoints:    careerPoints    / careerGames,
+          avgRebounds:  careerRebounds  / careerGames,
+          avgAssists:   careerAssists   / careerGames,
         }
       : undefined;
 
@@ -150,26 +157,38 @@ export function ProfilePage() {
   const displayStats = selectedSeason
     ? seasonStats && seasonStats.gamesPlayed > 0
       ? {
-          avgPoints: seasonStats.avgPoints,
-          avgRebounds: seasonStats.avgRebounds,
-          avgAssists: seasonStats.avgAssists,
+          avgPoints:     seasonStats.avgPoints,
+          avgRebounds:   seasonStats.avgRebounds,
+          avgAssists:    seasonStats.avgAssists,
           avgThreesMade: seasonStats.avgThreesMade,
-          gamesPlayed: seasonStats.gamesPlayed,
-          totalPoints: seasonStats.totalPoints,
+          avgSteals:     seasonStats.avgSteals,
+          avgBlocks:     seasonStats.avgBlocks,
+          avgTurnovers:  seasonStats.avgTurnovers,
+          gamesPlayed:   seasonStats.gamesPlayed,
+          totalPoints:   seasonStats.totalPoints,
           totalRebounds: seasonStats.totalRebounds,
-          totalAssists: seasonStats.totalAssists,
+          totalAssists:  seasonStats.totalAssists,
+          totalSteals:   seasonStats.totalSteals,
+          totalBlocks:   seasonStats.totalBlocks,
+          totalTurnovers:seasonStats.totalTurnovers,
         }
       : undefined
     : allSeasonStats && allSeasonStats.gamesPlayed > 0
     ? {
-        avgPoints: allSeasonStats.avgPoints,
-        avgRebounds: allSeasonStats.avgRebounds,
-        avgAssists: allSeasonStats.avgAssists,
+        avgPoints:     allSeasonStats.avgPoints,
+        avgRebounds:   allSeasonStats.avgRebounds,
+        avgAssists:    allSeasonStats.avgAssists,
         avgThreesMade: allSeasonStats.avgThreesMade,
-        gamesPlayed: allSeasonStats.gamesPlayed,
-        totalPoints: allSeasonStats.totalPoints,
+        avgSteals:     allSeasonStats.avgSteals,
+        avgBlocks:     allSeasonStats.avgBlocks,
+        avgTurnovers:  allSeasonStats.avgTurnovers,
+        gamesPlayed:   allSeasonStats.gamesPlayed,
+        totalPoints:   allSeasonStats.totalPoints,
         totalRebounds: allSeasonStats.totalRebounds,
-        totalAssists: allSeasonStats.totalAssists,
+        totalAssists:  allSeasonStats.totalAssists,
+        totalSteals:   allSeasonStats.totalSteals,
+        totalBlocks:   allSeasonStats.totalBlocks,
+        totalTurnovers:allSeasonStats.totalTurnovers,
       }
     : undefined;
 
@@ -288,6 +307,25 @@ export function ProfilePage() {
           )}
         </button>
       </div>
+
+      {displayStats && (
+        <div className="card-base p-4">
+          <p className="label-upper mb-3 px-1">Defensive &amp; Ball Stats · {seasonLabel}</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "SPG", value: displayStats.avgSteals?.toFixed(1) ?? "—", sub: `${displayStats.totalSteals ?? 0} total` },
+              { label: "BPG", value: displayStats.avgBlocks?.toFixed(1) ?? "—",  sub: `${displayStats.totalBlocks ?? 0} total` },
+              { label: "TOPG", value: displayStats.avgTurnovers?.toFixed(1) ?? "—", sub: `${displayStats.totalTurnovers ?? 0} total` },
+            ].map(({ label, value, sub }) => (
+              <div key={label} className="rounded-xl bg-muted/40 p-3 text-center">
+                <p className="font-display text-2xl font-black text-primary leading-none">{value}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{label}</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl overflow-hidden bg-secondary text-white">
         <div className="px-8 py-10 flex items-center gap-5">

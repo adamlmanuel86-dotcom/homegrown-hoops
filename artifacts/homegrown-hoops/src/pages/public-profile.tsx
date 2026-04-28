@@ -67,21 +67,27 @@ export function PublicProfilePage() {
   // ── Career totals for Legacy Score ─────────────────────────────────────────
   // All game stats are permanently in the DB — allSeasonStats (no season filter)
   // already covers every season a player has ever played.
-  const careerGames = allSeasonStats?.gamesPlayed ?? 0;
-  const careerPoints = allSeasonStats?.totalPoints ?? 0;
-  const careerRebounds = allSeasonStats?.totalRebounds ?? 0;
-  const careerAssists = allSeasonStats?.totalAssists ?? 0;
+  const careerGames     = allSeasonStats?.gamesPlayed    ?? 0;
+  const careerPoints    = allSeasonStats?.totalPoints    ?? 0;
+  const careerRebounds  = allSeasonStats?.totalRebounds  ?? 0;
+  const careerAssists   = allSeasonStats?.totalAssists   ?? 0;
+  const careerSteals    = allSeasonStats?.totalSteals    ?? 0;
+  const careerBlocks    = allSeasonStats?.totalBlocks    ?? 0;
+  const careerTurnovers = allSeasonStats?.totalTurnovers ?? 0;
 
   const careerTotalsForCard =
     careerGames > 0
       ? {
-          gamesPlayed: careerGames,
-          totalPoints: careerPoints,
-          totalRebounds: careerRebounds,
-          totalAssists: careerAssists,
-          avgPoints: careerPoints / careerGames,
-          avgRebounds: careerRebounds / careerGames,
-          avgAssists: careerAssists / careerGames,
+          gamesPlayed:    careerGames,
+          totalPoints:    careerPoints,
+          totalRebounds:  careerRebounds,
+          totalAssists:   careerAssists,
+          totalSteals:    careerSteals,
+          totalBlocks:    careerBlocks,
+          totalTurnovers: careerTurnovers,
+          avgPoints:    careerPoints   / careerGames,
+          avgRebounds:  careerRebounds / careerGames,
+          avgAssists:   careerAssists  / careerGames,
         }
       : undefined;
 
@@ -89,26 +95,38 @@ export function PublicProfilePage() {
   const displayStats = selectedSeason
     ? seasonStats && seasonStats.gamesPlayed > 0
       ? {
-          avgPoints: seasonStats.avgPoints,
-          avgRebounds: seasonStats.avgRebounds,
-          avgAssists: seasonStats.avgAssists,
-          avgThreesMade: seasonStats.avgThreesMade,
-          gamesPlayed: seasonStats.gamesPlayed,
-          totalPoints: seasonStats.totalPoints,
-          totalRebounds: seasonStats.totalRebounds,
-          totalAssists: seasonStats.totalAssists,
+          avgPoints:      seasonStats.avgPoints,
+          avgRebounds:    seasonStats.avgRebounds,
+          avgAssists:     seasonStats.avgAssists,
+          avgThreesMade:  seasonStats.avgThreesMade,
+          avgSteals:      seasonStats.avgSteals,
+          avgBlocks:      seasonStats.avgBlocks,
+          avgTurnovers:   seasonStats.avgTurnovers,
+          gamesPlayed:    seasonStats.gamesPlayed,
+          totalPoints:    seasonStats.totalPoints,
+          totalRebounds:  seasonStats.totalRebounds,
+          totalAssists:   seasonStats.totalAssists,
+          totalSteals:    seasonStats.totalSteals,
+          totalBlocks:    seasonStats.totalBlocks,
+          totalTurnovers: seasonStats.totalTurnovers,
         }
       : undefined
     : allSeasonStats && allSeasonStats.gamesPlayed > 0
     ? {
-        avgPoints: allSeasonStats.avgPoints,
-        avgRebounds: allSeasonStats.avgRebounds,
-        avgAssists: allSeasonStats.avgAssists,
-        avgThreesMade: allSeasonStats.avgThreesMade,
-        gamesPlayed: allSeasonStats.gamesPlayed,
-        totalPoints: allSeasonStats.totalPoints,
-        totalRebounds: allSeasonStats.totalRebounds,
-        totalAssists: allSeasonStats.totalAssists,
+        avgPoints:      allSeasonStats.avgPoints,
+        avgRebounds:    allSeasonStats.avgRebounds,
+        avgAssists:     allSeasonStats.avgAssists,
+        avgThreesMade:  allSeasonStats.avgThreesMade,
+        avgSteals:      allSeasonStats.avgSteals,
+        avgBlocks:      allSeasonStats.avgBlocks,
+        avgTurnovers:   allSeasonStats.avgTurnovers,
+        gamesPlayed:    allSeasonStats.gamesPlayed,
+        totalPoints:    allSeasonStats.totalPoints,
+        totalRebounds:  allSeasonStats.totalRebounds,
+        totalAssists:   allSeasonStats.totalAssists,
+        totalSteals:    allSeasonStats.totalSteals,
+        totalBlocks:    allSeasonStats.totalBlocks,
+        totalTurnovers: allSeasonStats.totalTurnovers,
       }
     : undefined;
 
@@ -356,6 +374,35 @@ export function PublicProfilePage() {
             secondaryColor={team?.secondaryColor ?? "#1E3A5F"}
           />
         </div>
+
+        {/* STL / BLK / TOV stat block */}
+        {displayStats && (
+          <div
+            style={{
+              borderRadius: 16,
+              background: "hsl(220, 36%, 10%)",
+              padding: "16px 20px",
+              marginBottom: 24,
+            }}
+          >
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(215, 16%, 45%)", marginBottom: 12 }}>
+              Defensive &amp; Ball Stats · {selectedSeason ?? "Career · All Seasons"}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              {[
+                { label: "SPG",  value: displayStats.avgSteals?.toFixed(1) ?? "—",    sub: `${displayStats.totalSteals ?? 0} total` },
+                { label: "BPG",  value: displayStats.avgBlocks?.toFixed(1) ?? "—",    sub: `${displayStats.totalBlocks ?? 0} total` },
+                { label: "TOPG", value: displayStats.avgTurnovers?.toFixed(1) ?? "—", sub: `${displayStats.totalTurnovers ?? 0} total` },
+              ].map(({ label, value, sub }) => (
+                <div key={label} style={{ borderRadius: 12, background: "hsl(220, 28%, 14%)", padding: "12px 8px", textAlign: "center" }}>
+                  <p style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: 22, fontWeight: 900, color: "hsl(22, 78%, 60%)", lineHeight: 1, margin: 0 }}>{value}</p>
+                  <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(215, 16%, 45%)", marginTop: 4 }}>{label}</p>
+                  <p style={{ fontSize: 9, color: "hsl(215, 16%, 35%)", marginTop: 2 }}>{sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Name / info block */}
         <div

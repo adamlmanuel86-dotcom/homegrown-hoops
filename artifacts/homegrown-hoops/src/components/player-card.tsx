@@ -25,6 +25,9 @@ export type CardStats = {
   totalPoints?: number;
   totalRebounds?: number;
   totalAssists?: number;
+  totalSteals?: number;
+  totalBlocks?: number;
+  totalTurnovers?: number;
 };
 
 export type CardProfile = {
@@ -141,6 +144,9 @@ function LegacyScorePopup({
     pts: number; ptLP: number;
     reb: number; rebLP: number;
     ast: number; astLP: number;
+    stl: number; stlLP: number;
+    blk: number; blkLP: number;
+    tov: number; tovLP: number;
     stamps: number; stampLP: number;
     tides: number; tideLP: number;
   };
@@ -151,6 +157,9 @@ function LegacyScorePopup({
     { label: `${breakdown.pts} Career Points`, value: "×10", lp: breakdown.ptLP, color: "#F97316" },
     { label: `${breakdown.reb} Career Rebounds`, value: "×15", lp: breakdown.rebLP, color: "#38BDF8" },
     { label: `${breakdown.ast} Career Assists`, value: "×20", lp: breakdown.astLP, color: "#34D399" },
+    { label: `${breakdown.stl} Career Steals`, value: "×35", lp: breakdown.stlLP, color: "#A78BFA" },
+    { label: `${breakdown.blk} Career Blocks`, value: "×35", lp: breakdown.blkLP, color: "#6366F1" },
+    { label: `${breakdown.tov} Career Turnovers`, value: "×(−10)", lp: breakdown.tovLP, color: "#EF4444" },
     { label: `${breakdown.stamps} Stamps Earned`, value: "×200", lp: breakdown.stampLP, color: "#FBBF24" },
     { label: `${breakdown.tides} Tides Earned`, value: "×1,000", lp: breakdown.tideLP, color: "#A78BFA" },
   ];
@@ -261,7 +270,7 @@ export function PlayerCard({
   }
 
   // Legacy Score formula:
-  //   games×25 + pts×10 + reb×15 + ast×20 + uniqueStamps×200 + tides×1000
+  //   games×25 + pts×10 + reb×15 + ast×20 + stl×35 + blk×35 + tov×(−10) + uniqueStamps×200 + tides×1000
   // careerTotals is used for the score when provided (career-based, never decreases).
   // profile.tides and profile.stamps are ALWAYS career-wide (all seasons combined).
   const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
@@ -269,20 +278,26 @@ export function PlayerCard({
   const archetypeKey = profile.archetype ?? "Uncharted";
 
   const lp = careerTotals ?? stats;
-  const gameLP  = (lp?.gamesPlayed   ?? 0) * 25;
-  const ptLP    = (lp?.totalPoints   ?? 0) * 10;
-  const rebLP   = (lp?.totalRebounds ?? 0) * 15;
-  const astLP   = (lp?.totalAssists  ?? 0) * 20;
+  const gameLP  = (lp?.gamesPlayed    ?? 0) * 25;
+  const ptLP    = (lp?.totalPoints    ?? 0) * 10;
+  const rebLP   = (lp?.totalRebounds  ?? 0) * 15;
+  const astLP   = (lp?.totalAssists   ?? 0) * 20;
+  const stlLP   = (lp?.totalSteals    ?? 0) * 35;
+  const blkLP   = (lp?.totalBlocks    ?? 0) * 35;
+  const tovLP   = (lp?.totalTurnovers ?? 0) * -10;
   const stampLP = uniqueStampCount * 200;
   const tideLP  = totalTides * 1000;
 
-  const legacyScore = gameLP + ptLP + rebLP + astLP + stampLP + tideLP;
+  const legacyScore = gameLP + ptLP + rebLP + astLP + stlLP + blkLP + tovLP + stampLP + tideLP;
 
   const legacyBreakdown = {
-    games: lp?.gamesPlayed  ?? 0, gameLP,
-    pts:   lp?.totalPoints  ?? 0, ptLP,
+    games: lp?.gamesPlayed   ?? 0, gameLP,
+    pts:   lp?.totalPoints   ?? 0, ptLP,
     reb:   lp?.totalRebounds ?? 0, rebLP,
     ast:   lp?.totalAssists  ?? 0, astLP,
+    stl:   lp?.totalSteals   ?? 0, stlLP,
+    blk:   lp?.totalBlocks   ?? 0, blkLP,
+    tov:   lp?.totalTurnovers ?? 0, tovLP,
     stamps: uniqueStampCount, stampLP,
     tides:  totalTides, tideLP,
   };

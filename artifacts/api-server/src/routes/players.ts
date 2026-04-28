@@ -141,6 +141,9 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
       totalRebounds: 0,
       totalAssists: 0,
       totalThreesMade: 0,
+      totalSteals: 0,
+      totalBlocks: 0,
+      totalTurnovers: 0,
       avgPoints: 0,
       avgRebounds: 0,
       avgAssists: 0,
@@ -167,9 +170,13 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
   const totalAssists  = astRows.reduce((s, r)   => s + (r.assists   ?? 0), 0);
   const total3m       = threeRows.reduce((s, r) => s + (r.threesMade ?? 0), 0);
 
-  const totalSteals    = rows.reduce((s, r) => s + r.steals, 0);
-  const totalBlocks    = rows.reduce((s, r) => s + r.blocks, 0);
-  const totalTurnovers = rows.reduce((s, r) => s + r.turnovers, 0);
+  const stlRows = rows.filter(r => r.steals    !== null);
+  const blkRows = rows.filter(r => r.blocks    !== null);
+  const tovRows = rows.filter(r => r.turnovers !== null);
+
+  const totalSteals    = stlRows.reduce((s, r) => s + (r.steals    ?? 0), 0);
+  const totalBlocks    = blkRows.reduce((s, r) => s + (r.blocks    ?? 0), 0);
+  const totalTurnovers = tovRows.reduce((s, r) => s + (r.turnovers ?? 0), 0);
   const totalMinutes   = rows.reduce((s, r) => s + r.minutesPlayed, 0);
   const totalFgm  = rows.reduce((s, r) => s + r.fieldGoalsMade, 0);
   const totalFga  = rows.reduce((s, r) => s + r.fieldGoalsAttempted, 0);
@@ -191,9 +198,12 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
     avgRebounds:   rebRows.length   > 0 ? round1(totalRebounds / rebRows.length)   : 0,
     avgAssists:    astRows.length   > 0 ? round1(totalAssists  / astRows.length)   : 0,
     avgThreesMade: threeRows.length > 0 ? round1(total3m       / threeRows.length) : 0,
-    avgSteals:    round1(totalSteals    / gamesPlayed),
-    avgBlocks:    round1(totalBlocks    / gamesPlayed),
-    avgTurnovers: round1(totalTurnovers / gamesPlayed),
+    totalSteals,
+    totalBlocks,
+    totalTurnovers,
+    avgSteals:    stlRows.length > 0 ? round1(totalSteals    / stlRows.length) : 0,
+    avgBlocks:    blkRows.length > 0 ? round1(totalBlocks    / blkRows.length) : 0,
+    avgTurnovers: tovRows.length > 0 ? round1(totalTurnovers / tovRows.length) : 0,
     avgMinutes:   round1(totalMinutes   / gamesPlayed),
     fieldGoalPct:  pct(totalFgm, totalFga),
     threePointPct: pct(total3m,  total3a),
