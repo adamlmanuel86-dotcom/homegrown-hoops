@@ -114,9 +114,9 @@ export const STAMPS: {
     label: "Sure Hands",
     icon: Grip,
     color: "#10B981",
-    description: "Took care of the ball all season. Averaged fewer than 1 turnover per game — a mark of decision-making and ball security.",
-    howToEarn: "Average fewer than 1 turnover per game for the season (minimum 1 game with turnovers recorded).",
-    threshold: "Avg < 1 turnover per game for the season",
+    description: "Handled the ball without giving it away. Recorded zero turnovers in a single game.",
+    howToEarn: "Record zero turnovers in a single game.",
+    threshold: "0 turnovers in one game",
   },
 ];
 
@@ -240,6 +240,16 @@ export const TIDES: {
     description: "Led the team in combined assists and steals for the season — making plays on both ends of the floor.",
     howToEarn: "Finish the season with the highest combined total of assists and steals on the team.",
     threshold: "Most combined assists + steals for the season",
+  },
+  {
+    id: "dead_calm",
+    label: "Dead Calm",
+    icon: Wind,
+    color: "#67E8F9",
+    glow: "rgba(103,232,249,0.25)",
+    description: "The steadiest hands in the league. Finished the season with the lowest turnovers per game average — nothing rattles this player.",
+    howToEarn: "Finish the season with the lowest turnovers per game average on the team (minimum 5 games played).",
+    threshold: "Lowest avg turnovers per game — min 5 games played",
   },
 ];
 

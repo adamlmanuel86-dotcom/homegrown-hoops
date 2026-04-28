@@ -60,6 +60,7 @@ const AUTO_TIDE_IDS = [
   "rip_tide",
   "the_wall",
   "all_tide",
+  "dead_calm",
 ] as const;
 type AutoTideId = (typeof AUTO_TIDE_IDS)[number];
 
@@ -211,23 +212,10 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
         newStamps.push({ id, earnedAt: row.gameDate });
       }
     }
-  }
 
-  // Sure Hands — seasonal stamp: avg < 1 turnover per game
-  // Group rows by season, then check the average for each
-  const bySeason = new Map<string, { turnovers: number[]; lastDate: string }>();
-  for (const row of rows) {
-    if (row.turnovers === null) continue; // skip games with unknown turnovers
-    if (!bySeason.has(row.season)) bySeason.set(row.season, { turnovers: [], lastDate: row.gameDate });
-    const entry = bySeason.get(row.season)!;
-    entry.turnovers.push(row.turnovers);
-    if (row.gameDate > entry.lastDate) entry.lastDate = row.gameDate;
-  }
-  for (const [, entry] of bySeason) {
-    if (entry.turnovers.length === 0) continue;
-    const avgTov = entry.turnovers.reduce((s, n) => s + n, 0) / entry.turnovers.length;
-    if (avgTov < 1) {
-      newStamps.push({ id: "sure_hands", earnedAt: entry.lastDate });
+    // Sure Hands — per-game: turnovers explicitly recorded as zero (not null/unknown)
+    if (row.turnovers !== null && row.turnovers === 0) {
+      newStamps.push({ id: "sure_hands", earnedAt: row.gameDate });
     }
   }
 
@@ -248,16 +236,17 @@ export async function recalculateTides(season: string): Promise<void> {
     firstName: string;
     lastName: string;
     avgPoints: number;
-  totalPoints: number;
+    totalPoints: number;
     totalRebounds: number;
     totalAssists: number;
     totalSteals: number;
     totalBlocks: number;
-  highestGamePoints: number;
+    highestGamePoints: number;
     stdDevPoints: number;
     improvement: number;
     composite: number;
-  gamesPlayed: number;
+    gamesPlayed: number;
+    avgTurnovers: number;
   };
 
   const metrics: Metrics[] = playerStats.map((p) => {
@@ -266,6 +255,7 @@ export async function recalculateTides(season: string): Promise<void> {
     const ast = p.games.map((g) => g.assists);
     const stl = p.games.map((g) => g.steals);
     const blk = p.games.map((g) => g.blocks);
+    const tov = p.games.map((g) => g.turnovers);
     const dates = p.games.map((g) => g.gameDate);
     const avgPts = mean(pts);
     const avgReb = mean(reb);
@@ -284,12 +274,14 @@ export async function recalculateTides(season: string): Promise<void> {
       improvement: halfImprovement(dates, pts),
       composite: avgPts + avgReb + avgAst,
       gamesPlayed: p.games.length,
+      avgTurnovers: mean(tov),
     };
   });
 
-  function topOf(key: (m: Metrics) => number): Metrics | null {
-    if (metrics.length === 0) return null;
-    return metrics.reduce((best, m) => (key(m) > key(best) ? m : best));
+  function topOf(key: (m: Metrics) => number, filter?: (m: Metrics) => boolean): Metrics | null {
+    const pool = filter ? metrics.filter(filter) : metrics;
+    if (pool.length === 0) return null;
+    return pool.reduce((best, m) => (key(m) > key(best) ? m : best));
   }
 
   const winners: Record<AutoTideId, Metrics | null> = {
@@ -304,6 +296,8 @@ export async function recalculateTides(season: string): Promise<void> {
     rip_tide:    topOf((m) => m.totalSteals),
     the_wall:    topOf((m) => m.totalBlocks),
     all_tide:    topOf((m) => m.totalAssists + m.totalSteals),
+    // Dead Calm: lowest avg turnovers, min 5 games played to qualify
+    dead_calm:   topOf((m) => -m.avgTurnovers, (m) => m.gamesPlayed >= 5),
   };
 
   const today = new Date().toISOString().split("T")[0];
@@ -465,6 +459,7 @@ const TIDE_LABELS: Record<string, string> = {
   rip_tide:    "Rip Tide",
   the_wall:    "The Wall",
   all_tide:    "All Tide",
+  dead_calm:   "Dead Calm",
 };
 
 export async function getTeamCurrentSeason(teamId: number): Promise<string | null> {
@@ -499,6 +494,7 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
     const ast   = p.games.map((g) => g.assists);
     const stl   = p.games.map((g) => g.steals);
     const blk   = p.games.map((g) => g.blocks);
+    const tov   = p.games.map((g) => g.turnovers);
     const dates = p.games.map((g) => g.gameDate);
     const m     = mean(pts);
     const maxDev = pts.length ? Math.max(...pts.map((v) => Math.abs(v - m))) : 0;
@@ -516,6 +512,7 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
       improvement:       halfImprovement(dates, pts),
       composite:         mean(pts) + mean(reb) + mean(ast),
       gamesPlayed:       p.games.length,
+      avgTurnovers:      mean(tov),
     };
   });
 
@@ -587,6 +584,22 @@ async function computeTeamTideWinners(teamId: number, season: string): Promise<T
       tideLabel: "Shoreline",
       playerName: `${w.firstName} ${w.lastName}`,
     });
+  }
+
+  // Dead Calm: player(s) with the lowest avg turnovers — minimum 5 games played
+  const deadCalmPool = metrics.filter((m) => m.gamesPlayed >= 5);
+  if (deadCalmPool.length > 0) {
+    const bestAvgTov = Math.min(...deadCalmPool.map((m) => m.avgTurnovers));
+    const deadCalmWinners = deadCalmPool.filter(
+      (m) => Math.abs(m.avgTurnovers - bestAvgTov) <= 1e-10
+    );
+    for (const w of deadCalmWinners) {
+      results.push({
+        tideId: "dead_calm",
+        tideLabel: "Dead Calm",
+        playerName: `${w.firstName} ${w.lastName}`,
+      });
+    }
   }
 
   return results;
