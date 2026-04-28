@@ -14,7 +14,7 @@ import {
   useUpsertGamePlayerStats,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play } from "lucide-react";
+import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play, ExternalLink, Film, Youtube } from "lucide-react";
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -62,6 +62,10 @@ export function GameDetailPage() {
   });
 
   const [editingScore, setEditingScore] = useState(false);
+  const [editingFilmInfo, setEditingFilmInfo] = useState(false);
+  const [notesInput, setNotesInput] = useState("");
+  const [externalUrlInput, setExternalUrlInput] = useState("");
+  const [filmSaveError, setFilmSaveError] = useState<string | null>(null);
   const [confirmingDeleteStatPlayerId, setConfirmingDeleteStatPlayerId] = useState<number | null>(null);
   const [deletingStatPlayerId, setDeletingStatPlayerId] = useState<number | null>(null);
   const [deleteModalPlayerId, setDeleteModalPlayerId] = useState<number | null>(null);
@@ -287,6 +291,35 @@ export function GameDetailPage() {
     setAwayScoreInput(game?.awayScore != null ? String(game.awayScore) : "");
     setScoreError(null);
     setEditingScore(true);
+  }
+
+  function openFilmInfoEditor() {
+    setNotesInput(game?.notes ?? "");
+    setExternalUrlInput(game?.externalUrl ?? "");
+    setFilmSaveError(null);
+    setEditingFilmInfo(true);
+  }
+
+  async function handleFilmInfoSave(e: React.FormEvent) {
+    e.preventDefault();
+    const url = externalUrlInput.trim();
+    if (url && !/^https?:\/\/.+/.test(url)) {
+      setFilmSaveError("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+    try {
+      await updateGame.mutateAsync({
+        id,
+        data: {
+          notes: notesInput.trim() || null,
+          externalUrl: url || null,
+        },
+      });
+      await qc.invalidateQueries({ queryKey: [`/api/games/${id}`] });
+      setEditingFilmInfo(false);
+    } catch {
+      setFilmSaveError("Failed to save. Please try again.");
+    }
   }
 
   async function handleScoreSave(e: React.FormEvent) {
@@ -1099,10 +1132,107 @@ export function GameDetailPage() {
         </div>
       )}
 
-      {game.notes && (
-        <div className="card-base p-5">
-          <p className="label-upper mb-2">Notes</p>
-          <p className="text-sm text-muted-foreground">{game.notes}</p>
+      {/* ── Game Film Info (admin edit form) ── */}
+      {isAdmin && editingFilmInfo && (
+        <form onSubmit={handleFilmInfoSave} className="card-base p-6 space-y-5 border-primary/40">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-xl text-secondary">GAME FILM INFO</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">Add a note or link to externally hosted game footage.</p>
+            </div>
+            <button type="button" onClick={() => setEditingFilmInfo(false)} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="label-upper block mb-2">External Video URL</label>
+              <input
+                type="text"
+                value={externalUrlInput}
+                onChange={(e) => { setExternalUrlInput(e.target.value); setFilmSaveError(null); }}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="w-full border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+              <p className="text-xs text-muted-foreground mt-1">YouTube links show a "Watch on YouTube" button. Any other URL shows a "Watch Film" link.</p>
+            </div>
+            <div>
+              <label className="label-upper block mb-2">Game Notes</label>
+              <textarea
+                value={notesInput}
+                onChange={(e) => setNotesInput(e.target.value)}
+                placeholder="Optional notes about this game..."
+                rows={3}
+                className="w-full border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all resize-none"
+              />
+            </div>
+          </div>
+          {filmSaveError && <p className="text-red-500 text-sm font-medium">{filmSaveError}</p>}
+          <div className="flex gap-3">
+            <button type="submit" disabled={updateGame.isPending} className="btn-primary">
+              <Save className="h-4 w-4" />
+              {updateGame.isPending ? "Saving..." : "Save"}
+            </button>
+            <button type="button" onClick={() => setEditingFilmInfo(false)} className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-border hover:bg-muted transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* ── Game Film Available display ── */}
+      {(game.notes || game.externalUrl) && (
+        <div className="card-base p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(249,115,22,0.15)" }}>
+                <Film className="h-4 w-4 text-primary" />
+              </div>
+              <p className="font-bold text-secondary text-sm uppercase tracking-wide">Game Film Available</p>
+            </div>
+            {isAdmin && !editingFilmInfo && (
+              <button
+                onClick={openFilmInfoEditor}
+                className="flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Pencil className="h-3 w-3" /> Edit
+              </button>
+            )}
+          </div>
+          {game.notes && (
+            <p className="text-sm text-muted-foreground leading-relaxed">{game.notes}</p>
+          )}
+          {game.externalUrl && (() => {
+            const isYouTube = /youtube\.com|youtu\.be/.test(game.externalUrl);
+            return (
+              <a
+                href={game.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={isYouTube
+                  ? { background: "#FF0000", color: "#fff" }
+                  : { background: "hsl(220 28% 16%)", color: "hsl(215 16% 85%)", border: "1px solid hsl(220 28% 22%)" }
+                }
+              >
+                {isYouTube ? <Youtube className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                {isYouTube ? "Watch on YouTube" : "Watch Film"}
+              </a>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── Admin: add film info button (shown only when no film info exists yet) ── */}
+      {isAdmin && !editingFilmInfo && !game.notes && !game.externalUrl && (
+        <div className="flex justify-center">
+          <button
+            onClick={openFilmInfoEditor}
+            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white/50 hover:text-white transition-colors px-4 py-2 rounded-lg border border-white/10 hover:border-white/30"
+          >
+            <Film className="h-3.5 w-3.5" />
+            Add Game Film Info
+          </button>
         </div>
       )}
 

@@ -156,6 +156,8 @@ export interface Game {
   status: GameStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  externalUrl?: string | null;
   createdAt: string;
 }
 
@@ -182,6 +184,8 @@ export interface CreateGameBody {
   status: CreateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  externalUrl?: string | null;
 }
 
 export type UpdateGameBodyStatus =
@@ -205,6 +209,8 @@ export interface UpdateGameBody {
   status?: UpdateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  externalUrl?: string | null;
 }
 
 export interface GamePlayerStat {

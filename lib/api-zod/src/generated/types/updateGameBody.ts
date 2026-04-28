@@ -19,4 +19,6 @@ export interface UpdateGameBody {
   status?: UpdateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  externalUrl?: string | null;
 }

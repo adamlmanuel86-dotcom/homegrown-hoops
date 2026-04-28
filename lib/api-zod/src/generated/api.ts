@@ -254,6 +254,7 @@ export const ListGamesResponseItem = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
+  externalUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 export const ListGamesResponse = zod.array(ListGamesResponseItem);
@@ -271,6 +272,7 @@ export const CreateGameBody = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
+  externalUrl: zod.string().nullish(),
 });
 
 /**
@@ -291,6 +293,7 @@ export const GetGameResponse = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
+  externalUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -309,6 +312,7 @@ export const UpdateGameBody = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]).optional(),
   notes: zod.string().nullish(),
+  externalUrl: zod.string().nullish(),
 });
 
 export const UpdateGameResponse = zod.object({
@@ -322,6 +326,7 @@ export const UpdateGameResponse = zod.object({
   location: zod.string().nullish(),
   status: zod.enum(["scheduled", "in_progress", "final"]),
   notes: zod.string().nullish(),
+  externalUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -479,6 +484,7 @@ export const GetStatsSummaryResponse = zod.object({
       location: zod.string().nullish(),
       status: zod.enum(["scheduled", "in_progress", "final"]),
       notes: zod.string().nullish(),
+      externalUrl: zod.string().nullish(),
       createdAt: zod.string(),
     }),
   ),

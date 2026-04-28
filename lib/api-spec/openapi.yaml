@@ -957,6 +957,8 @@ components:
           enum: [scheduled, in_progress, final]
         notes:
           type: ["string", "null"]
+        externalUrl:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -990,6 +992,8 @@ components:
           enum: [scheduled, in_progress, final]
         notes:
           type: ["string", "null"]
+        externalUrl:
+          type: ["string", "null"]
       required:
         - homeTeamId
         - awayTeamId
@@ -1014,6 +1018,8 @@ components:
           type: string
           enum: [scheduled, in_progress, final]
         notes:
+          type: ["string", "null"]
+        externalUrl:
           type: ["string", "null"]
 
     GamePlayerStat:

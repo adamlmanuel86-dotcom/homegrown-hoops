@@ -21,4 +21,6 @@ export interface CreateGameBody {
   status: CreateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  externalUrl?: string | null;
 }

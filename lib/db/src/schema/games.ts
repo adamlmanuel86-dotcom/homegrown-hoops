@@ -16,6 +16,7 @@ export const gamesTable = pgTable("games", {
   location: text("location"),
   status: gameStatusEnum("status").notNull().default("scheduled"),
   notes: text("notes"),
+  externalUrl: text("external_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

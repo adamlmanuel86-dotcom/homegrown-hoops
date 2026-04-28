@@ -22,5 +22,7 @@ export interface Game {
   status: GameStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  externalUrl?: string | null;
   createdAt: string;
 }
