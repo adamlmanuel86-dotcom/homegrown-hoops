@@ -251,6 +251,11 @@ export function PlayerCard({
   const earnedStamps = STAMPS.filter((s) => earnedIds.has(s.id));
   const unearnedStamps = STAMPS.filter((s) => !earnedIds.has(s.id));
 
+  const stampCountMap = new Map<string, number>();
+  for (const s of profile.stamps ?? []) {
+    stampCountMap.set(s.id, (stampCountMap.get(s.id) ?? 0) + 1);
+  }
+
   const sortedEarned = [...earnedStamps].sort((a, b) => {
     const aDate = profile.stamps?.find((s) => s.id === a.id)?.earnedAt ?? "";
     const bDate = profile.stamps?.find((s) => s.id === b.id)?.earnedAt ?? "";
@@ -638,23 +643,49 @@ export function PlayerCard({
             <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
               {displayStamps.map(({ stamp, earned }) => {
                 const Icon = stamp.icon;
+                const count = earned ? (stampCountMap.get(stamp.id) ?? 1) : 0;
                 return (
                   <div
                     key={stamp.id}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
-                      border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: earned ? 1 : 0.3,
-                      boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
-                    }}
+                    style={{ position: "relative", display: "inline-flex" }}
                   >
-                    <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
+                        border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        opacity: earned ? 1 : 0.3,
+                        boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
+                      }}
+                    >
+                      <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                    </div>
+                    {count >= 2 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: -3,
+                          right: -3,
+                          background: "#F97316",
+                          color: "#fff",
+                          fontSize: 7,
+                          fontWeight: 800,
+                          lineHeight: 1,
+                          padding: "1.5px 3px",
+                          borderRadius: 4,
+                          letterSpacing: "0.02em",
+                          pointerEvents: "none",
+                          border: "1px solid hsl(222,42%,9%)",
+                        }}
+                      >
+                        ×{count}
+                      </div>
+                    )}
                   </div>
                 );
               })}
