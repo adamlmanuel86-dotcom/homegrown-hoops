@@ -1,0 +1,24 @@
+# railway.toml — Homegrown Hoops deployment configuration
+#
+# This file configures the API server service on Railway.
+# The React frontend is a separate static-site service (see notes below).
+#
+# ─── One-time setup required in the Railway dashboard ────────────────────────
+# 1. Create a new Railway project.
+# 2. Add a PostgreSQL database plugin — Railway will auto-inject DATABASE_URL.
+# 3. Add a service for this repo (points to the monorepo root).
+#    Set the root directory to "/" and Railway will use this file.
+# 4. Add a second service for the frontend (or deploy dist/ to a static host).
+# 5. Set all environment variables from .env.example on each service.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @workspace/db run push && pnpm --filter @workspace/api-server run build"
+
+[deploy]
+startCommand = "pnpm --filter @workspace/api-server run start"
+healthcheckPath = "/api/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
