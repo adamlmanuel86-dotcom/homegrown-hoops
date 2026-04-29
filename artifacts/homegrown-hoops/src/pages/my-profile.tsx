@@ -6,6 +6,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 
+const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 2);
 
@@ -100,20 +102,24 @@ export function MyProfilePage() {
 
   async function uploadPhoto(file: File): Promise<string | null> {
     try {
-      const urlRes = await fetch("/api/storage/uploads/request-url", {
+      const sigRes = await fetch(`${BASE_URL}/api/cloudinary/profile-signature`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
       });
-      if (!urlRes.ok) return null;
-      const { uploadURL, objectPath } = await urlRes.json();
-      const putRes = await fetch(uploadURL, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
+      if (!sigRes.ok) return null;
+      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", String(timestamp));
+      formData.append("signature", signature);
+      formData.append("folder", folder);
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
       });
-      if (!putRes.ok) return null;
-      return `/api/storage/objects/${objectPath.replace(/^\/objects\//, "")}`;
+      if (!uploadRes.ok) return null;
+      const data = await uploadRes.json();
+      return data.secure_url ?? null;
     } catch {
       return null;
     }
