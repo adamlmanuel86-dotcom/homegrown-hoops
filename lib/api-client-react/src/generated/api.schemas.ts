@@ -121,9 +121,16 @@ export interface PlayerStats {
   playerId: number;
   gamesPlayed: number;
   totalPoints: number;
+  totalRebounds: number;
+  totalAssists: number;
+  totalSteals: number;
+  totalBlocks: number;
+  totalTurnovers: number;
+  totalThreesMade: number;
   avgPoints: number;
   avgRebounds: number;
   avgAssists: number;
+  avgThreesMade: number;
   avgSteals: number;
   avgBlocks: number;
   avgTurnovers: number;

@@ -242,7 +242,12 @@ function LegacyScorePopup({
                     <p className="text-xs font-semibold text-white/70">{row.label}</p>
                   </div>
                   <p className="text-xs font-bold" style={{ color: row.color }}>{row.value}</p>
-                  <p className="text-xs font-bold text-white/90 w-16 text-right">+{row.lp.toLocaleString()}</p>
+                  <p
+                    className="text-xs font-bold w-16 text-right"
+                    style={{ color: row.lp < 0 ? "#EF4444" : "rgba(255,255,255,0.9)" }}
+                  >
+                    {row.lp >= 0 ? `+${row.lp.toLocaleString()}` : row.lp.toLocaleString()}
+                  </p>
                 </div>
                 {row.expandable && showMilestones && (
                   <div className="mt-1 ml-3 space-y-1">

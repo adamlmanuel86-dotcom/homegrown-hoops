@@ -898,11 +898,25 @@ components:
           type: integer
         totalPoints:
           type: integer
+        totalRebounds:
+          type: integer
+        totalAssists:
+          type: integer
+        totalSteals:
+          type: integer
+        totalBlocks:
+          type: integer
+        totalTurnovers:
+          type: integer
+        totalThreesMade:
+          type: integer
         avgPoints:
           type: number
         avgRebounds:
           type: number
         avgAssists:
+          type: number
+        avgThreesMade:
           type: number
         avgSteals:
           type: number
@@ -922,9 +936,16 @@ components:
         - playerId
         - gamesPlayed
         - totalPoints
+        - totalRebounds
+        - totalAssists
+        - totalSteals
+        - totalBlocks
+        - totalTurnovers
+        - totalThreesMade
         - avgPoints
         - avgRebounds
         - avgAssists
+        - avgThreesMade
         - avgSteals
         - avgBlocks
         - avgTurnovers
