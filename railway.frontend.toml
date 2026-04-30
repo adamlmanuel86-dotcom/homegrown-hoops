@@ -1,0 +1,27 @@
+# railway.frontend.toml — Homegrown Hoops FRONTEND service
+#
+# In the Railway dashboard → frontend service → Settings → Config file path,
+# set this to: railway.frontend.toml
+#
+# The service root directory should remain "/" (repo root) so the full
+# pnpm workspace is available during the build.
+#
+# Required environment variables for this service:
+#   VITE_CLERK_PUBLISHABLE_KEY   — your Clerk publishable key
+#   VITE_CLERK_PROXY_URL         — (optional) Clerk proxy URL
+#   VITE_API_BASE_URL            — full URL of the Railway API server service
+#                                  e.g. https://api-server-production.up.railway.app
+
+[build]
+builder = "nixpacks"
+# Install all workspace deps from the monorepo root, then build the frontend.
+buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @workspace/homegrown-hoops run build"
+
+[deploy]
+# vite preview serves the pre-built dist/public on the PORT Railway injects.
+# vite.config.ts already reads process.env.PORT for the preview server.
+startCommand = "pnpm --filter @workspace/homegrown-hoops run serve"
+# No healthcheckPath — Railway performs a TCP health check (port open = healthy).
+# A static-file preview server does not need an HTTP health endpoint.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
