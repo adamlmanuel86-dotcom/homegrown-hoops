@@ -1,4 +1,4 @@
-FROM node:22-alpine
+FROM node:22-slim
 
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
