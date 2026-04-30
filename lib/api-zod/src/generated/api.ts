@@ -614,6 +614,8 @@ export const ListProfilesResponseItem = zod.object({
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
@@ -655,6 +657,15 @@ export const ListProfilesResponseItem = zod.object({
       "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
     ),
   archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -676,6 +687,8 @@ export const GetMyProfileResponse = zod.object({
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
@@ -717,6 +730,15 @@ export const GetMyProfileResponse = zod.object({
       "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
     ),
   archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -760,6 +782,8 @@ export const UpdateMyProfileResponse = zod.object({
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
@@ -801,6 +825,15 @@ export const UpdateMyProfileResponse = zod.object({
       "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
     ),
   archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -825,6 +858,8 @@ export const GetProfileResponse = zod.object({
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
@@ -866,6 +901,15 @@ export const GetProfileResponse = zod.object({
       "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
     ),
   archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -895,6 +939,8 @@ export const UpdateProfileResponse = zod.object({
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
       id: zod.string(),
@@ -936,6 +982,15 @@ export const UpdateProfileResponse = zod.object({
       "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
     ),
   archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

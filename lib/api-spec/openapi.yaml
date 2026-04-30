@@ -1255,6 +1255,17 @@ components:
         - id
         - earnedAt
 
+    ArchetypeHistoryEntry:
+      type: object
+      properties:
+        season:
+          type: string
+        archetype:
+          type: string
+      required:
+        - season
+        - archetype
+
     UserProfile:
       type: object
       properties:
@@ -1282,6 +1293,11 @@ components:
           type: boolean
         role:
           $ref: "#/components/schemas/UserRole"
+        avatarUrl:
+          type: ["string", "null"]
+        number:
+          type: ["string", "null"]
+          description: "Player jersey number"
         stamps:
           type: array
           items:
@@ -1297,6 +1313,12 @@ components:
           description: "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed."
         archetype:
           type: ["string", "null"]
+        archetypeHistory:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ArchetypeHistoryEntry"
+          description: "Per-season archetype history, archived at season end."
         createdAt:
           type: string
         updatedAt:

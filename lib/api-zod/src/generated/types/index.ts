@@ -9,6 +9,7 @@
 export * from "./addGameVideoBody";
 export * from "./adminUpdateProfileBody";
 export * from "./adminUserListItem";
+export * from "./archetypeHistoryEntry";
 export * from "./createGameBody";
 export * from "./createGameBodyStatus";
 export * from "./createPlayerBody";

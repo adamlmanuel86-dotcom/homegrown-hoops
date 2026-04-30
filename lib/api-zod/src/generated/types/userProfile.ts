@@ -5,6 +5,7 @@
  * Homegrown Hoops Basketball Stats Tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { ArchetypeHistoryEntry } from "./archetypeHistoryEntry";
 import type { RecognitionEntry } from "./recognitionEntry";
 import type { UserRole } from "./userRole";
 
@@ -26,12 +27,21 @@ export interface UserProfile {
   verified: boolean;
   isAdmin: boolean;
   role: UserRole;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /**
+   * Player jersey number
+   * @nullable
+   */
+  number?: string | null;
   stamps: RecognitionEntry[];
   tides: RecognitionEntry[];
   /** Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed. */
   milestones: RecognitionEntry[];
   /** @nullable */
   archetype?: string | null;
+  /** Per-season archetype history, archived at season end. */
+  archetypeHistory?: ArchetypeHistoryEntry[] | null;
   createdAt: string;
   updatedAt: string;
 }
