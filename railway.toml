@@ -17,7 +17,7 @@ builder = "nixpacks"
 buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build"
 
 [deploy]
-startCommand = "pnpm --filter @workspace/db run push && pnpm --filter @workspace/api-server run start"
+startCommand = "pnpm --filter @workspace/db run push-force && pnpm --filter @workspace/api-server run start"
 healthcheckPath = "/api/healthz"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
