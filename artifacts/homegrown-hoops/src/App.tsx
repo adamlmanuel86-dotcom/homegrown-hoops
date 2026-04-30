@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { ClerkProvider, ClerkLoading, ClerkLoaded, SignIn, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -296,11 +296,17 @@ function ClerkProviderWithRoutes() {
         </div>
       </ClerkLoading>
       <ClerkLoaded>
-        <QueryClientProvider client={queryClient}>
-          <ClerkQueryClientCacheInvalidator />
-          <Router />
-          <ServerStatusBanner />
-        </QueryClientProvider>
+        <Suspense fallback={
+          <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e", color: "#fb923c", fontFamily: "monospace", fontSize: "1.1rem" }}>
+            Loading app…
+          </div>
+        }>
+          <QueryClientProvider client={queryClient}>
+            <ClerkQueryClientCacheInvalidator />
+            <Router />
+            <ServerStatusBanner />
+          </QueryClientProvider>
+        </Suspense>
       </ClerkLoaded>
     </ClerkProvider>
   );
