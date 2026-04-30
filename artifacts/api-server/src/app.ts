@@ -30,7 +30,35 @@ app.use(
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+const ALLOWED_ORIGINS = [
+  "https://homegrown-hoops.vercel.app",
+  // Additional origins from env (comma-separated), e.g. Railway preview URLs
+  ...(process.env.CORS_EXTRA_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
+];
+
+app.use(
+  cors({
+    credentials: true,
+    origin(origin, callback) {
+      // Allow requests with no origin (server-to-server, mobile, curl)
+      if (!origin) return callback(null, true);
+      // Always allow any Replit or localhost origin in development
+      if (
+        origin.includes(".replit.dev") ||
+        origin.includes(".repl.co") ||
+        origin.startsWith("http://localhost") ||
+        origin.startsWith("http://127.0.0.1") ||
+        ALLOWED_ORIGINS.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origin not allowed — ${origin}`));
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
