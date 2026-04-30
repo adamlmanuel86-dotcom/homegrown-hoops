@@ -9,9 +9,24 @@ import { logger } from "./logger";
  */
 export async function runMigrations(): Promise<void> {
   logger.info("Running database migrations...");
+  console.log("[migrate] Starting migrations...");
+
+  const dbUrl = process.env["DATABASE_URL"] ?? "";
+  try {
+    const host = new URL(dbUrl).hostname;
+    console.log(`[migrate] Connecting to database host: ${host}`);
+  } catch {
+    console.log("[migrate] WARNING: Could not parse DATABASE_URL");
+  }
+
   const client = await pool.connect();
+  console.log("[migrate] Database client connected.");
 
   try {
+    // Ensure we are always operating in the public schema
+    await client.query(`SET search_path TO public;`);
+    console.log("[migrate] search_path set to public.");
+
     // ── Enum type ────────────────────────────────────────────────────────────
     await client.query(`
       DO $$ BEGIN
@@ -19,8 +34,9 @@ export async function runMigrations(): Promise<void> {
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$;
     `);
+    console.log("[migrate] game_status enum OK");
 
-    // ── teams (no foreign-key deps) ──────────────────────────────────────────
+    // ── teams ────────────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS teams (
         id               serial      PRIMARY KEY,
@@ -36,8 +52,9 @@ export async function runMigrations(): Promise<void> {
         created_at       timestamp   NOT NULL DEFAULT now()
       );
     `);
+    console.log("[migrate] teams OK");
 
-    // ── players (refs teams) ─────────────────────────────────────────────────
+    // ── players ──────────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS players (
         id           serial    PRIMARY KEY,
@@ -54,8 +71,9 @@ export async function runMigrations(): Promise<void> {
         created_at   timestamp NOT NULL DEFAULT now()
       );
     `);
+    console.log("[migrate] players OK");
 
-    // ── games (refs teams) ───────────────────────────────────────────────────
+    // ── games ────────────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS games (
         id             serial       PRIMARY KEY,
@@ -72,8 +90,9 @@ export async function runMigrations(): Promise<void> {
         created_at     timestamp    NOT NULL DEFAULT now()
       );
     `);
+    console.log("[migrate] games OK");
 
-    // ── game_player_stats (refs games + players) ─────────────────────────────
+    // ── game_player_stats ────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS game_player_stats (
         id                    serial  PRIMARY KEY,
@@ -94,8 +113,9 @@ export async function runMigrations(): Promise<void> {
         free_throws_attempted integer NOT NULL DEFAULT 0
       );
     `);
+    console.log("[migrate] game_player_stats OK");
 
-    // ── game_videos (refs games) ─────────────────────────────────────────────
+    // ── game_videos ──────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS game_videos (
         id                      serial    PRIMARY KEY,
@@ -107,8 +127,9 @@ export async function runMigrations(): Promise<void> {
         created_at              timestamp NOT NULL DEFAULT now()
       );
     `);
+    console.log("[migrate] game_videos OK");
 
-    // ── user_profiles (no foreign-key deps) ──────────────────────────────────
+    // ── user_profiles ────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
         id                serial    PRIMARY KEY,
@@ -135,8 +156,9 @@ export async function runMigrations(): Promise<void> {
         updated_at        timestamp NOT NULL DEFAULT now()
       );
     `);
+    console.log("[migrate] user_profiles OK");
 
-    // ── iso_ball_sessions (no foreign-key deps) ───────────────────────────────
+    // ── iso_ball_sessions ────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS iso_ball_sessions (
         id            serial    PRIMARY KEY,
@@ -147,8 +169,9 @@ export async function runMigrations(): Promise<void> {
         played_at     timestamp NOT NULL DEFAULT now()
       );
     `);
+    console.log("[migrate] iso_ball_sessions OK");
 
-    // ── iso_ball_daily_questions (no foreign-key deps) ────────────────────────
+    // ── iso_ball_daily_questions ─────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS iso_ball_daily_questions (
         id             serial  PRIMARY KEY,
@@ -158,9 +181,9 @@ export async function runMigrations(): Promise<void> {
         date           text    NOT NULL
       );
     `);
+    console.log("[migrate] iso_ball_daily_questions OK");
 
-    // ── Additive column migrations (idempotent, safe on existing tables) ──────
-    // These handle columns added after initial deployment.
+    // ── Additive column migrations (idempotent) ───────────────────────────────
     const addCol = (table: string, col: string, def: string) =>
       client.query(
         `ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${def};`
@@ -175,12 +198,25 @@ export async function runMigrations(): Promise<void> {
     await addCol("games",         "external_links",    "json NOT NULL DEFAULT '[]'");
     await addCol("games",         "notes",             "text");
     await addCol("teams",         "current_season",    "text");
+    console.log("[migrate] Column additions OK");
+
+    // ── Verify tables exist ───────────────────────────────────────────────────
+    const { rows } = await client.query<{ tablename: string }>(`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public'
+      ORDER BY tablename;
+    `);
+    const tableNames = rows.map((r) => r.tablename).join(", ");
+    console.log(`[migrate] Tables in public schema: ${tableNames}`);
 
     logger.info("Database migrations complete.");
+    console.log("[migrate] Done.");
   } catch (err) {
+    console.error("[migrate] ERROR:", err);
     logger.error({ err }, "Database migration failed");
     throw err;
   } finally {
     client.release();
+    console.log("[migrate] Client released.");
   }
 }
