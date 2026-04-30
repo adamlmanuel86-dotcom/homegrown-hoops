@@ -1,5 +1,5 @@
 import { useEffect, useRef, Suspense } from "react";
-import { ClerkProvider, ClerkLoading, ClerkLoaded, SignIn, Show, useClerk } from "@clerk/react";
+import { ClerkProvider, SignIn, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -126,20 +126,6 @@ const clerkAppearance = {
   },
 };
 
-// ─── Fixed status badge — remove once deployment is confirmed working ─────────
-function StatusBadge() {
-  return (
-    <div style={{
-      position: "fixed", bottom: "1rem", right: "1rem", zIndex: 99999,
-      background: "#14532d", color: "#bbf7d0", fontFamily: "monospace",
-      fontSize: "0.75rem", padding: "0.4rem 0.75rem", borderRadius: "9999px",
-      border: "1px solid #166534", pointerEvents: "none",
-    }}>
-      ✅ All providers + routes loaded
-    </div>
-  );
-}
-
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
@@ -215,25 +201,13 @@ function ClerkProviderWithRoutes() {
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
-      <ClerkLoading>
-        <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e", color: "#fb923c", fontFamily: "monospace", fontSize: "1.2rem" }}>
-          Clerk loading…
-        </div>
-      </ClerkLoading>
-      <ClerkLoaded>
-        <Suspense fallback={
-          <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e", color: "#fb923c", fontFamily: "monospace", fontSize: "1.1rem" }}>
-            Loading app…
-          </div>
-        }>
-          <QueryClientProvider client={queryClient}>
-            <ClerkQueryClientCacheInvalidator />
-            <Router />
-            <ServerStatusBanner />
-            <StatusBadge />
-          </QueryClientProvider>
-        </Suspense>
-      </ClerkLoaded>
+      <Suspense fallback={null}>
+        <QueryClientProvider client={queryClient}>
+          <ClerkQueryClientCacheInvalidator />
+          <Router />
+          <ServerStatusBanner />
+        </QueryClientProvider>
+      </Suspense>
     </ClerkProvider>
   );
 }
