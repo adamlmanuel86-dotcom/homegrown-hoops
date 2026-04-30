@@ -217,14 +217,33 @@ function ClerkProviderWithRoutes() {
   );
 }
 
+function DebugBanner() {
+  const hasKey = !!clerkPubKey;
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999,
+      background: hasKey ? "#16a34a" : "#dc2626",
+      color: "#fff", fontSize: "12px", fontFamily: "monospace",
+      padding: "4px 12px", textAlign: "center",
+    }}>
+      {hasKey
+        ? `CLERK KEY: present (${clerkPubKey.slice(0, 12)}…) | BASE_URL: "${import.meta.env.BASE_URL}" | MODE: ${import.meta.env.MODE}`
+        : "CLERK KEY: MISSING — VITE_CLERK_PUBLISHABLE_KEY not set"}
+    </div>
+  );
+}
+
 function App() {
   return (
-    <TooltipProvider>
-      <WouterRouter base={basePath}>
-        <ClerkProviderWithRoutes />
-      </WouterRouter>
-      <Toaster />
-    </TooltipProvider>
+    <>
+      <DebugBanner />
+      <TooltipProvider>
+        <WouterRouter base={basePath}>
+          <ClerkProviderWithRoutes />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </>
   );
 }
 
