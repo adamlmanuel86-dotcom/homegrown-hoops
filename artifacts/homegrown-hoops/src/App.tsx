@@ -201,7 +201,12 @@ function ClerkProviderWithRoutes() {
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
-      <Suspense fallback={null}>
+      <Suspense fallback={
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4">
+          <span className="font-display text-2xl uppercase tracking-widest text-primary">Homegrown Hoops</span>
+          <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+        </div>
+      }>
         <QueryClientProvider client={queryClient}>
           <ClerkQueryClientCacheInvalidator />
           <Router />
