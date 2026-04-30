@@ -1,3 +1,4 @@
+console.log("main.tsx executing");
 console.log("[DEBUG] VITE_CLERK_PUBLISHABLE_KEY:", import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "(undefined — not baked into bundle)");
 
 import { createRoot } from "react-dom/client";
@@ -6,6 +7,7 @@ import "./index.css";
 
 const rootEl = document.getElementById("root");
 if (rootEl) {
+  document.body.style.background = "red";
   try {
     createRoot(rootEl).render(<App />);
   } catch (err) {
