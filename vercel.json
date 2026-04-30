@@ -2,8 +2,5 @@
   "buildCommand": "pnpm --filter @workspace/homegrown-hoops run build",
   "outputDirectory": "artifacts/homegrown-hoops/dist/public",
   "installCommand": "pnpm install",
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
