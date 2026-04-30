@@ -39,7 +39,8 @@ function stripBase(path: string): string {
 }
 
 if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY in .env file");
+  console.error("[DEBUG] VITE_CLERK_PUBLISHABLE_KEY is missing — app will not function correctly.");
+  document.body.innerHTML = `<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0f1e;z-index:9999"><div style="background:#7f1d1d;color:#fecaca;padding:2rem;border-radius:0.75rem;max-width:480px;font-family:monospace;font-size:0.9rem;line-height:1.6"><strong style="font-size:1.1rem;display:block;margin-bottom:0.5rem">⛔ Missing Clerk Key</strong>VITE_CLERK_PUBLISHABLE_KEY is undefined in this build.<br>Railway did not pass the env var as a build arg, or the Docker build used a cached layer.<br><br>Force a fresh Railway deploy after confirming the variable is set.</div></div>`;
 }
 
 // ─── Clerk appearance — dark navy + burnt orange theme ───────────────────────
