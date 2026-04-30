@@ -1,29 +1,251 @@
-import { ClerkProvider, ClerkLoading, ClerkLoaded } from "@clerk/react";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useRef, Suspense } from "react";
+import { ClerkProvider, ClerkLoading, ClerkLoaded, SignIn, Show, useClerk } from "@clerk/react";
+import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
-import { Router as WouterRouter } from "wouter";
+import "@/lib/api";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ServerStatusBanner } from "@/components/server-status";
+import { Layout } from "@/components/layout";
+import { Home } from "@/pages/home";
+import { TeamsPage } from "@/pages/teams";
+import { TeamDetailPage } from "@/pages/team-detail";
+import { PlayersPage } from "@/pages/players";
+import { PlayerDetailPage } from "@/pages/player-detail";
+import { GamesPage } from "@/pages/games";
+import { GameDetailPage } from "@/pages/game-detail";
+import { MyProfilePage } from "@/pages/my-profile";
+import { ProfilePage } from "@/pages/profile";
+import { PublicProfilePage } from "@/pages/public-profile";
+import { AdminPage } from "@/pages/admin";
+import { OurStoryPage } from "@/pages/our-story";
+import { ArchetypesPage } from "@/pages/archetypes";
+import { IsoBallPage } from "@/pages/iso-ball";
+import { OnboardingPage } from "@/pages/onboarding";
+import { CustomSignUpPage } from "@/pages/sign-up";
+import { TermsPage } from "@/pages/terms";
+import { PrivacyPage } from "@/pages/privacy";
+import NotFound from "@/pages/not-found";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-function App() {
+function stripBase(path: string): string {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length) || "/"
+    : path;
+}
+
+// ─── Clerk appearance — dark navy + burnt orange theme ───────────────────────
+const clerkAppearance = {
+  options: {
+    logoPlacement: "inside" as const,
+    logoLinkUrl: basePath || "/",
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+  },
+  variables: {
+    colorPrimary:          "hsl(22, 78%, 46%)",
+    colorBackground:       "hsl(220, 36%, 10%)",
+    colorText:             "hsl(210, 16%, 88%)",
+    colorTextSecondary:    "hsl(215, 16%, 62%)",
+    colorInputBackground:  "hsl(220, 28%, 15%)",
+    colorInputText:        "hsl(210, 16%, 88%)",
+    colorNeutral:          "hsl(215, 50%, 16%)",
+    colorShimmer:          "hsl(220, 28%, 18%)",
+    borderRadius:  "0.75rem",
+    fontFamily:    "'Inter', sans-serif",
+  },
+  elements: {
+    rootBox:  "w-full",
+    cardBox:  "w-full rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/5",
+    card:     "!shadow-none !border-0 !rounded-xl",
+    footer:   "!shadow-none !border-0",
+    headerTitle: {
+      color:          "hsl(210, 16%, 92%)",
+      fontFamily:     "'Anton', sans-serif",
+      textTransform:  "uppercase" as const,
+      fontSize:       "1.75rem",
+      letterSpacing:  "0.03em",
+    },
+    headerSubtitle:   { color: "hsl(215, 16%, 62%)" },
+    formFieldLabel: {
+      color:          "hsl(210, 16%, 78%)",
+      fontWeight:     "600",
+      fontSize:       "0.7rem",
+      textTransform:  "uppercase" as const,
+      letterSpacing:  "0.1em",
+    },
+    formFieldInput: {
+      backgroundColor: "hsl(220, 28%, 13%)",
+      borderColor:     "hsl(220, 28%, 22%)",
+      color:           "hsl(210, 16%, 92%)",
+      boxShadow:       "none",
+    },
+    formFieldInputShowPasswordButton: { color: "hsl(215, 16%, 62%)" },
+    formFieldHintText:  { color: "hsl(215, 16%, 62%)" },
+    formFieldErrorText: { color: "hsl(10, 85%, 65%)" },
+    formButtonPrimary: {
+      backgroundColor: "hsl(22, 78%, 46%)",
+      color:           "#ffffff",
+      fontWeight:      "700",
+      textTransform:   "uppercase" as const,
+      letterSpacing:   "0.06em",
+      fontSize:        "0.85rem",
+      borderRadius:    "0.6rem",
+      boxShadow:       "none",
+      border:          "none",
+    },
+    formButtonReset: { color: "hsl(22, 78%, 46%)" },
+    socialButtonsBlockButton: {
+      backgroundColor: "hsl(220, 28%, 14%)",
+      borderColor:     "hsl(220, 28%, 22%)",
+      color:           "hsl(210, 16%, 88%)",
+    },
+    socialButtonsBlockButtonText:  { color: "hsl(210, 16%, 88%)" },
+    socialButtonsBlockButtonArrow: { color: "hsl(215, 16%, 62%)" },
+    dividerLine: { backgroundColor: "hsl(220, 28%, 19%)" },
+    dividerText: { color: "hsl(215, 16%, 52%)" },
+    footerActionText: { color: "hsl(215, 16%, 62%)" },
+    footerActionLink: { color: "hsl(22, 78%, 52%)", fontWeight: "600" },
+    footerPages:      { backgroundColor: "hsl(220, 36%, 10%)" },
+    identityPreviewText:       { color: "hsl(210, 16%, 88%)" },
+    identityPreviewEditButton: { color: "hsl(22, 78%, 52%)" },
+    otpCodeFieldInput: {
+      backgroundColor: "hsl(220, 28%, 13%)",
+      borderColor:     "hsl(220, 28%, 22%)",
+      color:           "hsl(210, 16%, 92%)",
+    },
+    alternativeMethodsBlockButton: {
+      backgroundColor: "hsl(220, 28%, 14%)",
+      borderColor:     "hsl(220, 28%, 22%)",
+      color:           "hsl(210, 16%, 88%)",
+    },
+    verificationLinkStatusIcon: { color: "hsl(22, 78%, 46%)" },
+  },
+};
+
+// ─── Fixed status badge — remove once deployment is confirmed working ─────────
+function StatusBadge() {
   return (
-    <ClerkProvider publishableKey={clerkPubKey}>
+    <div style={{
+      position: "fixed", bottom: "1rem", right: "1rem", zIndex: 99999,
+      background: "#14532d", color: "#bbf7d0", fontFamily: "monospace",
+      fontSize: "0.75rem", padding: "0.4rem 0.75rem", borderRadius: "9999px",
+      border: "1px solid #166534", pointerEvents: "none",
+    }}>
+      ✅ All providers + routes loaded
+    </div>
+  );
+}
+
+function SignInPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    </div>
+  );
+}
+
+function SignUpPage() {
+  return <CustomSignUpPage />;
+}
+
+function ClerkQueryClientCacheInvalidator() {
+  const { addListener } = useClerk();
+  const qc = useQueryClient();
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    const unsub = addListener(({ user }) => {
+      const userId = user?.id ?? null;
+      if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) {
+        qc.clear();
+      }
+      prevUserIdRef.current = userId;
+    });
+    return unsub;
+  }, [addListener, qc]);
+
+  return null;
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/onboarding" component={OnboardingPage} />
+      <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route path="/p/:clerkUserId" component={PublicProfilePage} />
+      <Route>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/sign-in/*?" component={SignInPage} />
+            <Route path="/teams" component={TeamsPage} />
+            <Route path="/teams/:id" component={TeamDetailPage} />
+            <Route path="/players" component={PlayersPage} />
+            <Route path="/players/:id" component={PlayerDetailPage} />
+            <Route path="/games" component={GamesPage} />
+            <Route path="/games/:id" component={GameDetailPage} />
+            <Route path="/my-profile" component={MyProfilePage} />
+            <Route path="/profiles/:clerkUserId" component={ProfilePage} />
+            <Route path="/admin" component={AdminPage} />
+            <Route path="/our-story" component={OurStoryPage} />
+            <Route path="/archetypes" component={ArchetypesPage} />
+            <Route path="/iso-ball" component={IsoBallPage} />
+            <Route path="/terms" component={TermsPage} />
+            <Route path="/privacy" component={PrivacyPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
+    </Switch>
+  );
+}
+
+function ClerkProviderWithRoutes() {
+  const [, setLocation] = useLocation();
+
+  return (
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl || undefined}
+      appearance={clerkAppearance}
+      routerPush={(to) => setLocation(stripBase(to))}
+      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+    >
       <ClerkLoading>
         <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e", color: "#fb923c", fontFamily: "monospace", fontSize: "1.2rem" }}>
           Clerk loading…
         </div>
       </ClerkLoading>
       <ClerkLoaded>
-        <QueryClientProvider client={queryClient}>
-          <WouterRouter base={basePath}>
-            <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e", color: "#4ade80", fontFamily: "monospace", fontSize: "1.5rem" }}>
-              ✅ App loaded — Router OK
-            </div>
-          </WouterRouter>
-        </QueryClientProvider>
+        <Suspense fallback={
+          <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f1e", color: "#fb923c", fontFamily: "monospace", fontSize: "1.1rem" }}>
+            Loading app…
+          </div>
+        }>
+          <QueryClientProvider client={queryClient}>
+            <ClerkQueryClientCacheInvalidator />
+            <Router />
+            <ServerStatusBanner />
+            <StatusBadge />
+          </QueryClientProvider>
+        </Suspense>
       </ClerkLoaded>
     </ClerkProvider>
+  );
+}
+
+function App() {
+  return (
+    <TooltipProvider>
+      <WouterRouter base={basePath}>
+        <ClerkProviderWithRoutes />
+      </WouterRouter>
+      <Toaster />
+    </TooltipProvider>
   );
 }
 
