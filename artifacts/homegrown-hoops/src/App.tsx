@@ -38,9 +38,27 @@ function stripBase(path: string): string {
     : path;
 }
 
+// Always-visible debug banner — shows key status without needing dev tools.
+// Remove this block once the deployment is confirmed working.
+(function injectDebugBanner() {
+  const keyPresent = !!clerkPubKey;
+  const keyPreview = clerkPubKey ? clerkPubKey.slice(0, 12) + "..." : "(undefined)";
+  const banner = document.createElement("div");
+  banner.id = "__clerk_debug__";
+  banner.style.cssText =
+    "position:fixed;top:0;left:0;right:0;z-index:99999;padding:0.6rem 1rem;" +
+    "font-family:monospace;font-size:0.8rem;display:flex;align-items:center;gap:0.75rem;" +
+    (keyPresent
+      ? "background:#14532d;color:#bbf7d0;border-bottom:1px solid #166534;"
+      : "background:#7f1d1d;color:#fecaca;border-bottom:1px solid #991b1b;");
+  banner.innerHTML =
+    `<strong>${keyPresent ? "✅ VITE_CLERK_PUBLISHABLE_KEY" : "⛔ VITE_CLERK_PUBLISHABLE_KEY"}</strong>` +
+    `<span>${keyPresent ? `present — ${keyPreview}` : "MISSING from bundle — env var was not baked in at build time"}</span>`;
+  document.body.prepend(banner);
+})();
+
 if (!clerkPubKey) {
   console.error("[DEBUG] VITE_CLERK_PUBLISHABLE_KEY is missing — app will not function correctly.");
-  document.body.innerHTML = `<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0f1e;z-index:9999"><div style="background:#7f1d1d;color:#fecaca;padding:2rem;border-radius:0.75rem;max-width:480px;font-family:monospace;font-size:0.9rem;line-height:1.6"><strong style="font-size:1.1rem;display:block;margin-bottom:0.5rem">⛔ Missing Clerk Key</strong>VITE_CLERK_PUBLISHABLE_KEY is undefined in this build.<br>Railway did not pass the env var as a build arg, or the Docker build used a cached layer.<br><br>Force a fresh Railway deploy after confirming the variable is set.</div></div>`;
 }
 
 // ─── Clerk appearance — dark navy + burnt orange theme ───────────────────────
