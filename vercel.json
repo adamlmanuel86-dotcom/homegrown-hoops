@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm --filter @workspace/homegrown-hoops run build",
+  "outputDirectory": "artifacts/homegrown-hoops/dist/public",
+  "installCommand": "pnpm install",
+  "framework": null
+}
