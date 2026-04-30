@@ -24,6 +24,6 @@ buildCommand = "corepack enable && corepack prepare pnpm@10.26.1 --activate && p
 
 [deploy]
 # vite preview serves artifacts/homegrown-hoops/dist/public and reads PORT from env.
-startCommand = "pnpm --filter @workspace/homegrown-hoops run serve"
+startCommand = "pnpm --filter @workspace/homegrown-hoops run build && pnpm --filter @workspace/homegrown-hoops run serve"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
