@@ -12,17 +12,18 @@
 #   VITE_API_BASE_URL            — full URL of the Railway API server service
 #                                  e.g. https://api-server-production.up.railway.app
 #
-# Nixpacks (not Dockerfile) is used so that Railway injects service environment
-# variables directly into the build process. This avoids the Docker ARG/ENV
-# pattern which Railway's security scanner flags as SecretsUsedInArgOrEnv.
-# Vite reads VITE_* vars from process.env at build time — no ARG needed.
+# Nixpacks is used so Railway injects service env vars into the build process
+# directly, avoiding the Docker ARG/ENV pattern that triggers SecretsUsedInArgOrEnv.
+#
+# .node-version pins Node 22 so import.meta.dirname works in vite.config.ts.
+# corepack ensures pnpm@10.26.1 matches the lockfile before install runs.
 
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @workspace/homegrown-hoops run build"
+buildCommand = "corepack enable && corepack prepare pnpm@10.26.1 --activate && pnpm install && pnpm --filter @workspace/homegrown-hoops run build"
 
 [deploy]
-# vite preview serves dist/public and reads PORT from the environment.
+# vite preview serves artifacts/homegrown-hoops/dist/public and reads PORT from env.
 startCommand = "pnpm --filter @workspace/homegrown-hoops run serve"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
