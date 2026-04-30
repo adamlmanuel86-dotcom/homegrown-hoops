@@ -1,4 +1,4 @@
-import { useEffect, useRef, Suspense } from "react";
+import { Component, ReactNode, useEffect, useRef, Suspense } from "react";
 import { ClerkProvider, SignIn, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -30,7 +30,11 @@ import NotFound from "@/pages/not-found";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Normalise BASE_URL: Vite emits "./" when base is "" (Vercel build without BASE_PATH).
+// Treat both "./" and "/" as root so basePath is always an empty string at root.
+const rawBase = import.meta.env.BASE_URL ?? "";
+const basePath = rawBase === "./" || rawBase === "/" ? "" : rawBase.replace(/\/$/, "");
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -126,6 +130,45 @@ const clerkAppearance = {
   },
 };
 
+// ─── Error boundary — catches crashes inside ClerkProvider ───────────────────
+interface EBState { error: Error | null }
+class ClerkErrorBoundary extends Component<{ children: ReactNode }, EBState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error): EBState {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 99998,
+          background: "#0b0f1a", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "24px", gap: "16px",
+        }}>
+          <div style={{ color: "#f97316", fontFamily: "monospace", fontSize: "14px", fontWeight: "bold" }}>
+            RENDER ERROR (inside ClerkProvider)
+          </div>
+          <pre style={{
+            color: "#fca5a5", fontFamily: "monospace", fontSize: "12px",
+            background: "#1c1f2e", padding: "16px", borderRadius: "8px",
+            maxWidth: "720px", width: "100%", overflow: "auto",
+            whiteSpace: "pre-wrap", wordBreak: "break-word",
+          }}>
+            {this.state.error.message}
+            {"\n\n"}
+            {this.state.error.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
@@ -201,18 +244,20 @@ function ClerkProviderWithRoutes() {
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
-      <QueryClientProvider client={queryClient}>
-        <ClerkQueryClientCacheInvalidator />
-        <Suspense fallback={
-          <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4">
-            <span className="font-display text-2xl uppercase tracking-widest text-primary">Homegrown Hoops</span>
-            <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-          </div>
-        }>
-          <Router />
-        </Suspense>
-        <ServerStatusBanner />
-      </QueryClientProvider>
+      <ClerkErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <ClerkQueryClientCacheInvalidator />
+          <Suspense fallback={
+            <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4">
+              <span className="font-display text-2xl uppercase tracking-widest text-primary">Homegrown Hoops</span>
+              <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            </div>
+          }>
+            <Router />
+          </Suspense>
+          <ServerStatusBanner />
+        </QueryClientProvider>
+      </ClerkErrorBoundary>
     </ClerkProvider>
   );
 }
@@ -227,7 +272,7 @@ function DebugBanner() {
       padding: "4px 12px", textAlign: "center",
     }}>
       {hasKey
-        ? `CLERK KEY: present (${clerkPubKey.slice(0, 12)}…) | BASE_URL: "${import.meta.env.BASE_URL}" | MODE: ${import.meta.env.MODE}`
+        ? `CLERK KEY: present (${clerkPubKey.slice(0, 12)}…) | BASE_URL: "${import.meta.env.BASE_URL}" | basePath: "${basePath}" | MODE: ${import.meta.env.MODE}`
         : "CLERK KEY: MISSING — VITE_CLERK_PUBLISHABLE_KEY not set"}
     </div>
   );
@@ -238,7 +283,7 @@ function App() {
     <>
       <DebugBanner />
       <TooltipProvider>
-        <WouterRouter base={basePath}>
+        <WouterRouter base="/">
           <ClerkProviderWithRoutes />
         </WouterRouter>
         <Toaster />
