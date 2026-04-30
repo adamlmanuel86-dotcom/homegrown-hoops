@@ -8,6 +8,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Debug: catch ALL JS errors before any module code runs -->
+    <script>
+      function __showError(msg) {
+        var el = document.getElementById('__debug_error__');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = '__debug_error__';
+          el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:999999;background:#7f1d1d;color:#fecaca;padding:1rem;font-family:monospace;font-size:0.78rem;line-height:1.5;max-height:50vh;overflow:auto;border-top:2px solid #991b1b;white-space:pre-wrap;';
+          document.body.appendChild(el);
+        }
+        el.textContent += '\n' + msg;
+      }
+      window.onerror = function(msg, src, line, col, err) {
+        __showError('[JS ERROR] ' + msg + '\n  at ' + src + ':' + line + ':' + col + (err && err.stack ? '\n' + err.stack : ''));
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        __showError('[UNHANDLED PROMISE] ' + (e.reason && e.reason.stack ? e.reason.stack : String(e.reason)));
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -6,5 +6,13 @@ import "./index.css";
 
 const rootEl = document.getElementById("root");
 if (rootEl) {
-  createRoot(rootEl).render(<App />);
+  try {
+    createRoot(rootEl).render(<App />);
+  } catch (err) {
+    const msg = err instanceof Error ? err.stack ?? err.message : String(err);
+    console.error("[RENDER ERROR]", msg);
+    if (typeof (window as any).__showError === "function") {
+      (window as any).__showError("[RENDER ERROR] " + msg);
+    }
+  }
 }
