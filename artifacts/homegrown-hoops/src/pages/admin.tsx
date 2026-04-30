@@ -18,7 +18,8 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain } from "lucide-react";
 import { TIDES } from "@/components/recognition";
 
-const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { apiBase } from "@/lib/api";
+
 
 const ROLES = ["admin", "coach", "player"] as const;
 type Role = typeof ROLES[number];
