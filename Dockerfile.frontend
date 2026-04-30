@@ -1,0 +1,32 @@
+FROM node:22-slim
+
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+
+WORKDIR /app
+
+# Copy the entire monorepo so the pnpm workspace resolves correctly
+COPY . .
+
+# Install all workspace dependencies
+RUN pnpm install --frozen-lockfile
+
+# Declare VITE_ build-time variables.
+# Railway passes matching service environment variables as Docker build args
+# when they are declared here. Converting to ENV makes them available inside
+# the RUN layer so Vite can bake them into the bundle.
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+
+ARG VITE_CLERK_PROXY_URL
+ENV VITE_CLERK_PROXY_URL=$VITE_CLERK_PROXY_URL
+
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# Build the Vite frontend — output goes to artifacts/homegrown-hoops/dist/public
+RUN pnpm --filter @workspace/homegrown-hoops run build
+
+EXPOSE 3000
+
+# vite preview serves dist/public and reads PORT from the environment
+CMD ["pnpm", "--filter", "@workspace/homegrown-hoops", "run", "serve"]
