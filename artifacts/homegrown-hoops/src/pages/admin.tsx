@@ -86,7 +86,7 @@ export function AdminPage() {
 
   const deleteGame = useMutation({
     mutationFn: async (gameId: number) => {
-      const res = await fetch(`${BASE_URL}/api/games/${gameId}`, { method: "DELETE" });
+      const res = await fetch(`${apiBase}/api/games/${gameId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete game");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
@@ -95,7 +95,7 @@ export function AdminPage() {
   // Run the canonical roster sync + load tide profiles once when admin is confirmed.
   useEffect(() => {
     if (!isAdmin) return;
-    fetch(`${BASE_URL}/api/admin/sync-all-players`, { method: "POST" })
+    fetch(`${apiBase}/api/admin/sync-all-players`, { method: "POST" })
       .then(() => qc.invalidateQueries({ queryKey: ["/api/players"] }))
       .catch(() => { /* non-critical, silent */ });
     loadTideProfiles();
@@ -111,7 +111,7 @@ export function AdminPage() {
   async function loadTideProfiles() {
     setTideProfilesLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/profiles-tides`);
+      const res = await fetch(`${apiBase}/api/admin/profiles-tides`);
       if (res.ok) {
         const data = await res.json();
         setTideProfiles(data.map((p: { id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] | null }) => ({
@@ -127,7 +127,7 @@ export function AdminPage() {
 
   const calculateSeasonTides = useMutation({
     mutationFn: async (season: string) => {
-      const res = await fetch(`${BASE_URL}/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
+      const res = await fetch(`${apiBase}/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: string }).error ?? "Failed to calculate tides");
@@ -146,7 +146,7 @@ export function AdminPage() {
 
   const awardTide = useMutation({
     mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
-      const res = await fetch(`${BASE_URL}/api/admin/profiles/${profileId}/tides`, {
+      const res = await fetch(`${apiBase}/api/admin/profiles/${profileId}/tides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tideId }),
@@ -165,7 +165,7 @@ export function AdminPage() {
 
   const removeTide = useMutation({
     mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
-      const res = await fetch(`${BASE_URL}/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
+      const res = await fetch(`${apiBase}/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -207,7 +207,7 @@ export function AdminPage() {
   const [confirmingResetIsoBallId, setConfirmingResetIsoBallId] = useState<string | null>(null);
   const resetIsoBall = useMutation({
     mutationFn: async (clerkUserId: string) => {
-      const res = await fetch(`${BASE_URL}/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
+      const res = await fetch(`${apiBase}/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -323,7 +323,7 @@ export function AdminPage() {
     setEndOfSeasonPending(true);
     setEndOfSeasonError(null);
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/teams/${teamId}/season-tides`, {
+      const res = await fetch(`${apiBase}/api/admin/teams/${teamId}/season-tides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -345,7 +345,7 @@ export function AdminPage() {
     setNewSeasonResetError(null);
     setNewSeasonResetDone(false);
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/teams/${teamId}/new-season-reset`, {
+      const res = await fetch(`${apiBase}/api/admin/teams/${teamId}/new-season-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newSeasonName: newSeasonName.trim() }),
@@ -366,7 +366,7 @@ export function AdminPage() {
 
   async function loadTeamSeasons(teamId: number) {
     try {
-      const res = await fetch(`${BASE_URL}/api/admin/teams/${teamId}/seasons`);
+      const res = await fetch(`${apiBase}/api/admin/teams/${teamId}/seasons`);
       if (!res.ok) throw new Error("Failed to load seasons");
       const data = await res.json() as { seasons: string[]; currentSeason: string | null };
       setTeamSeasonsMap((prev) => new Map(prev).set(teamId, data));
@@ -380,7 +380,7 @@ export function AdminPage() {
     setSeasonDeleteError(null);
     try {
       const res = await fetch(
-        `${BASE_URL}/api/admin/teams/${teamId}/seasons/${encodeURIComponent(season)}`,
+        `${apiBase}/api/admin/teams/${teamId}/seasons/${encodeURIComponent(season)}`,
         { method: "DELETE" }
       );
       if (!res.ok) {

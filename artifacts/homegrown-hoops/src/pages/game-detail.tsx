@@ -16,11 +16,11 @@ import {
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play, ExternalLink, Film, Youtube } from "lucide-react";
 
-const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { apiBase } from "@/lib/api";
 
 function videoUrl(objectPath: string) {
   if (objectPath.startsWith("http")) return objectPath;
-  return `${BASE_URL}/api/storage${objectPath}`;
+  return `${apiBase}/api/storage${objectPath}`;
 }
 
 function cloudinaryThumbnail(url: string): string | null {
@@ -56,7 +56,7 @@ export function GameDetailPage() {
   const upsertGamePlayerStats = useUpsertGamePlayerStats();
   const deleteGamePlayerStat = useMutation({
     mutationFn: async ({ id: gameId, playerId }: { id: number; playerId: number }) => {
-      const res = await fetch(`${BASE_URL}/api/games/${gameId}/player-stats/${playerId}`, { method: "DELETE" });
+      const res = await fetch(`${apiBase}/api/games/${gameId}/player-stats/${playerId}`, { method: "DELETE" });
       if (!res.ok) throw new Error(`Failed to delete stat: ${res.status}`);
     },
   });
@@ -467,7 +467,7 @@ export function GameDetailPage() {
 
     try {
       // Get signed upload credentials from our server
-      const sigRes = await fetch(`${BASE_URL}/api/cloudinary/signature`, { method: "POST" });
+      const sigRes = await fetch(`${apiBase}/api/cloudinary/signature`, { method: "POST" });
       if (!sigRes.ok) {
         const errData = await sigRes.json().catch(() => ({}));
         throw new Error(errData.error ?? `Could not get upload credentials (${sigRes.status})`);

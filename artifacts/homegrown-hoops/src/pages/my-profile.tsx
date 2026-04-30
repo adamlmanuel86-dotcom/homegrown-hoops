@@ -5,8 +5,7 @@ import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams }
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
-
-const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { apiBase } from "@/lib/api";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 2);
@@ -102,7 +101,7 @@ export function MyProfilePage() {
 
   async function uploadPhoto(file: File): Promise<string | null> {
     try {
-      const sigRes = await fetch(`${BASE_URL}/api/cloudinary/profile-signature`, {
+      const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
         method: "POST",
       });
       if (!sigRes.ok) return null;

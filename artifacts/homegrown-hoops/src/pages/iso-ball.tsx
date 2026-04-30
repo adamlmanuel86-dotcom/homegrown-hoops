@@ -3,6 +3,7 @@ import { Brain, ChevronLeft, RotateCcw, Zap, Trophy, Timer, BookOpen, Medal, Loc
 import { useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetIsoBallLeaderboard } from "@workspace/api-client-react";
+import { apiBase } from "@/lib/api";
 
 type Difficulty = "rookie" | "varsity" | "elite";
 type AnswerKey = "A" | "B" | "C" | "D";
@@ -392,7 +393,7 @@ export function IsoBallPage() {
   // Fetch daily status for signed-in users on mount
   useEffect(() => {
     if (!isSignedIn) { setStatusLoaded(true); return; }
-    fetch(`${BASE_URL}/api/iso-ball/daily-status`, { credentials: "include" })
+    fetch(`${apiBase}/api/iso-ball/daily-status`, { credentials: "include" })
       .then((r) => r.json())
       .then((data: DailyStatus) => {
         setDailyStatus(data.sessionsByDifficulty);
@@ -463,7 +464,7 @@ export function IsoBallPage() {
     let cancelled = false;
     async function save() {
       try {
-        const res = await fetch(`${BASE_URL}/api/iso-ball/sessions`, {
+        const res = await fetch(`${apiBase}/api/iso-ball/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
