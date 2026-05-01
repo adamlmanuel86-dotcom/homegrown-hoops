@@ -37,7 +37,7 @@ export function GameDetailPage() {
   const qc = useQueryClient();
 
   const { data: game, isLoading: loadingGame } = useGetGame(id, { query: { enabled: !!id } });
-  const { data: playerStats, isLoading: loadingStats } = useGetGamePlayerStats(id, { query: { enabled: !!id } });
+  const { data: playerStats, isLoading: loadingStats, isError: statsError } = useGetGamePlayerStats(id, { query: { enabled: !!id } });
   const { data: teams } = useListTeams();
   const { data: players } = useListPlayers();
   const { data: myProfile } = useGetMyProfile({
@@ -1159,8 +1159,27 @@ export function GameDetailPage() {
 
       {/* Box Score */}
       {game && (
-        <div className="space-y-6">
-          {[
+        <div className="space-y-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Stats</p>
+            <h2 className="font-display text-5xl text-primary leading-none tracking-tight">BOX SCORE</h2>
+          </div>
+
+          {loadingStats && (
+            <div className="space-y-3 animate-pulse">
+              <div className="h-32 bg-muted rounded-2xl" />
+              <div className="h-32 bg-muted rounded-2xl" />
+            </div>
+          )}
+
+          {statsError && !loadingStats && (
+            <div className="card-base px-6 py-8 text-center">
+              <p className="text-sm font-medium text-secondary mb-1">Stats unavailable</p>
+              <p className="text-xs text-muted-foreground">Could not load player stats for this game.</p>
+            </div>
+          )}
+
+          {!loadingStats && !statsError && [
             { label: awayTeam?.name ?? "Away", team: awayTeam, teamId: game.awayTeamId },
             { label: homeTeam?.name ?? "Home", team: homeTeam, teamId: game.homeTeamId },
           ].map(({ label, team, teamId }) => {
@@ -1269,7 +1288,7 @@ export function GameDetailPage() {
                       })}
                       {sorted.length === 0 && (
                         <tr>
-                          <td colSpan={isAdmin ? 6 : 5} className="px-4 py-6 text-sm text-muted-foreground text-center">
+                          <td colSpan={isAdmin ? 9 : 8} className="px-4 py-6 text-sm text-muted-foreground text-center">
                             No players registered for this team.
                           </td>
                         </tr>
