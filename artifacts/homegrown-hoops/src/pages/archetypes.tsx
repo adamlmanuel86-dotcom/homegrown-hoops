@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import {
-  Anchor, Wind, Zap, Target, Mountain, Flame, Compass,
-  ChevronRight,
+  Anchor, Wind, Activity, Target, Mountain, Flame, Compass,
+  ChevronRight, Zap, Shield, Castle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -11,7 +11,7 @@ const UNCHARTED = {
   label: "Uncharted",
   icon: Compass,
   description:
-    "Your story hasn't been written yet. Play games, earn stats, and discover who you are on the court. This is where every player begins.",
+    "Your story has not been written yet — step on the court and let your game speak.",
   accent: "#94A3B8",
   gradient: ["#0A0C10", "#0F1520", "#0A0C10"],
 };
@@ -32,35 +32,71 @@ const ARCHETYPES: ArchetypeData[] = [
     id: "The Mainstay",
     label: "The Mainstay",
     icon: Anchor,
-    tagline: "Consistent points scorer.",
-    requirement: "Earned by averaging the highest points per game on your team across the season.",
+    tagline: "The go-to scorer.",
+    requirement: "Earned when your scoring score (PPG × 10) reaches 180+ and you have the highest scoring score on your team.",
     accent: "#60A5FA",
     gradient: ["#0D1B2E", "#1A3355", "#0D1B2E"],
+  },
+  {
+    id: "The Voltage",
+    label: "The Voltage",
+    icon: Flame,
+    tagline: "An elite scorer who puts up big numbers every night.",
+    requirement: "Earned when your scoring score (PPG × 10) reaches 180+ but another player on your team has an even higher scoring score.",
+    accent: "#FBBF24",
+    gradient: ["#2E1E00", "#55380A", "#2E1E00"],
+  },
+  {
+    id: "The Engine",
+    label: "The Engine",
+    icon: Zap,
+    tagline: "Does everything at a high level.",
+    requirement: "Earned with a scoring score of 150–179 combined with a rebounding score above 90 or a playmaking score above 80.",
+    accent: "#FB7185",
+    gradient: ["#2E0A12", "#55101F", "#2E0A12"],
   },
   {
     id: "The Vortex",
     label: "The Vortex",
     icon: Wind,
     tagline: "Rebounds dominant.",
-    requirement: "Earned by leading your team in total rebounds for the season.",
+    requirement: "Earned when your rebounding score (RPG × 15) leads your team and reaches 90+.",
     accent: "#A78BFA",
     gradient: ["#160D2E", "#2D1A55", "#160D2E"],
   },
   {
     id: "The Current",
     label: "The Current",
-    icon: Zap,
+    icon: Activity,
     tagline: "Assists and playmaking.",
-    requirement: "Earned by leading your team in total assists for the season.",
+    requirement: "Earned when your playmaking score (APG × 20) leads your team and reaches 100+.",
     accent: "#22D3EE",
     gradient: ["#0A1E2E", "#0F3A45", "#0A1E2E"],
+  },
+  {
+    id: "The Warden",
+    label: "The Warden",
+    icon: Shield,
+    tagline: "Steals are this player's weapon.",
+    requirement: "Earned when your steals score (SPG × 35) leads your team and reaches 70+.",
+    accent: "#8B5CF6",
+    gradient: ["#160D2E", "#2D1A55", "#160D2E"],
+  },
+  {
+    id: "The Wall",
+    label: "The Wall",
+    icon: Castle,
+    tagline: "Shot blocking defines this player.",
+    requirement: "Earned when your blocks score (BPG × 35) leads your team and reaches 52+.",
+    accent: "#6366F1",
+    gradient: ["#0D0D2E", "#1A1A55", "#0D0D2E"],
   },
   {
     id: "The Deep",
     label: "The Deep",
     icon: Target,
     tagline: "Three point specialist.",
-    requirement: "Earned by making the most three pointers on your team for the season. Operates from range that demands respect.",
+    requirement: "Earned when your three-point score (3PM × 40) leads your team, reaches 80+, and you average at least 2 three pointers per game.",
     accent: "#FB923C",
     gradient: ["#2E1008", "#551E0A", "#2E1008"],
   },
@@ -68,20 +104,10 @@ const ARCHETYPES: ArchetypeData[] = [
     id: "The Climb",
     label: "The Climb",
     icon: Mountain,
-    tagline: "Improving across points and rebounds.",
-    requirement: "Earned by showing the biggest statistical improvement from the first half to the second half of the season.",
+    tagline: "Still writing their story.",
+    requirement: "Earned when no single stat category stands out enough to earn a named archetype — every player starts here.",
     accent: "#34D399",
     gradient: ["#0A2218", "#0F3D2A", "#0A2218"],
-  },
-  {
-    id: "The Spark",
-    label: "The Spark",
-    icon: Flame,
-    tagline: "Changes the game in limited minutes.",
-    requirement: "Earned by having the highest points per minute ratio on the team among players averaging under 15 minutes per game. Requires minutes played tracking.",
-    accent: "#F472B6",
-    gradient: ["#2E0A1A", "#551030", "#2E0A1A"],
-    comingSoon: true,
   },
 ];
 
@@ -283,7 +309,7 @@ export function ArchetypesPage() {
             Earnable Archetypes
           </p>
           <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
-          <span className="text-[10px] font-bold text-muted-foreground">8 paths</span>
+          <span className="text-[10px] font-bold text-muted-foreground">{ARCHETYPES.length} paths</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {ARCHETYPES.map((arch) => (

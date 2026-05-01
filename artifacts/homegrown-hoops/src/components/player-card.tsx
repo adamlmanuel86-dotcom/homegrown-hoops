@@ -2,7 +2,7 @@ import { useRef, useCallback, useState } from "react";
 import html2canvas from "html2canvas";
 import {
   Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
-  Shield, Castle,
+  Shield, Castle, Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { STAMPS } from "@/components/recognition";
@@ -10,13 +10,14 @@ import { STAMPS } from "@/components/recognition";
 const ARCHETYPE_META: Record<string, { icon: LucideIcon; color: string; label: string }> = {
   Uncharted:      { icon: Compass,  color: "#94A3B8", label: "Uncharted" },
   "The Mainstay": { icon: Anchor,   color: "#60A5FA", label: "The Mainstay" },
+  "The Voltage":  { icon: Flame,    color: "#FBBF24", label: "The Voltage" },
+  "The Engine":   { icon: Zap,      color: "#FB7185", label: "The Engine" },
   "The Vortex":   { icon: Wind,     color: "#34D399", label: "The Vortex" },
-  "The Current":  { icon: Zap,      color: "#38BDF8", label: "The Current" },
+  "The Current":  { icon: Activity, color: "#22D3EE", label: "The Current" },
   "The Deep":     { icon: Target,   color: "#A78BFA", label: "The Deep" },
   "The Climb":    { icon: Mountain, color: "#F97316", label: "The Climb" },
   "The Warden":   { icon: Shield,   color: "#8B5CF6", label: "The Warden" },
   "The Wall":     { icon: Castle,   color: "#6366F1", label: "The Wall" },
-  "The Spark":    { icon: Flame,    color: "#F472B6", label: "The Spark" },
 };
 
 export const MILESTONE_BONUSES: Record<string, { label: string; bonusLP: number }> = {

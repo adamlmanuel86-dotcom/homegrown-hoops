@@ -384,26 +384,25 @@ export async function recalculateTides(season: string): Promise<void> {
 
 // ─── 3. Recalculate archetypes for a team ─────────────────────────────────────
 //
-// Archetype is determined by weighted per-game category scores:
+// Weighted per-game category scores:
 //   Scoring score    = PPG × 10
 //   Rebounding score = RPG × 15
 //   Playmaking score = APG × 20
 //   Steals score     = SPG × 35
 //   Blocks score     = BPG × 35
-//   Threes score     = 3PG × 10  (only counts when 3PG ≥ 1.5; else 0)
+//   Three-point score = 3PM × 40
 //
-// The category with the highest weighted score is dominant.
-// Ties or all-zero → The Climb.
-//
-//  • Scoring dominant + highest PPG on team → The Mainstay (one per team)
-//  • Scoring dominant + NOT highest PPG     → The Climb
-//  • Rebounding dominant                   → The Vortex
-//  • Playmaking dominant                   → The Current
-//  • Steals dominant                       → The Warden
-//  • Blocks dominant                       → The Wall
-//  • Threes dominant (≥ 1.5 3PG)           → The Deep
-//  • All scores zero or tied               → The Climb
-//  • No games recorded                     → Uncharted
+// Priority rules (first match wins):
+//  1. Scoring ≥ 180 AND highest scorer on team  → The Mainstay
+//  2. Scoring ≥ 180 AND not highest scorer      → The Voltage
+//  3. Scoring 150–179 AND (rebounding > 90 OR playmaking > 80) → The Engine
+//  4. Three-point score highest AND ≥ 80 AND ≥ 2 3PM/game → The Deep
+//  5. Rebounding score highest AND ≥ 90          → The Vortex
+//  6. Playmaking score highest AND ≥ 100         → The Current
+//  7. Steals score highest AND ≥ 70              → The Warden
+//  8. Blocks score highest AND ≥ 52              → The Wall
+//  9. Everything else                            → The Climb
+// No games recorded                              → Uncharted
 export async function recalculateArchetypesForTeam(
   teamId: number,
   season: string
@@ -436,48 +435,44 @@ export async function recalculateArchetypesForTeam(
     avgBlocks:   mean(p.games.map((g) => g.blocks)),
   }));
 
-  // ── Weighted-score archetype helper ──────────────────────────────────────
-  // Returns the dominant category key or null if all zero / tied.
-  function dominantCategory(p: PlayerAvgs): string | null {
-    const scores: Record<string, number> = {
-      scoring:    p.avgPoints * 10,
-      rebounding: p.avgRebounds * 15,
-      playmaking: p.avgAssists * 20,
-      steals:     p.avgSteals * 35,
-      blocks:     p.avgBlocks * 35,
-      threes:     p.avgThrees >= 1.5 ? p.avgThrees * 10 : 0,
-    };
-    const maxVal = Math.max(...Object.values(scores));
-    if (maxVal <= 0) return null;
-    const leaders = Object.entries(scores).filter(([, v]) => Math.abs(v - maxVal) <= 1e-10);
-    return leaders.length === 1 ? leaders[0][0] : null; // null = tied
-  }
-
-  function categoryToArchetype(cat: string | null, isTopScorer: boolean): string {
-    switch (cat) {
-      case "scoring":    return isTopScorer ? "The Mainstay" : "The Climb";
-      case "rebounding": return "The Vortex";
-      case "playmaking": return "The Current";
-      case "steals":     return "The Warden";
-      case "blocks":     return "The Wall";
-      case "threes":     return "The Deep";
-      default:           return "The Climb";
-    }
-  }
-
   // ── Assign archetypes ────────────────────────────────────────────────────
   const assignments = new Map<string, string>();
 
   if (avgs.length >= 1) {
-    // Mainstay candidate = player with highest PPG on the team
-    const topScorer = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
+    // Pre-compute team category maximums for "highest on team" checks
+    const teamMaxReb    = Math.max(...avgs.map((a) => a.avgRebounds * 15));
+    const teamMaxPl     = Math.max(...avgs.map((a) => a.avgAssists  * 20));
+    const teamMaxSt     = Math.max(...avgs.map((a) => a.avgSteals   * 35));
+    const teamMaxBl     = Math.max(...avgs.map((a) => a.avgBlocks   * 35));
+    const teamMaxThrees = Math.max(...avgs.map((a) => a.avgThrees   * 40));
+
+    const topScorer    = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
     const topScorerKey = `${topScorer.firstName}|${topScorer.lastName}`;
 
+    const isHighest = (val: number, max: number) => Math.abs(val - max) <= 1e-10;
+
     for (const p of avgs) {
-      const key = `${p.firstName}|${p.lastName}`;
-      const cat = dominantCategory(p);
+      const key  = `${p.firstName}|${p.lastName}`;
+      const sc   = p.avgPoints   * 10;
+      const rb   = p.avgRebounds * 15;
+      const pl   = p.avgAssists  * 20;
+      const st   = p.avgSteals   * 35;
+      const bl   = p.avgBlocks   * 35;
+      const th   = p.avgThrees   * 40;
       const isTopScorer = key === topScorerKey;
-      assignments.set(key, categoryToArchetype(cat, isTopScorer));
+
+      let archetype: string;
+      if      (sc >= 180 && isTopScorer)                                         archetype = "The Mainstay";
+      else if (sc >= 180)                                                         archetype = "The Voltage";
+      else if (sc >= 150 && sc < 180 && (rb > 90 || pl > 80))                    archetype = "The Engine";
+      else if (isHighest(th, teamMaxThrees) && th >= 80 && p.avgThrees >= 2)     archetype = "The Deep";
+      else if (isHighest(rb, teamMaxReb)    && rb >= 90)                          archetype = "The Vortex";
+      else if (isHighest(pl, teamMaxPl)     && pl >= 100)                         archetype = "The Current";
+      else if (isHighest(st, teamMaxSt)     && st >= 70)                          archetype = "The Warden";
+      else if (isHighest(bl, teamMaxBl)     && bl >= 52)                          archetype = "The Wall";
+      else                                                                         archetype = "The Climb";
+
+      assignments.set(key, archetype);
     }
   }
 

@@ -1,7 +1,7 @@
 import { useGetStatsSummary, useGetStatLeaders, useListTeams } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
-import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Zap, Target, Share2, Crosshair } from "lucide-react";
+import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Target, Share2, Crosshair, ShieldAlert, Square, Zap } from "lucide-react";
 
 function CourtTexture() {
   return (
@@ -172,12 +172,14 @@ export function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {([
-              { key: "points"     as const, label: "Points",         abbr: "PPG",  icon: Trophy },
-              { key: "rebounds"   as const, label: "Rebounds",        abbr: "RPG",  icon: Target },
-              { key: "assists"    as const, label: "Assists",         abbr: "APG",  icon: Share2 },
-              { key: "threesMade" as const, label: "Three Pointers",  abbr: "3PG",  icon: Crosshair },
+              { key: "points"     as const, label: "Points",          abbr: "PPG",  icon: Trophy },
+              { key: "rebounds"   as const, label: "Rebounds",         abbr: "RPG",  icon: Target },
+              { key: "assists"    as const, label: "Assists",          abbr: "APG",  icon: Share2 },
+              { key: "threesMade" as const, label: "Three Pointers",   abbr: "3PG",  icon: Crosshair },
+              { key: "steals"     as const, label: "Steals",           abbr: "SPG",  icon: ShieldAlert },
+              { key: "blocks"     as const, label: "Blocks",           abbr: "BPG",  icon: Square },
             ] as const).map(({ key, label, abbr, icon: Icon }) => {
               const top = leaders?.[key]?.[0];
               return (

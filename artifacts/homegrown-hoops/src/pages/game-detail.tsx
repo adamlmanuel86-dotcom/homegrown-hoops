@@ -558,10 +558,10 @@ export function GameDetailPage() {
           <div className="flex flex-col items-center gap-2">
             {isFinal ? (
               <>
-                <div className="flex items-center gap-4">
-                  <span className={`font-display text-6xl ${awayWon ? "text-primary" : "text-white/90"}`}>{game.awayScore}</span>
-                  <span className="font-display text-2xl text-white/50">–</span>
-                  <span className={`font-display text-6xl ${homeWon ? "text-primary" : "text-white/90"}`}>{game.homeScore}</span>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <span className={`font-display text-4xl sm:text-6xl ${awayWon ? "text-primary" : "text-white/90"}`}>{game.awayScore}</span>
+                  <span className="font-display text-xl sm:text-2xl text-white/50">–</span>
+                  <span className={`font-display text-4xl sm:text-6xl ${homeWon ? "text-primary" : "text-white/90"}`}>{game.homeScore}</span>
                 </div>
                 <p className="text-xs font-bold uppercase tracking-widest text-white/65">Final · {game.gameDate}</p>
               </>
