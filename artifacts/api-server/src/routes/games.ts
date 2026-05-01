@@ -22,6 +22,17 @@ import {
 
 const router: IRouter = Router();
 
+// Ensure externalLinks is always an array — guards against rows stored as {} instead of []
+function normalizeGame<T extends { externalLinks?: unknown }>(row: T): T {
+  return {
+    ...row,
+    externalLinks: Array.isArray(row.externalLinks) ? row.externalLinks : [],
+  };
+}
+function normalizeGames<T extends { externalLinks?: unknown }>(rows: T[]): T[] {
+  return rows.map(normalizeGame);
+}
+
 router.get("/games", async (req, res): Promise<void> => {
   const query = ListGamesQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -56,7 +67,7 @@ router.get("/games", async (req, res): Promise<void> => {
   } else {
     games = await db.select().from(gamesTable).orderBy(desc(gamesTable.gameDate));
   }
-  res.json(ListGamesResponse.parse(serializeRows(games)));
+  res.json(ListGamesResponse.parse(normalizeGames(serializeRows(games))));
 });
 
 router.post("/games", async (req, res): Promise<void> => {
@@ -82,7 +93,7 @@ router.post("/games", async (req, res): Promise<void> => {
     return;
   }
   const [game] = await db.insert(gamesTable).values(parsed.data).returning();
-  res.status(201).json(GetGameResponse.parse(serializeRow(game)));
+  res.status(201).json(GetGameResponse.parse(normalizeGame(serializeRow(game))));
 });
 
 router.get("/games/:id", async (req, res): Promise<void> => {
@@ -96,7 +107,7 @@ router.get("/games/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Game not found" });
     return;
   }
-  res.json(GetGameResponse.parse(serializeRow(game)));
+  res.json(GetGameResponse.parse(normalizeGame(serializeRow(game))));
 });
 
 router.delete("/games/:id", async (req, res): Promise<void> => {
@@ -192,7 +203,7 @@ router.patch("/games/:id", async (req, res): Promise<void> => {
     await db.update(teamsTable).set(awayRecord).where(eq(teamsTable.id, game.awayTeamId));
   }
 
-  res.json(UpdateGameResponse.parse(serializeRow(game)));
+  res.json(UpdateGameResponse.parse(normalizeGame(serializeRow(game))));
 });
 
 router.get("/games/:id/player-stats", async (req, res): Promise<void> => {
