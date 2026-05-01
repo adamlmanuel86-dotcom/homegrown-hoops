@@ -1,0 +1,21 @@
+Please create two teams and their players in the database, then log stats for 5 games based on this real playoff series data. Use fictional position-based names not real player names.
+Team 1: Cleveland (name it ‘The Surge’)
+Players: PG-1 (Mitchell), SG-1 (Harden), SF-1 (Strus), PF-1 (Mobley), C-1 (Allen)
+Team 2: Toronto (name it ‘The Lynx’)
+Players: PG-2 (Barnes), SG-2 (Barrett), SF-2 (Ingram), PF-2 (Murray-Boyles), C-2 (Poeltl)
+Game 1 — The Surge 126, The Lynx 113:
+The Surge: PG-1: 32pts 7reb 5ast 1stl 0blk 1to | SG-1: 28pts 5reb 4ast 5stl 1blk 5to | SF-1: 24pts 3reb 0ast 0stl 0blk 2to | PF-1: 25pts 8reb 2ast 0stl 1blk 1to | C-1: 10pts 7reb 0ast 1stl 3blk 0to
+The Lynx: PG-2: 21pts 1reb 7ast 1stl 1blk 5to | SG-2: 22pts 9reb 5ast 0stl 0blk 4to | SF-2: 17pts 2reb 4ast 0stl 1blk 1to | PF-2: 14pts 4reb 4ast 0stl 0blk 1to | C-2: 4pts 6reb 2ast 1stl 2blk 2to
+Game 2 — The Surge 115, The Lynx 105:
+The Surge: PG-1: 30pts 7reb 5ast 1stl 0blk 1to | SG-1: 28pts 5reb 4ast 5stl 1blk 5to | SF-1: 6pts 3reb 3ast 1stl 0blk 1to | PF-1: 25pts 8reb 2ast 0stl 0blk 1to | C-1: 10pts 3reb 1ast 2stl 3blk 0to
+The Lynx: PG-2: 26pts 4reb 5ast 2stl 1blk 4to | SG-2: 22pts 9reb 5ast 0stl 0blk 4to | SF-2: 7pts 4reb 3ast 1stl 0blk 5to | PF-2: 12pts 10reb 2ast 1stl 0blk 2to | C-2: 2pts 4reb 1ast 0stl 0blk 2to
+Game 3 — The Lynx 126, The Surge 104:
+The Surge: PG-1: 15pts 5reb 3ast 0stl 0blk 3to | SG-1: 18pts 4reb 4ast 0stl 0blk 8to | SF-1: 15pts 6reb 3ast 1stl 0blk 2to | PF-1: 15pts 6reb 7ast 2stl 1blk 2to | C-1: 12pts 4reb 1ast 2stl 3blk 1to
+The Lynx: PG-2: 33pts 5reb 11ast 1stl 1blk 1to | SG-2: 33pts 5reb 5ast 2stl 1blk 2to | SF-2: 12pts 3reb 2ast 2stl 0blk 2to | PF-2: 22pts 8reb 2ast 1stl 1blk 2to | C-2: 8pts 6reb 2ast 0stl 1blk 0to
+Game 4 — The Lynx 93, The Surge 89:
+The Surge: PG-1: 19pts 4reb 3ast 1stl 0blk 2to | SG-1: 19pts 4reb 6ast 2stl 0blk 3to | SF-1: 8pts 2reb 1ast 0stl 0blk 1to | PF-1: 12pts 7reb 3ast 1stl 1blk 2to | C-1: 8pts 5reb 2ast 0stl 2blk 1to
+The Lynx: PG-2: 23pts 8reb 6ast 1stl 0blk 2to | SG-2: 23pts 6reb 3ast 1stl 0blk 2to | SF-2: 23pts 3reb 2ast 0stl 0blk 1to | PF-2: 10pts 5reb 1ast 0stl 0blk 1to | C-2: 6pts 8reb 3ast 1stl 2blk 1to
+Game 5 — The Surge 125, The Lynx 120:
+The Surge: PG-1: 19pts 3reb 4ast 1stl 0blk 1to | SG-1: 23pts 3reb 5ast 2stl 0blk 2to | SF-1: 10pts 2reb 1ast 0stl 0blk 0to | PF-1: 23pts 7reb 4ast 0stl 1blk 1to | C-1: 8pts 5reb 2ast 1stl 1blk 0to
+The Lynx: PG-2: 18pts 6reb 8ast 1stl 0blk 3to | SG-2: 24pts 5reb 4ast 2stl 0blk 2to | SF-2: 15pts 3reb 3ast 0stl 1blk 2to | PF-2: 16pts 6reb 2ast 1stl 0blk 1to | C-2: 10pts 9reb 2ast 0stl 1blk 1to
+Please create all teams, players, and games with these stats. Use admin privileges to enter everything directly into the database.”**
