@@ -483,7 +483,9 @@ export async function recalculateArchetypesForTeam(
       const maxVal = Math.max(...secondaryStats.map((s) => s.value));
       const leaders = secondaryStats.filter((s) => Math.abs(s.value - maxVal) <= 1e-10);
 
-      if (leaders.length === 1 && leaders[0].archetype !== null) {
+      // Require the dominant stat to be meaningful (≥2.0/game) before awarding
+      // a category-named archetype. Low-production players default to The Climb.
+      if (maxVal >= 2.0 && leaders.length === 1 && leaders[0].archetype !== null) {
         assignments.set(key, leaders[0].archetype);
       } else {
         assignments.set(key, "The Climb");
