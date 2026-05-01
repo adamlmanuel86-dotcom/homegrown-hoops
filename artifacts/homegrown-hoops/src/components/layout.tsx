@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Show, useUser, useClerk } from "@clerk/react";
 import { useGetMyProfile } from "@workspace/api-client-react";
@@ -20,9 +20,24 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, isSignedIn } = useUser();
   const { signOut } = useClerk();
 
-  const { data: myProfile } = useGetMyProfile({
+  const {
+    data: myProfile,
+    status: profileStatus,
+    error: profileError,
+    fetchStatus,
+  } = useGetMyProfile({
     query: { enabled: isSignedIn === true, retry: false },
   });
+
+  useEffect(() => {
+    if (isSignedIn === undefined) return; // Clerk still loading
+    console.log("[AdminDebug] isSignedIn:", isSignedIn);
+    console.log("[AdminDebug] profileStatus:", profileStatus, "fetchStatus:", fetchStatus);
+    console.log("[AdminDebug] myProfile:", myProfile ?? null);
+    console.log("[AdminDebug] myProfile.role:", myProfile?.role ?? "(none)");
+    console.log("[AdminDebug] myProfile.isAdmin:", myProfile?.isAdmin ?? "(none)");
+    if (profileError) console.log("[AdminDebug] profileError:", profileError);
+  }, [isSignedIn, myProfile, profileStatus, fetchStatus, profileError]);
 
   const isAdmin = myProfile?.role === "admin";
 
