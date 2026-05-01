@@ -314,15 +314,16 @@ export function GamesPage() {
               <Link
                 key={game.id}
                 href={`/games/${game.id}`}
-                className="card-base p-5 flex items-center gap-5 hover:shadow-md hover:border-primary/30 transition-all group"
+                className="card-base p-5 flex items-center gap-4 hover:shadow-md hover:border-primary/30 transition-all group"
               >
-                <div className="w-24 flex-shrink-0">
+                {/* Date / status */}
+                <div className="w-20 flex-shrink-0">
                   <p className="label-upper text-[10px] mb-1">{game.season}</p>
                   <p className="text-sm font-semibold text-secondary">
                     {game.gameDate}
                   </p>
                   <span
-                    className={`inline-block mt-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    className={`inline-block mt-1.5 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                       statusStyle[game.status] ??
                       "bg-muted text-muted-foreground"
                     }`}
@@ -331,59 +332,57 @@ export function GamesPage() {
                   </span>
                 </div>
 
-                <div className="flex-1 space-y-2.5">
+                {/* Teams — names only, scores are in their own column */}
+                <div className="flex-1 min-w-0 space-y-2.5">
                   {[
-                    { team: homeTeam, score: game.homeScore, won: homeWon },
-                    { team: awayTeam, score: game.awayScore, won: awayWon },
-                  ].map(({ team, score, won }, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between gap-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs text-white flex-shrink-0"
-                          style={{
-                            background: team
-                              ? `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#888"})`
-                              : "#888",
-                          }}
-                        >
-                          {team?.abbreviation ?? "?"}
-                        </div>
-                        <span
-                          className={`text-sm font-semibold ${
-                            won
-                              ? "text-secondary font-bold"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {team?.name ?? (idx === 0 ? "Home" : "Away")}
-                        </span>
+                    { team: homeTeam, won: homeWon },
+                    { team: awayTeam, won: awayWon },
+                  ].map(({ team, won }, idx) => (
+                    <div key={idx} className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs text-white flex-shrink-0"
+                        style={{
+                          background: team
+                            ? `linear-gradient(135deg, ${team.secondaryColor ?? "#132237"}, ${team.primaryColor ?? "#888"})`
+                            : "#888",
+                        }}
+                      >
+                        {team?.abbreviation ?? "?"}
                       </div>
                       <span
-                        className={`font-display text-xl ${
-                          won
-                            ? "text-primary"
-                            : isFinal
-                            ? "text-secondary"
-                            : "text-muted-foreground"
+                        className={`text-sm font-semibold truncate ${
+                          won ? "text-secondary" : "text-muted-foreground"
                         }`}
                       >
-                        {isFinal ? score : "—"}
+                        {team?.name ?? (idx === 0 ? "Home" : "Away")}
                       </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                  {game.location && (
-                    <p className="text-xs text-muted-foreground text-right hidden sm:block max-w-[100px] leading-snug">
-                      {game.location}
-                    </p>
-                  )}
-                  <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
+                {/* Scores — own fixed-width column, aligned with team rows */}
+                <div className="flex-shrink-0 flex flex-col items-end gap-2.5">
+                  {[
+                    { score: game.homeScore, won: homeWon },
+                    { score: game.awayScore, won: awayWon },
+                  ].map(({ score, won }, idx) => (
+                    <span
+                      key={idx}
+                      className={`font-display text-xl leading-none ${
+                        won
+                          ? "text-primary"
+                          : isFinal
+                          ? "text-secondary"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {isFinal ? score : "—"}
+                    </span>
+                  ))}
                 </div>
+
+                {/* Arrow — always at the far right, never between scores */}
+                <ArrowRight className="h-4 w-4 text-primary flex-shrink-0 group-hover:translate-x-1 transition-transform" />
               </Link>
             );
           })}

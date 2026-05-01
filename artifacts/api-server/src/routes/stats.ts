@@ -34,14 +34,16 @@ async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade
 }
 
 router.get("/stats/leaders", async (_req, res): Promise<void> => {
-  const [points, rebounds, assists, threesMade] = await Promise.all([
+  const [points, rebounds, assists, threesMade, steals, blocks] = await Promise.all([
     getLeaders("points"),
     getLeaders("rebounds"),
     getLeaders("assists"),
     getLeaders("threesMade"),
+    getLeaders("steals"),
+    getLeaders("blocks"),
   ]);
 
-  res.json(GetStatLeadersResponse.parse({ points, rebounds, assists, threesMade }));
+  res.json(GetStatLeadersResponse.parse({ points, rebounds, assists, threesMade, steals, blocks }));
 });
 
 router.get("/stats/summary", async (_req, res): Promise<void> => {
