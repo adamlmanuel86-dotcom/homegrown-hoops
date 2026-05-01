@@ -1062,16 +1062,22 @@ components:
           type: integer
         points:
           type: integer
+          nullable: true
         rebounds:
           type: integer
+          nullable: true
         assists:
           type: integer
+          nullable: true
         steals:
           type: integer
+          nullable: true
         blocks:
           type: integer
+          nullable: true
         turnovers:
           type: integer
+          nullable: true
         minutesPlayed:
           type: integer
         fieldGoalsMade:
@@ -1080,6 +1086,7 @@ components:
           type: integer
         threesMade:
           type: integer
+          nullable: true
         threesAttempted:
           type: integer
         freeThrowsMade:

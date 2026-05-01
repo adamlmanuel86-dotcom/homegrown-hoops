@@ -8,7 +8,7 @@ import {
 
 const router: IRouter = Router();
 
-async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade", limit = 100) {
+async function getLeaders(field: "points" | "rebounds" | "assists" | "threesMade" | "steals" | "blocks", limit = 100) {
   const col = gamePlayerStatsTable[field];
   const rows = await db
     .select({
