@@ -1,0 +1,112 @@
+You are a Node.js developer seeding a youth basketball player into a production PostgreSQL database for the Homegrown Hoops platform.
+
+CONNECTION STRING:
+postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway
+
+PACKAGE: Use `pg` npm package only. Run: npm install pg
+
+IMPORTANT: Before inserting anything, query and print the column names for ALL of these tables so you understand the exact schema:
+- teams
+- players
+- games
+- game_player_stats
+- user_profiles
+
+Print each table's columns to the console, then proceed with inserts that match the real column names exactly.
+
+---
+
+STEP 1 — CREATE TEAM (if not already present)
+
+INSERT into `teams` a row for:
+- Name: Surge Spartans
+- Type/level: Youth / Rep
+- Location: Saint John, NB (or whatever location column exists)
+- Use INSERT ... ON CONFLICT DO NOTHING if a unique constraint exists on name
+- Save the returned team_id
+
+---
+
+STEP 2 — CREATE PLAYER PROFILE
+
+INSERT into `players`:
+- First name: Heath
+- Last name: Manuel
+- Position: Point Guard
+- Team: Surge Spartans (use team_id from Step 1)
+- Jersey/number: NULL (unknown)
+- Any other columns: use NULL or sensible defaults
+- Use ON CONFLICT DO NOTHING
+- Save the returned player_id
+
+---
+
+STEP 3 — CREATE USER PROFILE
+
+INSERT into `user_profiles` a linked profile for Heath:
+- Link to player_id from Step 2
+- Name: Heath Manuel
+- Role: player (or whatever enum/value the column expects)
+- Use NULL for email, auth_id, avatar, or any unknown fields
+- Use ON CONFLICT DO NOTHING
+
+---
+
+STEP 4 — INSERT GAMES & STATS
+
+For each game below, do the following in order:
+1. INSERT a row into `games` — save the returned game_id
+2. INSERT a row into `game_player_stats` linking player_id + game_id with Heath's stats
+
+Use approximate dates (all games are from spring 2026 — use 2026-04-01, 2026-04-08, 2026-04-15 as placeholders if no real dates are known).
+
+---
+
+GAME 1:
+- games: home_team=Surge Spartans, away_team=UNB Reds, home_score=31, away_score=53, date=2026-04-01, result=L
+- game_player_stats: points=2, rebounds=3, assists=3, steals=3, blocks=1, turnovers=1
+
+GAME 2:
+- games: home_team=Surge Spartans, away_team=Salisbury, home_score=35, away_score=43, date=2026-04-08, result=L
+- game_player_stats: points=0, rebounds=3, assists=4, steals=1, blocks=0, turnovers=4
+
+GAME 3:
+- games: home_team=Surge Spartans, away_team=506 Elite, home_score=32, away_score=48, date=2026-04-15, result=L
+- game_player_stats: points=3, rebounds=1, assists=1, steals=4, blocks=0, turnovers=3
+
+---
+
+STEP 5 — TRIGGER RECOGNITION RECALCULATION
+
+After all inserts, make an HTTP POST request to the Homegrown Hoops API to trigger recognition recalculation for Heath's player_id:
+
+Try each of these endpoint patterns (attempt one, if 404 try the next):
+- POST https://homegrown-hoops.vercel.app/api/recognition/recalculate
+- POST https://homegrown-hoops.vercel.app/api/players/{player_id}/recalculate
+- POST https://homegrown-hoops.vercel.app/api/recalculate
+
+Send body: { "player_id": <heath_player_id> }
+Use the built-in `fetch` (Node 18+) or install `node-fetch` if needed.
+Log the full response status and body.
+If all endpoints 404, log a warning but do not crash — the DB seed is still valid.
+
+---
+
+STEP 6 — VERIFICATION
+
+Run these SELECT queries and print all results:
+1. Heath's row from `players`
+2. Heath's row from `user_profiles`
+3. All 3 rows from `games` where his team played
+4. All 3 rows from `game_player_stats` for his player_id
+5. Print a summary: "Heath Manuel seeded successfully — 3 games, 3 stat rows"
+
+---
+
+ERROR HANDLING:
+- Wrap every step in try/catch
+- Log the step name + full error on failure
+- Do not abort the whole script on a single step failure — continue to next step
+- Close the DB connection in a finally block
+
+Run with: node seed_heath.js
