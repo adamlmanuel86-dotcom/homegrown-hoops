@@ -384,24 +384,26 @@ export async function recalculateTides(season: string): Promise<void> {
 
 // ─── 3. Recalculate archetypes for a team ─────────────────────────────────────
 //
-// Multi-player rules (2+ players with stats on team):
-//  • The Mainstay  — ONE per team: the player with the highest PPG.
-//  • The Vortex    — any player whose RPG is their single highest secondary stat.
-//  • The Current   — any player whose APG is their single highest secondary stat.
-//  • The Deep      — any player whose 3PG is their single highest secondary stat.
-//  • The Climb     — default for any player with ≥1 game who hasn't clearly
-//                    distinguished themselves in one category (including ties,
-//                    or when SPG/BPG leads with no named archetype).
-//  • Uncharted     — no games recorded.
+// Archetype is determined by weighted per-game category scores:
+//   Scoring score    = PPG × 10
+//   Rebounding score = RPG × 15
+//   Playmaking score = APG × 20
+//   Steals score     = SPG × 35
+//   Blocks score     = BPG × 35
+//   Threes score     = 3PG × 10  (only counts when 3PG ≥ 1.5; else 0)
 //
-// Solo player rule (exactly 1 player with stats on team):
-//  Self-relative comparison across ALL categories (PPG, RPG, APG, 3PG, SPG, BPG).
-//  Highest → The Mainstay / Vortex / Current / Deep / Warden / Wall.
-//  Tie or all-zero → The Climb.
+// The category with the highest weighted score is dominant.
+// Ties or all-zero → The Climb.
 //
-// Multiple players may share Vortex/Current/Deep/Climb.
-// Secondary-stat comparison uses: RPG, APG, 3PG, SPG, BPG.
-// PPG drives Mainstay selection only.
+//  • Scoring dominant + highest PPG on team → The Mainstay (one per team)
+//  • Scoring dominant + NOT highest PPG     → The Climb
+//  • Rebounding dominant                   → The Vortex
+//  • Playmaking dominant                   → The Current
+//  • Steals dominant                       → The Warden
+//  • Blocks dominant                       → The Wall
+//  • Threes dominant (≥ 1.5 3PG)           → The Deep
+//  • All scores zero or tied               → The Climb
+//  • No games recorded                     → Uncharted
 export async function recalculateArchetypesForTeam(
   teamId: number,
   season: string
@@ -434,62 +436,48 @@ export async function recalculateArchetypesForTeam(
     avgBlocks:   mean(p.games.map((g) => g.blocks)),
   }));
 
-  // ── Steps 1 & 2: Assign each player their archetype ──────────────────────
+  // ── Weighted-score archetype helper ──────────────────────────────────────
+  // Returns the dominant category key or null if all zero / tied.
+  function dominantCategory(p: PlayerAvgs): string | null {
+    const scores: Record<string, number> = {
+      scoring:    p.avgPoints * 10,
+      rebounding: p.avgRebounds * 15,
+      playmaking: p.avgAssists * 20,
+      steals:     p.avgSteals * 35,
+      blocks:     p.avgBlocks * 35,
+      threes:     p.avgThrees >= 1.5 ? p.avgThrees * 10 : 0,
+    };
+    const maxVal = Math.max(...Object.values(scores));
+    if (maxVal <= 0) return null;
+    const leaders = Object.entries(scores).filter(([, v]) => Math.abs(v - maxVal) <= 1e-10);
+    return leaders.length === 1 ? leaders[0][0] : null; // null = tied
+  }
+
+  function categoryToArchetype(cat: string | null, isTopScorer: boolean): string {
+    switch (cat) {
+      case "scoring":    return isTopScorer ? "The Mainstay" : "The Climb";
+      case "rebounding": return "The Vortex";
+      case "playmaking": return "The Current";
+      case "steals":     return "The Warden";
+      case "blocks":     return "The Wall";
+      case "threes":     return "The Deep";
+      default:           return "The Climb";
+    }
+  }
+
+  // ── Assign archetypes ────────────────────────────────────────────────────
   const assignments = new Map<string, string>();
 
-  if (avgs.length === 1) {
-    // ── Solo player: self-relative comparison across ALL stat categories ──
-    const p = avgs[0];
-    const key = `${p.firstName}|${p.lastName}`;
-    const cats = [
-      { archetype: "The Mainstay", value: p.avgPoints   },
-      { archetype: "The Vortex",   value: p.avgRebounds },
-      { archetype: "The Current",  value: p.avgAssists  },
-      { archetype: "The Deep",     value: p.avgThrees   },
-      { archetype: "The Warden",   value: p.avgSteals   },
-      { archetype: "The Wall",     value: p.avgBlocks   },
-    ];
-    const maxVal = Math.max(...cats.map((c) => c.value));
-    if (maxVal <= 0) {
-      assignments.set(key, "The Climb");
-    } else {
-      const leaders = cats.filter((c) => Math.abs(c.value - maxVal) <= 1e-10);
-      assignments.set(key, leaders.length === 1 ? leaders[0].archetype : "The Climb");
-    }
-  } else if (avgs.length > 1) {
-    // ── Multi-player team: existing team-relative logic ───────────────────
-    // Mainstay = highest PPG (exclusive, one per team)
-    const top = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
-    const mainstayKey = `${top.firstName}|${top.lastName}`;
+  if (avgs.length >= 1) {
+    // Mainstay candidate = player with highest PPG on the team
+    const topScorer = avgs.reduce((best, p) => (p.avgPoints > best.avgPoints ? p : best));
+    const topScorerKey = `${topScorer.firstName}|${topScorer.lastName}`;
 
     for (const p of avgs) {
       const key = `${p.firstName}|${p.lastName}`;
-
-      if (key === mainstayKey) {
-        assignments.set(key, "The Mainstay");
-        continue;
-      }
-
-      // Compare secondary per-game stats. SPG and BPG have no named archetype
-      // in the multi-player context — if they lead, player gets The Climb.
-      const secondaryStats = [
-        { archetype: "The Vortex"  as string | null, value: p.avgRebounds },
-        { archetype: "The Current" as string | null, value: p.avgAssists  },
-        { archetype: "The Deep"    as string | null, value: p.avgThrees   },
-        { archetype: null,                           value: p.avgSteals   },
-        { archetype: null,                           value: p.avgBlocks   },
-      ];
-
-      const maxVal = Math.max(...secondaryStats.map((s) => s.value));
-      const leaders = secondaryStats.filter((s) => Math.abs(s.value - maxVal) <= 1e-10);
-
-      // Require the dominant stat to be meaningful (≥2.0/game) before awarding
-      // a category-named archetype. Low-production players default to The Climb.
-      if (maxVal >= 2.0 && leaders.length === 1 && leaders[0].archetype !== null) {
-        assignments.set(key, leaders[0].archetype);
-      } else {
-        assignments.set(key, "The Climb");
-      }
+      const cat = dominantCategory(p);
+      const isTopScorer = key === topScorerKey;
+      assignments.set(key, categoryToArchetype(cat, isTopScorer));
     }
   }
 

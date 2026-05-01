@@ -1,0 +1,29 @@
+“Please update the archetype assignment logic in recognition.ts to use the Legacy Score formula weights to determine each player’s dominant statistical category. Here is the exact logic to implement:
+Step 1 — Calculate weighted category scores per game:
+	•	Scoring score = PPG × 10
+	•	Rebounding score = RPG × 15
+	•	Playmaking score = APG × 20
+	•	Steals score = SPG × 35
+	•	Blocks score = BPG × 35
+Step 2 — Find the highest weighted score. That is the player’s dominant category.
+Step 3 — Assign archetype based on dominant category:
+	•	Scoring dominant → check if highest PPG on team → The Mainstay (one per team only). If not highest scorer → The Climb
+	•	Rebounding dominant → The Vortex
+	•	Playmaking dominant → The Current
+	•	Steals dominant → The Warden
+	•	Blocks dominant → The Wall
+	•	Three pointers → The Deep (use 3PM × 10 as the score since it uses same points multiplier, minimum 1.5 3PM per game to qualify)
+	•	If all scores are low or tied → The Climb
+	•	If player has very few minutes and high points per minute → The Spark
+Step 4 — Update all archetype description text everywhere it appears to describe what the player does not their team rank. Examples:
+	•	The Current: ‘A natural playmaker whose passing defines how this team moves the ball’
+	•	The Vortex: ‘Rebounds are this player’s signature — they control the glass on both ends’
+	•	The Warden: ‘Steals are this player’s weapon — they make the game difficult for ball handlers’
+	•	The Wall: ‘Shot blocking defines this player — they protect the paint and change shots’
+	•	The Deep: ‘The three pointer is this player’s signature weapon’
+	•	The Mainstay: ‘The go-to scorer — when points are needed this player delivers’
+	•	The Climb: ‘Still writing their story — consistent contributor whose best games are ahead’
+	•	The Spark: ‘Maximum impact in minimum minutes — this player changes the game off the bench’
+	•	Uncharted: ‘Your story has not been written yet — step on the court and begin’
+Step 5 — Recalculate archetypes for all existing players in the Railway database using connection string postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway
+Push all changes to GitHub.”
