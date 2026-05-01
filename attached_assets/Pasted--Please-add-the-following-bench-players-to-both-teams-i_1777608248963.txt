@@ -1,0 +1,23 @@
+“Please add the following bench players to both teams in the Railway database and insert their stats for all 5 games. Use connection string postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway
+Add to The Surge (Cleveland) bench:
+PG2-Surge, SG2-Surge, SF2-Surge, PF2-Surge, C2-Surge
+(Schroder, Strus, Tyson, Merrill, Ellis)
+Add to The Lynx (Toronto) bench:
+PG2-Lynx, SG2-Lynx, SF2-Lynx, PF2-Lynx, C2-Lynx
+(Shead, Walter, Murray-Boyles, Battle, Lawson)
+Game 1 — Surge 126 Lynx 113:
+Surge bench: PG2: 2pts 1reb 2ast 0stl 0blk 1to | SG2: 24pts 3reb 0ast 0stl 0blk 2to | SF2: 2pts 0reb 1ast 1stl 0blk 0to | PF2: 7pts 4reb 2ast 1stl 0blk 0to | C2: 3pts 3reb 0ast 1stl 0blk 0to
+Lynx bench: PG2: 17pts 1reb 2ast 0stl 0blk 2to | SG2: 7pts 2reb 2ast 0stl 0blk 0to | SF2: 14pts 4reb 4ast 0stl 0blk 1to | PF2: 0pts 0reb 0ast 0stl 0blk 0to | C2: 2pts 0reb 3ast 1stl 1blk 0to
+Game 2 — Surge 115 Lynx 105:
+Surge bench: PG2: 5pts 1reb 4ast 0stl 0blk 0to | SG2: 6pts 3reb 3ast 1stl 0blk 1to | SF2: 3pts 2reb 1ast 1stl 0blk 1to | PF2: 5pts 1reb 1ast 1stl 0blk 0to | C2: 0pts 0reb 0ast 0stl 0blk 0to
+Lynx bench: PG2: 0pts 0reb 0ast 0stl 0blk 0to | SG2: 14pts 1reb 1ast 1stl 0blk 1to | SF2: 12pts 10reb 2ast 1stl 0blk 2to | PF2: 2pts 0reb 1ast 0stl 0blk 0to | C2: 2pts 4reb 1ast 0stl 0blk 2to
+Game 3 — Lynx 126 Surge 104:
+Surge bench: PG2: 3pts 1reb 0ast 0stl 0blk 3to | SG2: 15pts 6reb 3ast 1stl 0blk 2to | SF2: 13pts 2reb 4ast 1stl 0blk 0to | PF2: 3pts 3reb 0ast 0stl 0blk 0to | C2: 0pts 4reb 0ast 0stl 1blk 1to
+Lynx bench: PG2: 2pts 1reb 5ast 5stl 0blk 3to | SG2: 0pts 2reb 0ast 0stl 0blk 0to | SF2: 22pts 8reb 2ast 1stl 1blk 2to | PF2: 14pts 2reb 0ast 0stl 0blk 0to | C2: 2pts 0reb 3ast 0stl 0blk 0to
+Game 4 — Lynx 93 Surge 89:
+Surge bench: PG2: 19pts 1reb 2ast 1stl 0blk 0to | SG2: 8pts 2reb 1ast 0stl 0blk 0to | SF2: 5pts 1reb 0ast 0stl 0blk 0to | PF2: 4pts 1reb 0ast 0stl 0blk 0to | C2: 0pts 0reb 0ast 0stl 0blk 0to
+Lynx bench: PG2: 8pts 1reb 3ast 0stl 0blk 0to | SG2: 10pts 2reb 1ast 0stl 0blk 0to | SF2: 8pts 4reb 1ast 0stl 0blk 1to | PF2: 4pts 1reb 0ast 0stl 0blk 0to | C2: 0pts 1reb 1ast 0stl 0blk 0to
+Game 5 — Surge 125 Lynx 120:
+Surge bench: PG2: 19pts 1reb 2ast 0stl 0blk 1to | SG2: 10pts 2reb 1ast 0stl 0blk 0to | SF2: 5pts 1reb 0ast 1stl 0blk 0to | PF2: 7pts 2reb 2ast 0stl 0blk 0to | C2: 3pts 1reb 0ast 1stl 0blk 0to
+Lynx bench: PG2: 6pts 2reb 4ast 1stl 0blk 1to | SG2: 12pts 1reb 1ast 0stl 0blk 0to | SF2: 10pts 3reb 1ast 0stl 0blk 1to | PF2: 4pts 1reb 0ast 0stl 0blk 0to | C2: 2pts 1reb 0ast 0stl 0blk 1to
+After inserting all players and stats please create user profiles for all 10 bench players and trigger recognition recalculation so their stamps archetypes and legacy scores are computed.”**
