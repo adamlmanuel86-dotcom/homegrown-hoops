@@ -332,12 +332,12 @@ export function GamesPage() {
                   </span>
                 </div>
 
-                {/* Teams — names only, scores are in their own column */}
+                {/* Teams + Scores — score lives inside each team row for perfect alignment */}
                 <div className="flex-1 min-w-0 space-y-2.5">
                   {[
-                    { team: homeTeam, won: homeWon },
-                    { team: awayTeam, won: awayWon },
-                  ].map(({ team, won }, idx) => (
+                    { team: homeTeam, won: homeWon, score: game.homeScore },
+                    { team: awayTeam, won: awayWon, score: game.awayScore },
+                  ].map(({ team, won, score }, idx) => (
                     <div key={idx} className="flex items-center gap-3 min-w-0">
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs text-white flex-shrink-0"
@@ -350,34 +350,24 @@ export function GamesPage() {
                         {team?.abbreviation ?? "?"}
                       </div>
                       <span
-                        className={`text-sm font-semibold truncate ${
+                        className={`flex-1 text-sm font-semibold truncate ${
                           won ? "text-secondary" : "text-muted-foreground"
                         }`}
                       >
                         {team?.name ?? (idx === 0 ? "Home" : "Away")}
                       </span>
+                      <span
+                        className={`flex-shrink-0 font-display text-xl leading-none ${
+                          won
+                            ? "text-primary"
+                            : isFinal
+                            ? "text-secondary"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {isFinal ? score : "—"}
+                      </span>
                     </div>
-                  ))}
-                </div>
-
-                {/* Scores — own fixed-width column, aligned with team rows */}
-                <div className="flex-shrink-0 flex flex-col items-end gap-2.5">
-                  {[
-                    { score: game.homeScore, won: homeWon },
-                    { score: game.awayScore, won: awayWon },
-                  ].map(({ score, won }, idx) => (
-                    <span
-                      key={idx}
-                      className={`font-display text-xl leading-none ${
-                        won
-                          ? "text-primary"
-                          : isFinal
-                          ? "text-secondary"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {isFinal ? score : "—"}
-                    </span>
                   ))}
                 </div>
 

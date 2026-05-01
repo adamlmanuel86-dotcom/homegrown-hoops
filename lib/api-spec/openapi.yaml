@@ -1173,6 +1173,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlayerLeaderEntry"
+        threesMade:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerLeaderEntry"
         steals:
           type: array
           items:
@@ -1185,6 +1189,7 @@ components:
         - points
         - rebounds
         - assists
+        - threesMade
         - steals
         - blocks
 

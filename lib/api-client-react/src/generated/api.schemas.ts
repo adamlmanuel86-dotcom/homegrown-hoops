@@ -276,6 +276,7 @@ export interface StatLeaders {
   points: PlayerLeaderEntry[];
   rebounds: PlayerLeaderEntry[];
   assists: PlayerLeaderEntry[];
+  threesMade: PlayerLeaderEntry[];
   steals: PlayerLeaderEntry[];
   blocks: PlayerLeaderEntry[];
 }
