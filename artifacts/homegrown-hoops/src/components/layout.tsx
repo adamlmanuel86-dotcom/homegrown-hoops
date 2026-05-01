@@ -20,11 +20,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { user, isSignedIn } = useUser();
   const { signOut } = useClerk();
 
-  const {
-    data: myProfile,
-    status: profileStatus,
-    error: profileError,
-  } = useGetMyProfile({
+  const { data: myProfile } = useGetMyProfile({
     query: { enabled: isSignedIn === true, retry: false },
   });
 
@@ -256,40 +252,6 @@ export function Layout({ children }: { children: ReactNode }) {
           <div>© {new Date().getFullYear()} Homegrown Hoops</div>
         </div>
       </footer>
-
-      {/* ── Admin debug overlay (temporary) ─────────────────────────────── */}
-      {isSignedIn && (
-        <div
-          style={{
-            position: "fixed",
-            top: "72px",
-            right: "12px",
-            zIndex: 9999,
-            background: "rgba(0,0,0,0.85)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: "8px",
-            padding: "10px 14px",
-            fontSize: "11px",
-            fontFamily: "monospace",
-            color: "#fff",
-            maxWidth: "220px",
-            lineHeight: 1.6,
-          }}
-        >
-          <div style={{ fontWeight: "bold", marginBottom: "4px", color: "#f97316" }}>
-            🛠 Admin Debug
-          </div>
-          <div>status: <b>{profileStatus}</b></div>
-          <div>role: <b>{myProfile?.role ?? "(none)"}</b></div>
-          <div>isAdmin: <b>{String(myProfile?.isAdmin ?? "(none)")}</b></div>
-          <div>isAdmin(check): <b>{String(isAdmin)}</b></div>
-          {profileError && (
-            <div style={{ color: "#f87171", marginTop: "4px" }}>
-              error: {String((profileError as { status?: number })?.status ?? profileError)}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
