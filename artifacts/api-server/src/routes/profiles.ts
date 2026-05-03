@@ -318,6 +318,45 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   res.json(GetProfileResponse.parse(serializeRow(profile)));
 });
 
+// Admin-only: update avatar (upload or clear) for any profile
+router.patch("/profiles/:clerkUserId/avatar", async (req, res): Promise<void> => {
+  const requesterId = requireAuth(req, res);
+  if (!requesterId) return;
+
+  const [requesterProfile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, requesterId));
+
+  if (!requesterProfile?.isAdmin) {
+    res.status(403).json({ error: "Forbidden — admin only" });
+    return;
+  }
+
+  const { clerkUserId } = req.params;
+  const body = req.body as { avatarUrl?: string | null };
+  // Accept explicit null (clear) or a string URL (set)
+  const newAvatarUrl = body.avatarUrl === undefined ? undefined : (body.avatarUrl ?? null);
+
+  if (newAvatarUrl === undefined) {
+    res.status(400).json({ error: "avatarUrl is required (pass null to clear)" });
+    return;
+  }
+
+  const [profile] = await db
+    .update(userProfilesTable)
+    .set({ avatarUrl: newAvatarUrl, updatedAt: new Date() })
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId))
+    .returning();
+
+  if (!profile) {
+    res.status(404).json({ error: "Profile not found" });
+    return;
+  }
+
+  res.json({ avatarUrl: profile.avatarUrl });
+});
+
 // Admin-only: permanently delete a player profile
 router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   const requesterId = requireAuth(req, res);

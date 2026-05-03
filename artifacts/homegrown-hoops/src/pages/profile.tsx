@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "wouter";
 import { useUser } from "@clerk/react";
 import {
   useGetProfile,
+  useGetMyProfile,
   useListPlayers,
   useGetPlayerStats,
   useListTeams,
@@ -10,10 +11,12 @@ import {
   useGetPlayerStatsBySeason,
   useGetIsoBallProfile,
 } from "@workspace/api-client-react";
-import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 import { MILESTONE_BONUSES } from "@/components/player-card";
+import { apiBase } from "@/lib/api";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -103,6 +106,108 @@ export function ProfilePage() {
   const teamLabel = team?.name ?? "Unaffiliated / No Team";
 
   const isOwner = isSignedIn && user?.id === clerkUserId;
+
+  const qc = useQueryClient();
+
+  // Admin detection — fetch the signed-in user's own profile to check isAdmin
+  const { data: myProfile } = useGetMyProfile({
+    query: { enabled: isSignedIn === true, retry: false },
+  });
+  const isViewerAdmin = myProfile?.isAdmin === true;
+
+  // ── Admin photo upload state ──────────────────────────────────────────────
+  const [editingPhoto, setEditingPhoto] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function openPhotoEditor() {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setPhotoError(null);
+    setEditingPhoto(true);
+  }
+
+  function closePhotoEditor() {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setPhotoError(null);
+    setEditingPhoto(false);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+    setPhotoError(null);
+  }
+
+  async function uploadToCloudinary(file: File): Promise<string | null> {
+    try {
+      const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, { method: "POST" });
+      if (!sigRes.ok) return null;
+      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("api_key", apiKey);
+      fd.append("timestamp", String(timestamp));
+      fd.append("signature", signature);
+      fd.append("folder", folder);
+      const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!upRes.ok) return null;
+      const data = await upRes.json();
+      return data.secure_url ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function saveAvatar(avatarUrl: string | null) {
+    const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ avatarUrl }),
+    });
+    if (!res.ok) throw new Error("Failed to update avatar");
+    await qc.invalidateQueries({ queryKey: [`/api/profiles/${clerkUserId}`] });
+    await refetchProfile();
+  }
+
+  async function handleSavePhoto() {
+    if (!avatarFile) return;
+    setIsUploadingPhoto(true);
+    setPhotoError(null);
+    try {
+      const url = await uploadToCloudinary(avatarFile);
+      if (!url) { setPhotoError("Upload failed — please try again."); return; }
+      await saveAvatar(url);
+      closePhotoEditor();
+    } catch {
+      setPhotoError("Something went wrong. Please try again.");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
+
+  async function handleRemovePhoto() {
+    setIsUploadingPhoto(true);
+    setPhotoError(null);
+    try {
+      await saveAvatar(null);
+      closePhotoEditor();
+    } catch {
+      setPhotoError("Failed to remove photo.");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
 
   const { data: isoBallData, refetch: refetchIsoBall } = useGetIsoBallProfile(clerkUserId || null);
 
@@ -303,6 +408,103 @@ export function ProfilePage() {
         );
       })()}
 
+      {/* Hidden file input — accept="image/*" opens camera roll on mobile */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* Admin photo editor modal */}
+      {editingPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+          onClick={closePhotoEditor}
+        >
+          <div
+            className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden"
+            style={{ background: "hsl(222 42% 9%)", border: "1px solid hsl(220 28% 16%)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-1 w-full" style={{ background: "linear-gradient(to right, #F97316, #A78BFA)" }} />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+              <p className="font-bold text-white text-base">Edit Photo</p>
+              <button
+                onClick={closePhotoEditor}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "hsl(220 28% 14%)" }}
+              >
+                <XIcon className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* Preview */}
+              {(avatarPreview || profile.avatarUrl) && (
+                <div className="flex justify-center">
+                  <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-primary/40">
+                    <img
+                      src={avatarPreview ?? profile.avatarUrl!}
+                      alt="Photo preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {photoError && (
+                <p className="text-xs text-red-400 text-center">{photoError}</p>
+              )}
+
+              {/* Upload button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50"
+                style={{ background: "hsl(220 28% 14%)", border: "1px solid hsl(220 28% 22%)", color: "hsl(210 16% 88%)" }}
+              >
+                <Camera className="h-4 w-4" />
+                {avatarPreview ? "Choose different photo" : "Upload photo from camera roll"}
+              </button>
+
+              {/* Save button — shown only when a new file is chosen */}
+              {avatarFile && (
+                <button
+                  onClick={handleSavePhoto}
+                  disabled={isUploadingPhoto}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 btn-primary"
+                >
+                  {isUploadingPhoto ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Uploading…</>
+                  ) : (
+                    <><Award className="h-4 w-4" /> Save Photo</>
+                  )}
+                </button>
+              )}
+
+              {/* Remove button — shown only when there's a current photo */}
+              {profile.avatarUrl && !avatarFile && (
+                <button
+                  onClick={handleRemovePhoto}
+                  disabled={isUploadingPhoto}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50"
+                  style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.25)", color: "#EF4444" }}
+                >
+                  {isUploadingPhoto ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Removing…</>
+                  ) : (
+                    <><XIcon className="h-4 w-4" /> Remove current photo</>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-4">
         <PlayerCard
           profile={displayProfile}
@@ -311,6 +513,16 @@ export function ProfilePage() {
           primaryColor={team?.primaryColor ?? "#B45309"}
           secondaryColor={team?.secondaryColor ?? "#1E3A5F"}
         />
+        {isViewerAdmin && (
+          <button
+            onClick={openPhotoEditor}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors"
+            style={{ background: "hsl(220 28% 14%)", border: "1px solid hsl(220 28% 22%)", color: "hsl(210 16% 65%)" }}
+          >
+            <Camera className="h-3.5 w-3.5" />
+            Edit Photo
+          </button>
+        )}
         {isoBallData && isoBallData.sessionCount > 0 && (
           <BallKnowledgeBlock
             totalPoints={isoBallData.totalPoints}

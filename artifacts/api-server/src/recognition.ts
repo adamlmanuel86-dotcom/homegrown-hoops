@@ -438,8 +438,49 @@ export async function recalculateArchetypesForTeam(
   // ── Assign archetypes ────────────────────────────────────────────────────
   const assignments = new Map<string, string>();
 
-  if (avgs.length >= 1) {
-    // Pre-compute team category maximums for "highest on team" checks
+  if (avgs.length === 1) {
+    // ── Solo-player path ────────────────────────────────────────────────────
+    // When only one player is on the team there is no meaningful "highest on
+    // team" comparison — they would win every category by default.  Instead,
+    // assign an archetype purely from absolute stat thresholds, then fall back
+    // to their single strongest category so they are never stuck on The Climb
+    // simply because no team-mates exist to compare against.
+    const p   = avgs[0];
+    const key = `${p.firstName}|${p.lastName}`;
+    const sc  = p.avgPoints   * 10;
+    const rb  = p.avgRebounds * 15;
+    const pl  = p.avgAssists  * 20;
+    const st  = p.avgSteals   * 35;
+    const bl  = p.avgBlocks   * 35;
+    const th  = p.avgThrees   * 40;
+
+    let archetype: string;
+    if      (sc >= 180)                               archetype = "The Mainstay";
+    else if (sc >= 150 && (rb > 90 || pl > 80))       archetype = "The Engine";
+    else if (th >= 80 && p.avgThrees >= 2)            archetype = "The Deep";
+    else if (rb >= 90)                                archetype = "The Vortex";
+    else if (pl >= 100)                               archetype = "The Current";
+    else if (st >= 70)                                archetype = "The Warden";
+    else if (bl >= 52)                                archetype = "The Wall";
+    else {
+      // Below all absolute thresholds — give the player the archetype for their
+      // single highest weighted score so the card always reflects their game.
+      const categories = [
+        { id: "The Mainstay", score: sc },
+        { id: "The Deep",     score: th },
+        { id: "The Vortex",   score: rb },
+        { id: "The Current",  score: pl },
+        { id: "The Warden",   score: st },
+        { id: "The Wall",     score: bl },
+      ];
+      const best = categories.reduce((a, b) => (b.score > a.score ? b : a));
+      archetype = best.score > 0 ? best.id : "The Climb";
+    }
+
+    assignments.set(key, archetype);
+
+  } else if (avgs.length > 1) {
+    // ── Multi-player path — team comparison ─────────────────────────────────
     const teamMaxReb    = Math.max(...avgs.map((a) => a.avgRebounds * 15));
     const teamMaxPl     = Math.max(...avgs.map((a) => a.avgAssists  * 20));
     const teamMaxSt     = Math.max(...avgs.map((a) => a.avgSteals   * 35));
