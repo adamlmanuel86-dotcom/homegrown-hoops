@@ -23,13 +23,35 @@ router.get("/ping", (_req, res) => {
  */
 router.get("/debug/auth", async (req, res): Promise<void> => {
   try {
+    const rawAuth = req.headers.authorization ?? "";
+    const clerkSecret = process.env.CLERK_SECRET_KEY ?? "";
+
+    // Capture env diagnostics before any auth check
+    const envDiag = {
+      CLERK_SECRET_KEY_set: !!clerkSecret,
+      // sk_test_ = development instance, sk_live_ = production instance
+      CLERK_SECRET_KEY_prefix: clerkSecret ? clerkSecret.substring(0, 12) : "(not set)",
+      NODE_ENV: process.env.NODE_ENV ?? "(not set)",
+      hasAuthorizationHeader: !!rawAuth,
+      // Show "Bearer eyJ…" prefix only — never the full token
+      authorizationPrefix: rawAuth
+        ? rawAuth.substring(0, Math.min(rawAuth.length, 20)) + "…"
+        : "(none)",
+    };
+
     const { userId } = getAuth(req);
 
     if (!userId) {
       res.json({
         clerkAuth: false,
         clerkUserId: null,
-        note: "Clerk session not verified — cookie missing or invalid. Check that CLERK_SECRET_KEY matches the frontend publishable key.",
+        env: envDiag,
+        note: [
+          "getAuth() returned no userId.",
+          !clerkSecret && "CLERK_SECRET_KEY is NOT set on this server — set it on Railway to match the frontend publishable key.",
+          !rawAuth && "No Authorization header received — the frontend is not sending a Bearer token.",
+          clerkSecret && rawAuth && "Both header and key are present but Clerk still rejected the token — possible key mismatch (e.g. sk_test_ key with a live frontend).",
+        ].filter(Boolean).join(" "),
         profileExists: false,
         profileRole: null,
         isProtectedAdmin: false,
@@ -49,6 +71,7 @@ router.get("/debug/auth", async (req, res): Promise<void> => {
     res.json({
       clerkAuth: true,
       clerkUserId: userId,
+      env: envDiag,
       profileExists: !!profile,
       profileRole: profile?.role ?? null,
       isProtectedAdmin: adminCheck,

@@ -92,9 +92,33 @@ router.post("/cloudinary/signature", async (req, res): Promise<void> => {
 // the server; only the time-limited HMAC signature + public API key are sent.
 // Requires the caller to be authenticated (any role).
 router.post("/cloudinary/profile-signature", async (req, res): Promise<void> => {
+  // Diagnostic logging — visible in Railway logs to confirm auth headers arrive.
+  const rawAuth = req.headers.authorization ?? "";
+  req.log.info(
+    {
+      hasAuthorizationHeader: !!rawAuth,
+      // Show scheme + first 8 chars of token only — never log the full token
+      authorizationPrefix: rawAuth ? rawAuth.substring(0, Math.min(rawAuth.length, 20)) + "…" : "(none)",
+      CLERK_SECRET_KEY_set: !!process.env.CLERK_SECRET_KEY,
+      CLERK_SECRET_KEY_prefix: process.env.CLERK_SECRET_KEY
+        ? process.env.CLERK_SECRET_KEY.substring(0, 12)
+        : "(not set)",
+    },
+    "cloudinary/profile-signature: incoming auth diagnostic",
+  );
+
   const { userId } = getAuth(req);
+
+  req.log.info(
+    { clerkUserId: userId ?? "(null — getAuth returned no userId)" },
+    "cloudinary/profile-signature: Clerk getAuth result",
+  );
+
   if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({
+      error: "Unauthorized",
+      hint: "getAuth() returned no userId — check Railway logs for auth diagnostic to confirm CLERK_SECRET_KEY is set and matches the frontend publishable key",
+    });
     return;
   }
 
