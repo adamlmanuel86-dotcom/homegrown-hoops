@@ -12,6 +12,18 @@ const router: IRouter = Router();
  * API secrets containing URL-special characters (+, =, /, @) are handled
  * correctly. Falls back to three individual env vars for local development.
  */
+/** Safely percent-decode a string; returns the original if decoding throws. */
+function safeDecode(s: string): string {
+  try { return decodeURIComponent(s); } catch { return s; }
+}
+
+/**
+ * Parse Cloudinary credentials from CLOUDINARY_URL (Railway's default single
+ * env var, format: cloudinary://key:secret@cloud_name) using a regex so that
+ * API secrets containing URL-special characters (+, =, /, @) are handled
+ * correctly. Percent-decodes key+secret in case Railway URL-encoded them.
+ * Falls back to three individual env vars for local development.
+ */
 function parseCloudinaryCredentials(): {
   apiKey: string;
   apiSecret: string;
@@ -19,15 +31,16 @@ function parseCloudinaryCredentials(): {
 } | null {
   const url = (process.env.CLOUDINARY_URL ?? "").trim();
   if (url) {
-    // Use regex instead of URL() so secrets with +, =, /, @ parse correctly.
-    // (.+)@([^@]+)$ matches up to the LAST @ — handles @ inside the secret.
+    // (.+)@([^@]+)$ — greedy match up to the LAST @ handles @ inside secret.
     const match = url.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
     if (match) {
-      const [, apiKey, apiSecret, cloudName] = match;
+      const apiKey    = safeDecode(match[1]);
+      const apiSecret = safeDecode(match[2]);
+      const cloudName = match[3].trim();
       if (apiKey && apiSecret && cloudName) return { apiKey, apiSecret, cloudName };
     }
   }
-  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiKey    = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   if (apiKey && apiSecret && cloudName) return { apiKey, apiSecret, cloudName };

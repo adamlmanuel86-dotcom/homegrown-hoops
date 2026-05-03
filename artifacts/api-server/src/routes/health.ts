@@ -34,47 +34,87 @@ router.get("/test-upload", (_req, res) => {
  * correctly without exposing the API key or secret.
  */
 router.get("/debug/cloudinary", (_req, res) => {
+  // ── Parse CLOUDINARY_URL ──────────────────────────────────────────────────
   const raw = (process.env.CLOUDINARY_URL ?? "").trim();
   const hasUrl = !!raw;
-  let parsed: { ok: boolean; cloudName?: string; apiKeyPrefix?: string; error?: string } = { ok: false };
 
-  if (hasUrl) {
+  function safeDecode(s: string): string {
+    try { return decodeURIComponent(s); } catch { return s; }
+  }
+
+  type ParseResult =
+    | { ok: true; cloudName: string; apiKeyPrefix: string; apiKeyLength: number; secretLength: number; secretContainsPct: boolean }
+    | { ok: false; error: string };
+
+  let urlParse: ParseResult;
+  if (!hasUrl) {
+    urlParse = { ok: false, error: "CLOUDINARY_URL not set" };
+  } else {
     const match = raw.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
-    if (match) {
-      const [, apiKey, apiSecret, cloudName] = match;
-      if (apiKey && apiSecret && cloudName) {
-        parsed = {
+    if (!match) {
+      urlParse = { ok: false, error: `Format not recognised. Starts with: "${raw.substring(0, 30)}…" — expected cloudinary://KEY:SECRET@CLOUD_NAME` };
+    } else {
+      const apiKey    = safeDecode(match[1]);
+      const apiSecret = safeDecode(match[2]);
+      const cloudName = match[3].trim();
+      if (!apiKey || !apiSecret || !cloudName) {
+        urlParse = { ok: false, error: "Parsed but one or more fields is empty after decoding" };
+      } else {
+        urlParse = {
           ok: true,
           cloudName,
-          // Show only first 6 chars of key — enough to confirm it's the right one
-          apiKeyPrefix: apiKey.substring(0, 6) + "…",
+          // First 6 + last 4 chars of the API key — enough to identify without exposing it
+          apiKeyPrefix: `${apiKey.substring(0, 6)}…${apiKey.slice(-4)}`,
+          apiKeyLength: apiKey.length,
+          // Length + whether original contained %-encoding (signals URL-encoding issue)
+          secretLength: apiSecret.length,
+          secretContainsPct: match[2].includes("%"),
         };
-      } else {
-        parsed = { ok: false, error: "Regex matched but one or more fields is empty" };
       }
-    } else {
-      parsed = { ok: false, error: `Regex did not match. URL starts with: ${raw.substring(0, 20)}…` };
     }
   }
 
-  const hasIndividualVars = !!(
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET &&
-    process.env.CLOUDINARY_CLOUD_NAME
-  );
+  // ── Individual vars ───────────────────────────────────────────────────────
+  const indivKey     = process.env.CLOUDINARY_API_KEY    ?? "";
+  const indivSecret  = process.env.CLOUDINARY_API_SECRET ?? "";
+  const indivCloud   = process.env.CLOUDINARY_CLOUD_NAME ?? "";
+  const hasIndividual = !!(indivKey && indivSecret && indivCloud);
+
+  // Detect potential conflict: both sets present with different cloud names
+  const conflict = urlParse.ok && hasIndividual && urlParse.cloudName !== indivCloud
+    ? `CLOUDINARY_URL cloud="${urlParse.cloudName}" vs CLOUDINARY_CLOUD_NAME="${indivCloud}" — mismatched!`
+    : null;
+
+  // ── Source that will actually be used by each route ───────────────────────
+  // profiles.ts (avatar/upload) → CLOUDINARY_URL only, no fallback
+  const profilesRouteSource = urlParse.ok ? "CLOUDINARY_URL" : "none (will 500)";
+  // cloudinary.ts (signature, profile-signature) → CLOUDINARY_URL first, then individual
+  const cloudinaryRouteSource = urlParse.ok ? "CLOUDINARY_URL" : hasIndividual ? "individual vars" : "none (will 500)";
+
+  const hints: string[] = [];
+  if (!hasUrl && !hasIndividual)           hints.push("Set CLOUDINARY_URL on Railway and redeploy.");
+  if (hasUrl && !urlParse.ok)              hints.push("CLOUDINARY_URL is set but fails to parse — check format: cloudinary://KEY:SECRET@CLOUD_NAME (no quotes, no trailing slash).");
+  if (urlParse.ok && (urlParse as { secretContainsPct: boolean }).secretContainsPct)
+                                           hints.push("Secret contained %-encoded characters — decoded before use. If signature still fails, verify the secret in Cloudinary console matches what was stored.");
+  if (conflict)                            hints.push(conflict);
+  if (!urlParse.ok && hasIndividual)       hints.push("Falling back to individual CLOUDINARY_API_KEY/SECRET/CLOUD_NAME vars for signature routes, but avatar/upload will fail (it only reads CLOUDINARY_URL).");
+  if (urlParse.ok && !conflict)            hints.push("Config looks good. If you just updated Railway env vars, trigger a redeploy — vars are read at startup, not live.");
 
   res.json({
-    CLOUDINARY_URL_set: hasUrl,
-    CLOUDINARY_URL_parse: parsed,
-    CLOUDINARY_individual_vars_set: hasIndividualVars,
-    willWork: parsed.ok || hasIndividualVars,
-    hint: !hasUrl && !hasIndividualVars
-      ? "Set CLOUDINARY_URL on Railway and redeploy — or set the three individual vars."
-      : !parsed.ok && !hasIndividualVars
-      ? "CLOUDINARY_URL is set but does not match cloudinary://key:secret@cloudname — check for extra spaces or wrong format."
-      : parsed.ok
-      ? "Cloudinary config looks good. If uploads still fail, redeploy Railway to pick up env var changes."
-      : "Falling back to individual CLOUDINARY_API_KEY/SECRET/CLOUD_NAME vars.",
+    CLOUDINARY_URL: { set: hasUrl, parse: urlParse },
+    CLOUDINARY_individual_vars: {
+      CLOUDINARY_API_KEY_set:    !!indivKey,
+      CLOUDINARY_API_SECRET_set: !!indivSecret,
+      CLOUDINARY_CLOUD_NAME:     indivCloud || "(not set)",
+      allPresent: hasIndividual,
+    },
+    routeSources: {
+      "POST /api/profiles/:id/avatar/upload": profilesRouteSource,
+      "POST /api/cloudinary/signature":       cloudinaryRouteSource,
+      "POST /api/cloudinary/profile-signature": cloudinaryRouteSource,
+    },
+    conflict,
+    hints,
   });
 });
 

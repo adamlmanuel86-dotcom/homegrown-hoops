@@ -12,13 +12,27 @@ import { isProtectedAdmin } from "../lib/adminGuard";
  * (+, =, /, @) are handled correctly. Matches up to the LAST @ so embedded @
  * characters in the secret don't break extraction.
  */
+/** Safely percent-decode a string; returns original if decoding throws. */
+function safeDecode(s: string): string {
+  try { return decodeURIComponent(s); } catch { return s; }
+}
+
+/**
+ * Parse CLOUDINARY_URL (cloudinary://key:secret@cloud_name) using a regex
+ * instead of URL parsing so that API secrets containing URL-special characters
+ * (+, =, /, @) are handled correctly. Matches up to the LAST @ so embedded @
+ * characters in the secret don't break extraction. Percent-decodes both fields
+ * in case Railway URL-encoded the credentials when saving the variable.
+ */
 function parseCloudinaryUrl(): { apiKey: string; apiSecret: string; cloudName: string } | null {
   const raw = (process.env.CLOUDINARY_URL ?? "").trim();
   if (!raw) return null;
   // Format: cloudinary://<apiKey>:<apiSecret>@<cloudName>
   const match = raw.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
   if (!match) return null;
-  const [, apiKey, apiSecret, cloudName] = match;
+  const apiKey    = safeDecode(match[1]);
+  const apiSecret = safeDecode(match[2]);
+  const cloudName = match[3].trim();
   if (!apiKey || !apiSecret || !cloudName) return null;
   return { apiKey, apiSecret, cloudName };
 }
