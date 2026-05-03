@@ -8,24 +8,23 @@ const router: IRouter = Router();
 
 /**
  * Parse Cloudinary credentials from CLOUDINARY_URL (Railway's default single
- * env var, format: cloudinary://key:secret@cloud_name) with fallback to the
- * three individual vars for local development.
+ * env var, format: cloudinary://key:secret@cloud_name) using a regex so that
+ * API secrets containing URL-special characters (+, =, /, @) are handled
+ * correctly. Falls back to three individual env vars for local development.
  */
 function parseCloudinaryCredentials(): {
   apiKey: string;
   apiSecret: string;
   cloudName: string;
 } | null {
-  const url = process.env.CLOUDINARY_URL;
+  const url = (process.env.CLOUDINARY_URL ?? "").trim();
   if (url) {
-    try {
-      const parsed = new URL(url.replace(/^cloudinary:\/\//, "https://"));
-      const apiKey = decodeURIComponent(parsed.username);
-      const apiSecret = decodeURIComponent(parsed.password);
-      const cloudName = parsed.hostname;
+    // Use regex instead of URL() so secrets with +, =, /, @ parse correctly.
+    // (.+)@([^@]+)$ matches up to the LAST @ — handles @ inside the secret.
+    const match = url.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
+    if (match) {
+      const [, apiKey, apiSecret, cloudName] = match;
       if (apiKey && apiSecret && cloudName) return { apiKey, apiSecret, cloudName };
-    } catch {
-      // fall through to individual vars
     }
   }
   const apiKey = process.env.CLOUDINARY_API_KEY;

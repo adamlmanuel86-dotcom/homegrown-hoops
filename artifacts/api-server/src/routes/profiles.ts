@@ -6,20 +6,21 @@ import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
-/** Parse CLOUDINARY_URL (cloudinary://key:secret@cloud_name) into its components. */
+/**
+ * Parse CLOUDINARY_URL (cloudinary://key:secret@cloud_name) using a regex
+ * instead of URL parsing so that API secrets containing URL-special characters
+ * (+, =, /, @) are handled correctly. Matches up to the LAST @ so embedded @
+ * characters in the secret don't break extraction.
+ */
 function parseCloudinaryUrl(): { apiKey: string; apiSecret: string; cloudName: string } | null {
-  const raw = process.env.CLOUDINARY_URL;
+  const raw = (process.env.CLOUDINARY_URL ?? "").trim();
   if (!raw) return null;
-  try {
-    const parsed = new URL(raw.replace(/^cloudinary:\/\//, "https://"));
-    return {
-      apiKey: decodeURIComponent(parsed.username),
-      apiSecret: decodeURIComponent(parsed.password),
-      cloudName: parsed.hostname,
-    };
-  } catch {
-    return null;
-  }
+  // Format: cloudinary://<apiKey>:<apiSecret>@<cloudName>
+  const match = raw.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
+  if (!match) return null;
+  const [, apiKey, apiSecret, cloudName] = match;
+  if (!apiKey || !apiSecret || !cloudName) return null;
+  return { apiKey, apiSecret, cloudName };
 }
 
 /**

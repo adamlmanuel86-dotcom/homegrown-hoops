@@ -30,6 +30,55 @@ router.get("/test-upload", (_req, res) => {
 });
 
 /**
+ * No-auth Cloudinary config probe — shows whether CLOUDINARY_URL parses
+ * correctly without exposing the API key or secret.
+ */
+router.get("/debug/cloudinary", (_req, res) => {
+  const raw = (process.env.CLOUDINARY_URL ?? "").trim();
+  const hasUrl = !!raw;
+  let parsed: { ok: boolean; cloudName?: string; apiKeyPrefix?: string; error?: string } = { ok: false };
+
+  if (hasUrl) {
+    const match = raw.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
+    if (match) {
+      const [, apiKey, apiSecret, cloudName] = match;
+      if (apiKey && apiSecret && cloudName) {
+        parsed = {
+          ok: true,
+          cloudName,
+          // Show only first 6 chars of key — enough to confirm it's the right one
+          apiKeyPrefix: apiKey.substring(0, 6) + "…",
+        };
+      } else {
+        parsed = { ok: false, error: "Regex matched but one or more fields is empty" };
+      }
+    } else {
+      parsed = { ok: false, error: `Regex did not match. URL starts with: ${raw.substring(0, 20)}…` };
+    }
+  }
+
+  const hasIndividualVars = !!(
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET &&
+    process.env.CLOUDINARY_CLOUD_NAME
+  );
+
+  res.json({
+    CLOUDINARY_URL_set: hasUrl,
+    CLOUDINARY_URL_parse: parsed,
+    CLOUDINARY_individual_vars_set: hasIndividualVars,
+    willWork: parsed.ok || hasIndividualVars,
+    hint: !hasUrl && !hasIndividualVars
+      ? "Set CLOUDINARY_URL on Railway and redeploy — or set the three individual vars."
+      : !parsed.ok && !hasIndividualVars
+      ? "CLOUDINARY_URL is set but does not match cloudinary://key:secret@cloudname — check for extra spaces or wrong format."
+      : parsed.ok
+      ? "Cloudinary config looks good. If uploads still fail, redeploy Railway to pick up env var changes."
+      : "Falling back to individual CLOUDINARY_API_KEY/SECRET/CLOUD_NAME vars.",
+  });
+});
+
+/**
  * Diagnostic endpoint — helps debug auth and admin detection issues.
  * Safe to expose publicly: only returns data about the caller's own session.
  * No sensitive data is leaked.
