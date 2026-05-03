@@ -157,40 +157,60 @@ export function ProfilePage() {
     await refetchProfile();
   }
 
-  /** Convert a File to a base64 data URI so the server can forward it to Cloudinary. */
-  function fileToDataUri(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
   async function handleSavePhoto() {
     if (!avatarFile) return;
     setIsUploadingPhoto(true);
     setPhotoError(null);
     try {
-      // Convert to base64 data URI and POST to the API server.
-      // The server parses CLOUDINARY_URL, uploads to Cloudinary, and returns
-      // the secure_url — credentials never leave the server.
-      const dataUri = await fileToDataUri(avatarFile);
-      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar/upload`, {
+      // Step 1: Get signed upload credentials from our server.
+      // Same approach as game video uploads and my-profile.tsx — the server signs,
+      // the browser uploads directly to Cloudinary. The API secret stays on the server;
+      // only the time-limited signature + public API key are sent to the browser.
+      const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ dataUri }),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({})) as { error?: string };
-        setPhotoError(errData.error ?? `Upload failed (${res.status}) — please try again.`);
+      if (!sigRes.ok) {
+        const errData = await sigRes.json().catch(() => ({})) as { error?: string };
+        console.error("[profile] signature endpoint failed:", sigRes.status, errData);
+        setPhotoError(errData.error ?? `Could not get upload credentials (${sigRes.status})`);
         return;
       }
-      await qc.invalidateQueries({ queryKey: [`/api/profiles/${clerkUserId}`] });
-      await refetchProfile();
+      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json() as {
+        signature: string; apiKey: string; cloudName: string; timestamp: number; folder: string;
+      };
+
+      // Step 2: Upload the file directly to Cloudinary using FormData (same as videos).
+      const formData = new FormData();
+      formData.append("file", avatarFile);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", String(timestamp));
+      formData.append("signature", signature);
+      formData.append("folder", folder);
+
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        { method: "POST", body: formData },
+      );
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text().catch(() => "");
+        console.error("[profile] Cloudinary upload failed:", uploadRes.status, errText);
+        setPhotoError(`Upload failed (${uploadRes.status}) — please try again.`);
+        return;
+      }
+      const uploadData = await uploadRes.json() as { secure_url?: string };
+      const secureUrl = uploadData.secure_url;
+      if (!secureUrl) {
+        console.error("[profile] Cloudinary returned no secure_url:", uploadData);
+        setPhotoError("Upload completed but no URL was returned — please try again.");
+        return;
+      }
+
+      // Step 3: Save the Cloudinary URL to the profile via our API.
+      await saveAvatar(secureUrl);
       closePhotoEditor();
     } catch (err) {
+      console.error("[profile] Photo upload error:", err);
       setPhotoError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsUploadingPhoto(false);

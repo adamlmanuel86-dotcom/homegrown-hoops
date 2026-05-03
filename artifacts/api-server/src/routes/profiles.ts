@@ -354,9 +354,14 @@ router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<vo
 
   const creds = parseCloudinaryUrl();
   if (!creds) {
+    req.log.error(
+      { CLOUDINARY_URL_set: !!process.env.CLOUDINARY_URL },
+      "avatar/upload: Cloudinary not configured — CLOUDINARY_URL env var is missing or invalid",
+    );
     res.status(500).json({ error: "Cloudinary not configured — CLOUDINARY_URL env var is missing or invalid" });
     return;
   }
+  req.log.info({ cloudName: creds.cloudName }, "avatar/upload: Cloudinary creds parsed OK");
 
   const { dataUri } = req.body as { dataUri?: string };
   if (!dataUri || !dataUri.startsWith("data:")) {
@@ -384,7 +389,8 @@ router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<vo
 
   if (!upRes.ok) {
     const text = await upRes.text();
-    res.status(502).json({ error: `Cloudinary upload failed: ${text}` });
+    req.log.error({ status: upRes.status, body: text }, "avatar/upload: Cloudinary rejected upload");
+    res.status(502).json({ error: `Cloudinary upload failed (${upRes.status}): ${text}` });
     return;
   }
 

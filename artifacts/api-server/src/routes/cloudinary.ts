@@ -69,7 +69,10 @@ router.post("/cloudinary/signature", async (req, res): Promise<void> => {
 
   const creds = parseCloudinaryCredentials();
   if (!creds) {
-    req.log.error("Cloudinary not configured — set CLOUDINARY_URL or CLOUDINARY_API_KEY/SECRET/CLOUD_NAME");
+    req.log.error(
+      { CLOUDINARY_URL_set: !!process.env.CLOUDINARY_URL },
+      "cloudinary/signature: not configured — set CLOUDINARY_URL or CLOUDINARY_API_KEY/SECRET/CLOUD_NAME",
+    );
     res.status(500).json({ error: "Cloudinary not configured on this server" });
     return;
   }
@@ -79,15 +82,15 @@ router.post("/cloudinary/signature", async (req, res): Promise<void> => {
   const folder = "homegrown-hoops";
   const signature = buildSignature(apiSecret, folder, timestamp);
 
+  req.log.info({ cloudName, folder }, "cloudinary/signature: issuing signed credentials");
   res.json({ signature, apiKey, cloudName, timestamp, folder });
 });
 
-// Signed upload credentials for player self-upload (my-profile.tsx).
-// Used by the "My Profile" page so a signed-in player can upload their own
-// photo directly from the browser to Cloudinary.  Admin profile-photo uploads
-// go through POST /profiles/:clerkUserId/avatar/upload instead (fully server-side).
-// Requires the caller to be authenticated (any role) to prevent unauthenticated
-// credential minting.
+// Signed upload credentials for player self-upload (my-profile.tsx) and admin
+// profile photo uploads (profile.tsx).  Both pages upload directly from the
+// browser to Cloudinary using this signature — the API secret never leaves
+// the server; only the time-limited HMAC signature + public API key are sent.
+// Requires the caller to be authenticated (any role).
 router.post("/cloudinary/profile-signature", async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   if (!userId) {
@@ -97,7 +100,10 @@ router.post("/cloudinary/profile-signature", async (req, res): Promise<void> => 
 
   const creds = parseCloudinaryCredentials();
   if (!creds) {
-    req.log.error("Cloudinary not configured — set CLOUDINARY_URL or CLOUDINARY_API_KEY/SECRET/CLOUD_NAME");
+    req.log.error(
+      { CLOUDINARY_URL_set: !!process.env.CLOUDINARY_URL },
+      "cloudinary/profile-signature: not configured — set CLOUDINARY_URL or CLOUDINARY_API_KEY/SECRET/CLOUD_NAME",
+    );
     res.status(500).json({ error: "Cloudinary not configured on this server" });
     return;
   }
@@ -107,7 +113,7 @@ router.post("/cloudinary/profile-signature", async (req, res): Promise<void> => 
   const folder = "homegrown-hoops/profiles";
   const signature = buildSignature(apiSecret, folder, timestamp);
 
-  req.log.info({ cloudName, folder }, "Issuing Cloudinary profile-signature");
+  req.log.info({ cloudName, folder }, "cloudinary/profile-signature: issuing signed credentials");
   res.json({ signature, apiKey, cloudName, timestamp, folder });
 });
 
