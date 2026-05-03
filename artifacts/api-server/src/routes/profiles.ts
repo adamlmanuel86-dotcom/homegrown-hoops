@@ -339,8 +339,38 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
 // Accepts JSON body: { dataUri: string }  (base64 data URI, e.g. "data:image/jpeg;base64,...")
 // Parses CLOUDINARY_URL server-side so credentials never leave the server.
 router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<void> => {
-  const requesterId = requireAuth(req, res);
-  if (!requesterId) return;
+  // ── Auth diagnostic — always logged so Railway shows exactly what arrived ──
+  const rawAuth = req.headers.authorization ?? "";
+  const clerkSecret = process.env.CLERK_SECRET_KEY ?? "";
+  req.log.info(
+    {
+      hasAuthorizationHeader: !!rawAuth,
+      authorizationPrefix: rawAuth ? rawAuth.substring(0, 20) + "…" : "(none)",
+      CLERK_SECRET_KEY_set: !!clerkSecret,
+      CLERK_SECRET_KEY_prefix: clerkSecret ? clerkSecret.substring(0, 12) : "(not set)",
+      contentType: req.headers["content-type"] ?? "(none)",
+      targetClerkUserId: req.params.clerkUserId,
+    },
+    "avatar/upload: incoming request diagnostic"
+  );
+
+  const { userId: requesterId } = getAuth(req);
+  req.log.info({ requesterId: requesterId ?? "(null)" }, "avatar/upload: getAuth result");
+
+  if (!requesterId) {
+    res.status(401).json({
+      error: "Unauthorized",
+      diag: {
+        hasAuthorizationHeader: !!rawAuth,
+        CLERK_SECRET_KEY_prefix: clerkSecret ? clerkSecret.substring(0, 12) : "(not set)",
+        hint: !rawAuth
+          ? "No Authorization header received — getToken() may have returned null on the client."
+          : "Authorization header present but Clerk rejected the token — possible key mismatch or expired token.",
+      },
+    });
+    return;
+  }
+  // ── End diagnostic ─────────────────────────────────────────────────────────
 
   const [requesterProfile] = await db
     .select()

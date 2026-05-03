@@ -17,6 +17,19 @@ router.get("/ping", (_req, res) => {
 });
 
 /**
+ * No-auth connectivity probe — confirms Vercel proxy → Railway routing works
+ * for this path prefix without any authentication in the way.
+ */
+router.get("/test-upload", (_req, res) => {
+  res.json({
+    ok: true,
+    message: "Railway is reachable via Vercel proxy",
+    timestamp: new Date().toISOString(),
+    server: "Railway",
+  });
+});
+
+/**
  * Diagnostic endpoint — helps debug auth and admin detection issues.
  * Safe to expose publicly: only returns data about the caller's own session.
  * No sensitive data is leaked.
