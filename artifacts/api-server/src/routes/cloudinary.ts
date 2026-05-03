@@ -82,9 +82,12 @@ router.post("/cloudinary/signature", async (req, res): Promise<void> => {
   res.json({ signature, apiKey, cloudName, timestamp, folder });
 });
 
-// Signed credentials for profile photo uploads (browser → Cloudinary directly).
-// Requires the caller to be signed in (any role) — the admin check happens
-// separately on the PATCH /profiles/:id/avatar endpoint that saves the URL.
+// Signed upload credentials for player self-upload (my-profile.tsx).
+// Used by the "My Profile" page so a signed-in player can upload their own
+// photo directly from the browser to Cloudinary.  Admin profile-photo uploads
+// go through POST /profiles/:clerkUserId/avatar/upload instead (fully server-side).
+// Requires the caller to be authenticated (any role) to prevent unauthenticated
+// credential minting.
 router.post("/cloudinary/profile-signature", async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   if (!userId) {
