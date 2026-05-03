@@ -157,52 +157,38 @@ export function ProfilePage() {
     await refetchProfile();
   }
 
+  /** Convert a File to a base64 data URI so the server can forward it to Cloudinary. */
+  function fileToDataUri(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleSavePhoto() {
     if (!avatarFile) return;
     setIsUploadingPhoto(true);
     setPhotoError(null);
     try {
-      // Step 1: get a server-generated signature (secret never leaves the server)
-      const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
+      // Convert to base64 data URI and POST to the API server.
+      // The server parses CLOUDINARY_URL, uploads to Cloudinary, and returns
+      // the secure_url — credentials never leave the server.
+      const dataUri = await fileToDataUri(avatarFile);
+      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar/upload`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ dataUri }),
       });
-      if (!sigRes.ok) {
-        const errData = await sigRes.json().catch(() => ({})) as { error?: string };
-        setPhotoError(errData.error ?? `Could not get upload credentials (${sigRes.status})`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        setPhotoError(errData.error ?? `Upload failed (${res.status}) — please try again.`);
         return;
       }
-      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json() as {
-        signature: string; apiKey: string; cloudName: string; timestamp: number; folder: string;
-      };
-
-      // Step 2: upload the file directly from the browser to Cloudinary
-      // (same approach as game video uploads — actual File blob, not base64)
-      const fd = new FormData();
-      fd.append("file", avatarFile);
-      fd.append("api_key", apiKey);
-      fd.append("timestamp", String(timestamp));
-      fd.append("signature", signature);
-      fd.append("folder", folder);
-
-      const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: fd,
-      });
-      if (!upRes.ok) {
-        const errData = await upRes.json().catch(() => ({})) as { error?: { message?: string } };
-        setPhotoError(errData.error?.message ?? `Cloudinary rejected the upload (${upRes.status})`);
-        return;
-      }
-      const data = await upRes.json() as { secure_url?: string };
-      const url = data.secure_url;
-      if (!url) {
-        setPhotoError("Cloudinary returned no URL — please try again.");
-        return;
-      }
-
-      // Step 3: save the URL to the profile
-      await saveAvatar(url);
+      await qc.invalidateQueries({ queryKey: [`/api/profiles/${clerkUserId}`] });
+      await refetchProfile();
       closePhotoEditor();
     } catch (err) {
       setPhotoError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
