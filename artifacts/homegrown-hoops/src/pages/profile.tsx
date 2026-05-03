@@ -145,27 +145,14 @@ export function ProfilePage() {
     setPhotoError(null);
   }
 
-  async function uploadToCloudinary(file: File): Promise<string | null> {
-    try {
-      const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, { method: "POST" });
-      if (!sigRes.ok) return null;
-      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("api_key", apiKey);
-      fd.append("timestamp", String(timestamp));
-      fd.append("signature", signature);
-      fd.append("folder", folder);
-      const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: fd,
-      });
-      if (!upRes.ok) return null;
-      const data = await upRes.json();
-      return data.secure_url ?? null;
-    } catch {
-      return null;
-    }
+  /** Convert a File to a base64 data URI for server-side Cloudinary upload. */
+  function fileToDataUri(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   async function saveAvatar(avatarUrl: string | null) {
@@ -185,9 +172,20 @@ export function ProfilePage() {
     setIsUploadingPhoto(true);
     setPhotoError(null);
     try {
-      const url = await uploadToCloudinary(avatarFile);
-      if (!url) { setPhotoError("Upload failed — please try again."); return; }
-      await saveAvatar(url);
+      const dataUri = await fileToDataUri(avatarFile);
+      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ dataUri }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        setPhotoError(err.error ?? "Upload failed — please try again.");
+        return;
+      }
+      await qc.invalidateQueries({ queryKey: [`/api/profiles/${clerkUserId}`] });
+      await refetchProfile();
       closePhotoEditor();
     } catch {
       setPhotoError("Something went wrong. Please try again.");

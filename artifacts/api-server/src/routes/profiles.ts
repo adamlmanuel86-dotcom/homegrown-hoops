@@ -1,9 +1,26 @@
 import { Router, type IRouter } from "express";
 import { eq, count, and, isNull, ne } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
+import crypto from "crypto";
 import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
+
+/** Parse CLOUDINARY_URL (cloudinary://key:secret@cloud_name) into its components. */
+function parseCloudinaryUrl(): { apiKey: string; apiSecret: string; cloudName: string } | null {
+  const raw = process.env.CLOUDINARY_URL;
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw.replace(/^cloudinary:\/\//, "https://"));
+    return {
+      apiKey: decodeURIComponent(parsed.username),
+      apiSecret: decodeURIComponent(parsed.password),
+      cloudName: parsed.hostname,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Full roster sync when a profile is created or updated.
@@ -316,6 +333,81 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   );
 
   res.json(GetProfileResponse.parse(serializeRow(profile)));
+});
+
+// Admin-only: upload an image to Cloudinary and set it as the player's avatar.
+// Accepts JSON body: { dataUri: string }  (base64 data URI, e.g. "data:image/jpeg;base64,...")
+// Parses CLOUDINARY_URL server-side so credentials never leave the server.
+router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<void> => {
+  const requesterId = requireAuth(req, res);
+  if (!requesterId) return;
+
+  const [requesterProfile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, requesterId));
+
+  if (!requesterProfile?.isAdmin) {
+    res.status(403).json({ error: "Forbidden — admin only" });
+    return;
+  }
+
+  const creds = parseCloudinaryUrl();
+  if (!creds) {
+    res.status(500).json({ error: "Cloudinary not configured — CLOUDINARY_URL env var is missing or invalid" });
+    return;
+  }
+
+  const { dataUri } = req.body as { dataUri?: string };
+  if (!dataUri || !dataUri.startsWith("data:")) {
+    res.status(400).json({ error: "dataUri is required (must be a base64 data URI)" });
+    return;
+  }
+
+  const { apiKey, apiSecret, cloudName } = creds;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = "homegrown-hoops/profiles";
+  const paramStr = `folder=${folder}&timestamp=${timestamp}`;
+  const signature = crypto.createHash("sha1").update(paramStr + apiSecret).digest("hex");
+
+  const fd = new FormData();
+  fd.append("file", dataUri);
+  fd.append("api_key", apiKey);
+  fd.append("timestamp", String(timestamp));
+  fd.append("signature", signature);
+  fd.append("folder", folder);
+
+  const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: fd,
+  });
+
+  if (!upRes.ok) {
+    const text = await upRes.text();
+    res.status(502).json({ error: `Cloudinary upload failed: ${text}` });
+    return;
+  }
+
+  const data = await upRes.json() as { secure_url?: string };
+  const avatarUrl = data.secure_url;
+  if (!avatarUrl) {
+    res.status(502).json({ error: "Cloudinary returned no URL" });
+    return;
+  }
+
+  const { clerkUserId } = req.params;
+  const [profile] = await db
+    .update(userProfilesTable)
+    .set({ avatarUrl, updatedAt: new Date() })
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId))
+    .returning();
+
+  if (!profile) {
+    res.status(404).json({ error: "Profile not found" });
+    return;
+  }
+
+  res.json({ avatarUrl });
 });
 
 // Admin-only: update avatar (upload or clear) for any profile
