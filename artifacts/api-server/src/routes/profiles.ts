@@ -420,6 +420,29 @@ router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<vo
   const paramStr = `folder=${folder}&timestamp=${timestamp}`;
   const signature = crypto.createHash("sha1").update(paramStr + apiSecret).digest("hex");
 
+  // ── Secret diagnostic — TEMPORARY, remove once signature is confirmed ─────
+  req.log.info(
+    {
+      cloudName,
+      apiKeyFirstFour: apiKey.substring(0, 4),
+      apiKeyLastFour:  apiKey.slice(-4),
+      apiKeyLength:    apiKey.length,
+      secretFirstFour: apiSecret.substring(0, 4),
+      secretLastFour:  apiSecret.slice(-4),
+      secretLength:    apiSecret.length,
+      // Flag any chars that might survive safeDecode differently
+      secretHasPercent: apiSecret.includes("%"),
+      secretHasPlus:    apiSecret.includes("+"),
+      secretHasEquals:  apiSecret.includes("="),
+      secretHasSlash:   apiSecret.includes("/"),
+      secretHasAt:      apiSecret.includes("@"),
+      paramStr,
+      signatureFirst8:  signature.substring(0, 8),
+    },
+    "avatar/upload: signing diagnostic — compare secretFirstFour/LastFour against Cloudinary dashboard",
+  );
+  // ── End secret diagnostic ─────────────────────────────────────────────────
+
   const fd = new FormData();
   fd.append("file", dataUri);
   fd.append("api_key", apiKey);
@@ -435,7 +458,25 @@ router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<vo
   if (!upRes.ok) {
     const text = await upRes.text();
     req.log.error({ status: upRes.status, body: text }, "avatar/upload: Cloudinary rejected upload");
-    res.status(502).json({ error: `Cloudinary upload failed (${upRes.status}): ${text}` });
+    // Include signing diagnostic in the error response so it's visible in the
+    // browser network tab without needing Railway logs.
+    res.status(502).json({
+      error: `Cloudinary upload failed (${upRes.status}): ${text}`,
+      signingDiag: {
+        cloudName,
+        apiKeyFirstFour: apiKey.substring(0, 4),
+        apiKeyLastFour:  apiKey.slice(-4),
+        apiKeyLength:    apiKey.length,
+        secretFirstFour: apiSecret.substring(0, 4),
+        secretLastFour:  apiSecret.slice(-4),
+        secretLength:    apiSecret.length,
+        secretHasPercent: apiSecret.includes("%"),
+        secretHasPlus:    apiSecret.includes("+"),
+        secretHasEquals:  apiSecret.includes("="),
+        secretHasSlash:   apiSecret.includes("/"),
+        paramStr,
+      },
+    });
     return;
   }
 
