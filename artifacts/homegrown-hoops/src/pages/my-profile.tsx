@@ -99,15 +99,59 @@ export function MyProfilePage() {
     setPhotoError(null);
   }
 
+  function compressImage(file: File, maxPx = 800, maxBytes = 500 * 1024): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(blobUrl);
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width >= height) {
+            height = Math.round((height * maxPx) / width);
+            width = maxPx;
+          } else {
+            width = Math.round((width * maxPx) / height);
+            height = maxPx;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas not supported")); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        const qualities = [0.85, 0.72, 0.58, 0.42];
+        let attempt = 0;
+        function tryQuality() {
+          const q = qualities[attempt] ?? 0.42;
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error("Image compression failed")); return; }
+            if (blob.size <= maxBytes || attempt >= qualities.length - 1) {
+              resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+            } else {
+              attempt++;
+              tryQuality();
+            }
+          }, "image/jpeg", q);
+        }
+        tryQuality();
+      };
+      img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error("Failed to load image")); };
+      img.src = blobUrl;
+    });
+  }
+
   async function uploadPhoto(file: File): Promise<string | null> {
     try {
+      const compressed = await compressImage(file);
       const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
         method: "POST",
       });
       if (!sigRes.ok) return null;
       const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressed);
       formData.append("api_key", apiKey);
       formData.append("timestamp", String(timestamp));
       formData.append("signature", signature);

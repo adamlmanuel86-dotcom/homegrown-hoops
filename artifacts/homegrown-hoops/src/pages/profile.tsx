@@ -145,6 +145,55 @@ export function ProfilePage() {
     setPhotoError(null);
   }
 
+  /**
+   * Compress and resize an image file using the browser Canvas API.
+   * - Resizes to at most maxPx × maxPx (maintains aspect ratio)
+   * - Reduces JPEG quality iteratively until the blob is under maxBytes
+   * No external library required.
+   */
+  function compressImage(file: File, maxPx = 800, maxBytes = 500 * 1024): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(blobUrl);
+        let { width, height } = img;
+        if (width > maxPx || height > maxPx) {
+          if (width >= height) {
+            height = Math.round((height * maxPx) / width);
+            width = maxPx;
+          } else {
+            width = Math.round((width * maxPx) / height);
+            height = maxPx;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas not supported")); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        const qualities = [0.85, 0.72, 0.58, 0.42];
+        let attempt = 0;
+        function tryQuality() {
+          const q = qualities[attempt] ?? 0.42;
+          canvas.toBlob((blob) => {
+            if (!blob) { reject(new Error("Image compression failed")); return; }
+            if (blob.size <= maxBytes || attempt >= qualities.length - 1) {
+              resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+            } else {
+              attempt++;
+              tryQuality();
+            }
+          }, "image/jpeg", q);
+        }
+        tryQuality();
+      };
+      img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error("Failed to load image")); };
+      img.src = blobUrl;
+    });
+  }
+
   async function saveAvatar(avatarUrl: string | null) {
     const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar`, {
       method: "PATCH",
@@ -180,9 +229,12 @@ export function ProfilePage() {
         signature: string; apiKey: string; cloudName: string; timestamp: number; folder: string;
       };
 
-      // Step 2: Upload the file directly to Cloudinary using FormData (same as videos).
+      // Step 2: Compress and resize before upload (max 800×800 px, max 500 KB).
+      const fileToUpload = await compressImage(avatarFile);
+
+      // Step 3: Upload the compressed file directly to Cloudinary via FormData.
       const formData = new FormData();
-      formData.append("file", avatarFile);
+      formData.append("file", fileToUpload);
       formData.append("api_key", apiKey);
       formData.append("timestamp", String(timestamp));
       formData.append("signature", signature);
