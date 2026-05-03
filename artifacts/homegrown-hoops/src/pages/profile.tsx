@@ -206,60 +206,45 @@ export function ProfilePage() {
     await refetchProfile();
   }
 
+  /** Convert a File/Blob to a base64 data URI. */
+  function fileToDataUri(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleSavePhoto() {
     if (!avatarFile) return;
     setIsUploadingPhoto(true);
     setPhotoError(null);
     try {
-      // Step 1: Get signed upload credentials from our server.
-      // Same approach as game video uploads and my-profile.tsx — the server signs,
-      // the browser uploads directly to Cloudinary. The API secret stays on the server;
-      // only the time-limited signature + public API key are sent to the browser.
-      const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
+      // Step 1: Compress/resize client-side (max 800×800 px, max 500 KB).
+      // The compressed blob is ~≤700 KB as base64 — well under the 10 MB Express limit.
+      const compressed = await compressImage(avatarFile);
+
+      // Step 2: Encode as base64 data URI and POST to the API server.
+      // The server uses requireAuth (same middleware as every other working admin
+      // route), uploads to Cloudinary server-side, and saves the URL to the DB.
+      // This avoids the cookie/token ambiguity on the two-hop Vercel→Railway path
+      // that was causing 401s on the separate signature endpoint.
+      const dataUri = await fileToDataUri(compressed);
+      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar/upload`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ dataUri }),
       });
-      if (!sigRes.ok) {
-        const errData = await sigRes.json().catch(() => ({})) as { error?: string };
-        console.error("[profile] signature endpoint failed:", sigRes.status, errData);
-        setPhotoError(errData.error ?? `Could not get upload credentials (${sigRes.status})`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string };
+        console.error("[profile] avatar/upload failed:", res.status, errData);
+        setPhotoError(errData.error ?? `Upload failed (${res.status}) — please try again.`);
         return;
       }
-      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json() as {
-        signature: string; apiKey: string; cloudName: string; timestamp: number; folder: string;
-      };
-
-      // Step 2: Compress and resize before upload (max 800×800 px, max 500 KB).
-      const fileToUpload = await compressImage(avatarFile);
-
-      // Step 3: Upload the compressed file directly to Cloudinary via FormData.
-      const formData = new FormData();
-      formData.append("file", fileToUpload);
-      formData.append("api_key", apiKey);
-      formData.append("timestamp", String(timestamp));
-      formData.append("signature", signature);
-      formData.append("folder", folder);
-
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: "POST", body: formData },
-      );
-      if (!uploadRes.ok) {
-        const errText = await uploadRes.text().catch(() => "");
-        console.error("[profile] Cloudinary upload failed:", uploadRes.status, errText);
-        setPhotoError(`Upload failed (${uploadRes.status}) — please try again.`);
-        return;
-      }
-      const uploadData = await uploadRes.json() as { secure_url?: string };
-      const secureUrl = uploadData.secure_url;
-      if (!secureUrl) {
-        console.error("[profile] Cloudinary returned no secure_url:", uploadData);
-        setPhotoError("Upload completed but no URL was returned — please try again.");
-        return;
-      }
-
-      // Step 3: Save the Cloudinary URL to the profile via our API.
-      await saveAvatar(secureUrl);
+      await qc.invalidateQueries({ queryKey: [`/api/profiles/${clerkUserId}`] });
+      await refetchProfile();
       closePhotoEditor();
     } catch (err) {
       console.error("[profile] Photo upload error:", err);
