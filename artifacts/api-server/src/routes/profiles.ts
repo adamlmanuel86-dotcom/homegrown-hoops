@@ -1,41 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq, count, and, isNull, ne } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import crypto from "crypto";
 import { db, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
-/**
- * Parse CLOUDINARY_URL (cloudinary://key:secret@cloud_name) using a regex
- * instead of URL parsing so that API secrets containing URL-special characters
- * (+, =, /, @) are handled correctly. Matches up to the LAST @ so embedded @
- * characters in the secret don't break extraction.
- */
-/** Safely percent-decode a string; returns original if decoding throws. */
-function safeDecode(s: string): string {
-  try { return decodeURIComponent(s); } catch { return s; }
-}
-
-/**
- * Parse CLOUDINARY_URL (cloudinary://key:secret@cloud_name) using a regex
- * instead of URL parsing so that API secrets containing URL-special characters
- * (+, =, /, @) are handled correctly. Matches up to the LAST @ so embedded @
- * characters in the secret don't break extraction. Percent-decodes both fields
- * in case Railway URL-encoded the credentials when saving the variable.
- */
-function parseCloudinaryUrl(): { apiKey: string; apiSecret: string; cloudName: string } | null {
-  const raw = (process.env.CLOUDINARY_URL ?? "").trim();
-  if (!raw) return null;
-  // Format: cloudinary://<apiKey>:<apiSecret>@<cloudName>
-  const match = raw.match(/^cloudinary:\/\/([^:]+):(.+)@([^@]+)$/);
-  if (!match) return null;
-  const apiKey    = safeDecode(match[1]);
-  const apiSecret = safeDecode(match[2]);
-  const cloudName = match[3].trim();
-  if (!apiKey || !apiSecret || !cloudName) return null;
-  return { apiKey, apiSecret, cloudName };
-}
+// Max base64 data URI size accepted for profile photos (≈ 600 KB decoded).
+// The frontend compresses to ≤500 KB before sending, so this is a safety cap.
+const MAX_DATA_URI_BYTES = 800_000;
 
 /**
  * Full roster sync when a profile is created or updated.
@@ -350,42 +322,17 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   res.json(GetProfileResponse.parse(serializeRow(profile)));
 });
 
-// Admin-only: upload an image to Cloudinary and set it as the player's avatar.
-// Accepts JSON body: { dataUri: string }  (base64 data URI, e.g. "data:image/jpeg;base64,...")
-// Parses CLOUDINARY_URL server-side so credentials never leave the server.
+// Admin-only: accept a compressed base64 data URI and store it directly in
+// avatarUrl — no external storage dependency.
+// Accepts JSON body: { dataUri: string }  (e.g. "data:image/jpeg;base64,...")
+// The frontend compresses to ≤500 KB before sending; the server enforces an
+// 800 KB hard cap to prevent oversized payloads reaching the database.
 router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<void> => {
-  // ── Auth diagnostic — always logged so Railway shows exactly what arrived ──
-  const rawAuth = req.headers.authorization ?? "";
-  const clerkSecret = process.env.CLERK_SECRET_KEY ?? "";
-  req.log.info(
-    {
-      hasAuthorizationHeader: !!rawAuth,
-      authorizationPrefix: rawAuth ? rawAuth.substring(0, 20) + "…" : "(none)",
-      CLERK_SECRET_KEY_set: !!clerkSecret,
-      CLERK_SECRET_KEY_prefix: clerkSecret ? clerkSecret.substring(0, 12) : "(not set)",
-      contentType: req.headers["content-type"] ?? "(none)",
-      targetClerkUserId: req.params.clerkUserId,
-    },
-    "avatar/upload: incoming request diagnostic"
-  );
-
   const { userId: requesterId } = getAuth(req);
-  req.log.info({ requesterId: requesterId ?? "(null)" }, "avatar/upload: getAuth result");
-
   if (!requesterId) {
-    res.status(401).json({
-      error: "Unauthorized",
-      diag: {
-        hasAuthorizationHeader: !!rawAuth,
-        CLERK_SECRET_KEY_prefix: clerkSecret ? clerkSecret.substring(0, 12) : "(not set)",
-        hint: !rawAuth
-          ? "No Authorization header received — getToken() may have returned null on the client."
-          : "Authorization header present but Clerk rejected the token — possible key mismatch or expired token.",
-      },
-    });
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  // ── End diagnostic ─────────────────────────────────────────────────────────
 
   const [requesterProfile] = await db
     .select()
@@ -397,100 +344,23 @@ router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<vo
     return;
   }
 
-  const creds = parseCloudinaryUrl();
-  if (!creds) {
-    req.log.error(
-      { CLOUDINARY_URL_set: !!process.env.CLOUDINARY_URL },
-      "avatar/upload: Cloudinary not configured — CLOUDINARY_URL env var is missing or invalid",
-    );
-    res.status(500).json({ error: "Cloudinary not configured — CLOUDINARY_URL env var is missing or invalid" });
-    return;
-  }
-  req.log.info({ cloudName: creds.cloudName }, "avatar/upload: Cloudinary creds parsed OK");
-
   const { dataUri } = req.body as { dataUri?: string };
-  if (!dataUri || !dataUri.startsWith("data:")) {
-    res.status(400).json({ error: "dataUri is required (must be a base64 data URI)" });
+  if (!dataUri || !dataUri.startsWith("data:image/")) {
+    res.status(400).json({ error: "dataUri is required and must be an image data URI (data:image/...)" });
     return;
   }
 
-  const { apiKey, apiSecret, cloudName } = creds;
-  const timestamp = Math.floor(Date.now() / 1000);
-  const folder = "homegrown-hoops/profiles";
-  const paramStr = `folder=${folder}&timestamp=${timestamp}`;
-  const signature = crypto.createHash("sha1").update(paramStr + apiSecret).digest("hex");
-
-  // ── Secret diagnostic — TEMPORARY, remove once signature is confirmed ─────
-  req.log.info(
-    {
-      cloudName,
-      apiKeyFirstFour: apiKey.substring(0, 4),
-      apiKeyLastFour:  apiKey.slice(-4),
-      apiKeyLength:    apiKey.length,
-      secretFirstFour: apiSecret.substring(0, 4),
-      secretLastFour:  apiSecret.slice(-4),
-      secretLength:    apiSecret.length,
-      // Flag any chars that might survive safeDecode differently
-      secretHasPercent: apiSecret.includes("%"),
-      secretHasPlus:    apiSecret.includes("+"),
-      secretHasEquals:  apiSecret.includes("="),
-      secretHasSlash:   apiSecret.includes("/"),
-      secretHasAt:      apiSecret.includes("@"),
-      paramStr,
-      signatureFirst8:  signature.substring(0, 8),
-    },
-    "avatar/upload: signing diagnostic — compare secretFirstFour/LastFour against Cloudinary dashboard",
-  );
-  // ── End secret diagnostic ─────────────────────────────────────────────────
-
-  const fd = new FormData();
-  fd.append("file", dataUri);
-  fd.append("api_key", apiKey);
-  fd.append("timestamp", String(timestamp));
-  fd.append("signature", signature);
-  fd.append("folder", folder);
-
-  const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: "POST",
-    body: fd,
-  });
-
-  if (!upRes.ok) {
-    const text = await upRes.text();
-    req.log.error({ status: upRes.status, body: text }, "avatar/upload: Cloudinary rejected upload");
-    // Include signing diagnostic in the error response so it's visible in the
-    // browser network tab without needing Railway logs.
-    res.status(502).json({
-      error: `Cloudinary upload failed (${upRes.status}): ${text}`,
-      signingDiag: {
-        cloudName,
-        apiKeyFirstFour: apiKey.substring(0, 4),
-        apiKeyLastFour:  apiKey.slice(-4),
-        apiKeyLength:    apiKey.length,
-        secretFirstFour: apiSecret.substring(0, 4),
-        secretLastFour:  apiSecret.slice(-4),
-        secretLength:    apiSecret.length,
-        secretHasPercent: apiSecret.includes("%"),
-        secretHasPlus:    apiSecret.includes("+"),
-        secretHasEquals:  apiSecret.includes("="),
-        secretHasSlash:   apiSecret.includes("/"),
-        paramStr,
-      },
+  if (dataUri.length > MAX_DATA_URI_BYTES) {
+    res.status(413).json({
+      error: `Image too large (${Math.round(dataUri.length / 1024)} KB). Please compress to under 600 KB before uploading.`,
     });
-    return;
-  }
-
-  const data = await upRes.json() as { secure_url?: string };
-  const avatarUrl = data.secure_url;
-  if (!avatarUrl) {
-    res.status(502).json({ error: "Cloudinary returned no URL" });
     return;
   }
 
   const { clerkUserId } = req.params;
   const [profile] = await db
     .update(userProfilesTable)
-    .set({ avatarUrl, updatedAt: new Date() })
+    .set({ avatarUrl: dataUri, updatedAt: new Date() })
     .where(eq(userProfilesTable.clerkUserId, clerkUserId))
     .returning();
 
@@ -499,7 +369,8 @@ router.post("/profiles/:clerkUserId/avatar/upload", async (req, res): Promise<vo
     return;
   }
 
-  res.json({ avatarUrl });
+  req.log.info({ clerkUserId, dataUriLength: dataUri.length }, "avatar/upload: saved base64 data URI to DB");
+  res.json({ avatarUrl: dataUri });
 });
 
 // Admin-only: update avatar (upload or clear) for any profile
