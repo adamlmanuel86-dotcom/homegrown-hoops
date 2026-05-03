@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useUser } from "@clerk/react";
+import { useUser, useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +34,7 @@ const empty: FormData = {
 
 export function MyProfilePage() {
   const { isSignedIn, user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
 
@@ -145,8 +146,11 @@ export function MyProfilePage() {
   async function uploadPhoto(file: File): Promise<string | null> {
     try {
       const compressed = await compressImage(file);
+      const token = await getToken();
       const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       });
       if (!sigRes.ok) return null;
       const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();

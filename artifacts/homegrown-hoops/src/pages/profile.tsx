@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useParams } from "wouter";
-import { useUser } from "@clerk/react";
+import { useUser, useAuth } from "@clerk/react";
 import {
   useGetProfile,
   useGetMyProfile,
@@ -23,6 +23,7 @@ const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 export function ProfilePage() {
   const { clerkUserId = "" } = useParams<{ clerkUserId: string }>();
   const { user, isSignedIn } = useUser();
+  const { getToken } = useAuth();
   const [copied, setCopied] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -195,9 +196,13 @@ export function ProfilePage() {
   }
 
   async function saveAvatar(avatarUrl: string | null) {
+    const token = await getToken();
     const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/avatar`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       credentials: "include",
       body: JSON.stringify({ avatarUrl }),
     });
@@ -215,8 +220,10 @@ export function ProfilePage() {
       // Same approach as game video uploads and my-profile.tsx — the server signs,
       // the browser uploads directly to Cloudinary. The API secret stays on the server;
       // only the time-limited signature + public API key are sent to the browser.
+      const token = await getToken();
       const sigRes = await fetch(`${apiBase}/api/cloudinary/profile-signature`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",
       });
       if (!sigRes.ok) {
