@@ -290,7 +290,7 @@ export const ARCHETYPES: {
     id: "The Engine",
     label: "The Engine",
     icon: Zap,
-    tagline: "Does everything — scoring, rebounding, and playmaking at a high level. The team runs through this player.",
+    tagline: "Does everything — scoring rebounding and playmaking at a high level. The team runs through this player.",
     gradient: "from-rose-900/80 via-red-800/60 to-rose-900/80",
     accent: "#FB7185",
   },

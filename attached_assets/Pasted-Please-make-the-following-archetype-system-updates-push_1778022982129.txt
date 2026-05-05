@@ -1,0 +1,34 @@
+Please make the following archetype system updates, push to GitHub, and recalculate all player archetypes in Railway using connection string postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway
+1. Remove The Spark archetype entirely from all code, metadata, icons and descriptions.
+2. Add The Voltage and The Engine archetypes with these descriptions:
+	•	The Voltage: ‘An elite scorer who creates their own shot and puts up big numbers every night’
+	•	The Engine: ‘Does everything — scoring rebounding and playmaking at a high level. The team runs through this player’
+3. Update archetype assignment logic using these weighted scores:
+	•	Scoring score = PPG × 10
+	•	Rebounding score = RPG × 15
+	•	Playmaking score = APG × 20
+	•	Steals score = SPG × 35
+	•	Blocks score = BPG × 35
+	•	Three point score = 3PM × 40
+Assignment rules in priority order:
+	1.	Scoring score 180+ AND highest scorer on team → The Mainstay
+	2.	Scoring score 180+ AND not highest scorer → The Voltage
+	3.	Scoring score 150-179 PLUS rebounding above 90 OR playmaking above 80 → The Engine
+	4.	Three point score highest AND above 80 AND minimum 2 3PM per game → The Deep
+	5.	Rebounding score highest AND above 90 → The Vortex
+	6.	Playmaking score highest AND above 100 → The Current
+	7.	Steals score highest AND above 70 → The Warden
+	8.	Blocks score highest AND above 52 → The Wall
+	9.	Everything else → The Climb
+4. Update all archetype descriptions:
+	•	The Mainstay: ‘The go-to scorer — when points are needed this player delivers consistently’
+	•	The Voltage: ‘An elite scorer who creates their own shot and puts up big numbers every night’
+	•	The Engine: ‘Does everything — scoring rebounding and playmaking at a high level. The team runs through this player’
+	•	The Vortex: ‘Rebounds are this player’s signature — they control the glass on both ends’
+	•	The Current: ‘A natural playmaker whose passing defines how this team moves the ball’
+	•	The Warden: ‘Steals are this player’s weapon — they make life difficult for every ball handler’
+	•	The Wall: ‘Shot blocking defines this player — they protect the paint and alter shots’
+	•	The Deep: ‘The three pointer is this player’s signature weapon — range is their superpower’
+	•	The Climb: ‘Still writing their story — consistent contributor whose best games lie ahead’
+	•	Uncharted: ‘Your story has not been written yet — step on the court and let your game speak’
+5. Recalculate all player archetypes after the logic update.”
