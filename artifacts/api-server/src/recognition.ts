@@ -207,6 +207,10 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
     .select({
       gameDate: gamesTable.gameDate,
       season: gamesTable.season,
+      homeTeamId: gamesTable.homeTeamId,
+      awayTeamId: gamesTable.awayTeamId,
+      homeScore: gamesTable.homeScore,
+      awayScore: gamesTable.awayScore,
       points: gamePlayerStatsTable.points,
       rebounds: gamePlayerStatsTable.rebounds,
       assists: gamePlayerStatsTable.assists,
@@ -249,6 +253,21 @@ export async function recalculateStampsForPlayer(playerId: number): Promise<void
   }
 
   newStamps.sort((a, b) => a.earnedAt.localeCompare(b.earnedAt));
+
+  // ── Battle Tested career stamp ───────────────────────────────────────────
+  // Awarded once when a player has been on the winning team in 4+ career games.
+  const playerTeamId = player.teamId;
+  const winRows = rows.filter((r) => {
+    const { homeScore, awayScore, homeTeamId, awayTeamId } = r;
+    if (homeScore == null || awayScore == null) return false;
+    if (homeTeamId === playerTeamId) return homeScore > awayScore;
+    if (awayTeamId === playerTeamId) return awayScore > homeScore;
+    return false;
+  });
+  if (winRows.length >= 4) {
+    const sortedWins = [...winRows].sort((a, b) => a.gameDate.localeCompare(b.gameDate));
+    newStamps.push({ id: "battle_tested", earnedAt: sortedWins[3].gameDate });
+  }
 
   // ── Career milestone check ───────────────────────────────────────────────
   const careerTotals: CareerTotals = {

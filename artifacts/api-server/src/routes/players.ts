@@ -119,24 +119,51 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
   // Never let a browser or proxy cache career stats — always return a live DB read.
   res.set("Cache-Control", "no-store, no-cache");
 
-  const rows = season
+  // Fetch player's team for win calculation
+  const [playerRow] = await db
+    .select({ teamId: playersTable.teamId })
+    .from(playersTable)
+    .where(eq(playersTable.id, playerId));
+  const playerTeamId = playerRow?.teamId ?? null;
+
+  // Always join games so we can calculate wins
+  const gameSelect = {
+    stat: gamePlayerStatsTable,
+    homeTeamId: gamesTable.homeTeamId,
+    awayTeamId: gamesTable.awayTeamId,
+    homeScore: gamesTable.homeScore,
+    awayScore: gamesTable.awayScore,
+  };
+  const rawRows = season
     ? await db
-        .select({ stat: gamePlayerStatsTable })
+        .select(gameSelect)
         .from(gamePlayerStatsTable)
         .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
         .where(and(eq(gamePlayerStatsTable.playerId, playerId), eq(gamesTable.season, season)))
-        .then((r) => r.map((x) => x.stat))
     : await db
-        .select()
+        .select(gameSelect)
         .from(gamePlayerStatsTable)
+        .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
         .where(eq(gamePlayerStatsTable.playerId, playerId));
 
+  const rows = rawRows.map((r) => r.stat);
   const gamesPlayed = rows.length;
+
+  // Count wins: games where the player's team finished with more points
+  const wins = playerTeamId != null
+    ? rawRows.filter(({ homeTeamId, awayTeamId, homeScore, awayScore }) => {
+        if (homeScore == null || awayScore == null) return false;
+        if (homeTeamId === playerTeamId) return homeScore > awayScore;
+        if (awayTeamId === playerTeamId) return awayScore > homeScore;
+        return false;
+      }).length
+    : 0;
 
   if (gamesPlayed === 0) {
     res.json(GetPlayerStatsResponse.parse({
       playerId,
       gamesPlayed: 0,
+      wins: 0,
       totalPoints: 0,
       totalRebounds: 0,
       totalAssists: 0,
@@ -190,6 +217,7 @@ router.get("/players/:id/stats", async (req, res): Promise<void> => {
   res.json(GetPlayerStatsResponse.parse({
     playerId,
     gamesPlayed,
+    wins,
     totalPoints,
     totalRebounds,
     totalAssists,

@@ -20,8 +20,9 @@ Mobile-friendly basketball stats tracking website for community/neighborhood lea
 - Players list (search + filter by team) + player detail (career averages, shooting %)
 - Games log (filter by team/season) + game detail with full box score
 - Admin stat entry: admins see "Player Stats" panel on game detail pages with inline PTS/REB/AST inputs per player. Saving triggers the recognition engine (stamps, tides, archetypes).
-- Recognition engine (`artifacts/api-server/src/recognition.ts`): recalculates stamps (all-time per-game badges), tides (current season leader titles), and archetypes (team-based roles) after every stat save.
-- Recognition frontend (`artifacts/homegrown-hoops/src/components/recognition.tsx`): 8 stamps, 6 tides, 7 archetypes with icons, descriptions, and rarity colors. "Shift Worker" stamp removed.
+- Recognition engine (`artifacts/api-server/src/recognition.ts`): recalculates stamps (all-time per-game badges + career stamps), tides (current season leader titles), and archetypes (team-based roles) after every stat save.
+- Recognition frontend (`artifacts/homegrown-hoops/src/components/recognition.tsx`): 9 stamps (incl. Battle Tested career stamp), 6 tides, 7 archetypes with icons, descriptions, and rarity colors.
+- Legacy Score includes win bonus: +50 LP per team win (from `wins` field in PlayerStats API).
 - Clerk authentication (sign in / sign up)
 - User profile system: signed-in users can create/edit their profile (name, school, position, graduation year, bio); profiles are publicly viewable at `/profiles/:clerkUserId`; only the owner or an admin can edit
 - Three-tier role system: admin, coach, player (default). First account to register is auto-promoted to admin. Admins see an "Admin" link in the nav leading to `/admin` panel where they can change any user's role.

@@ -120,6 +120,7 @@ export interface UpdatePlayerBody {
 export interface PlayerStats {
   playerId: number;
   gamesPlayed: number;
+  wins: number;
   totalPoints: number;
   totalRebounds: number;
   totalAssists: number;

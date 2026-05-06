@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "recalc-archetypes": "tsx ./src/recalculate-archetypes.ts",
+    "recalc-stamps": "tsx ./src/recalculate-stamps.ts",
     "seed-2001-lakers": "tsx ./src/seed-2001-lakers.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

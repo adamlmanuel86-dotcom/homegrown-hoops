@@ -3,7 +3,7 @@ import {
   Hash, Square, Eye, Droplets, Target, Zap, Layers, Crown,
   Waves, TrendingUp, Shield, Lightbulb, Activity, MapPin, Sparkles, Mountain,
   Anchor, Wind, Flame, Lock, X, Calendar, Compass, ChevronRight,
-  Swords, ShieldX, Grip, Scissors, Castle, Star,
+  Swords, ShieldX, Grip, Scissors, Castle, Star, Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link } from "wouter";
@@ -117,6 +117,15 @@ export const STAMPS: {
     description: "Handled the ball without giving it away. Recorded zero turnovers in a single game.",
     howToEarn: "Record zero turnovers in a single game.",
     threshold: "0 turnovers in one game",
+  },
+  {
+    id: "battle_tested",
+    label: "Battle Tested",
+    icon: Trophy,
+    color: "#F59E0B",
+    description: "Four wins and counting — this player knows what it takes to win.",
+    howToEarn: "Be on the winning team in 4 or more games in your career.",
+    threshold: "4+ career wins",
   },
 ];
 

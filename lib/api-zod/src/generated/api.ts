@@ -222,6 +222,7 @@ export const GetPlayerStatsParams = zod.object({
 export const GetPlayerStatsResponse = zod.object({
   playerId: zod.number(),
   gamesPlayed: zod.number(),
+  wins: zod.number(),
   totalPoints: zod.number(),
   totalRebounds: zod.number(),
   totalAssists: zod.number(),

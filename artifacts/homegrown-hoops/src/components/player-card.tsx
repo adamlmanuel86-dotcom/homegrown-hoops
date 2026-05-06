@@ -42,6 +42,7 @@ export type CardStats = {
   avgSteals?: number | string;
   avgBlocks?: number | string;
   gamesPlayed?: number;
+  wins?: number;
   totalPoints?: number;
   totalRebounds?: number;
   totalAssists?: number;
@@ -162,6 +163,7 @@ function LegacyScorePopup({
   score: number;
   breakdown: {
     games: number; gameLP: number;
+    wins: number; winLP: number;
     pts: number; ptLP: number;
     reb: number; rebLP: number;
     ast: number; astLP: number;
@@ -178,6 +180,7 @@ function LegacyScorePopup({
   const [showMilestones, setShowMilestones] = useState(false);
   const rows: { label: string; value: string; lp: number; color: string; expandable?: boolean }[] = [
     { label: `${breakdown.games} Games Played`, value: "×25", lp: breakdown.gameLP, color: "#4ADE80" },
+    { label: `${breakdown.wins} Team Wins`, value: "×50", lp: breakdown.winLP, color: "#FBBF24" },
     { label: `${breakdown.pts} Career Points`, value: "×10", lp: breakdown.ptLP, color: "#F97316" },
     { label: `${breakdown.reb} Career Rebounds`, value: "×15", lp: breakdown.rebLP, color: "#38BDF8" },
     { label: `${breakdown.ast} Career Assists`, value: "×20", lp: breakdown.astLP, color: "#34D399" },
@@ -269,7 +272,7 @@ function LegacyScorePopup({
             style={{ background: "hsl(220 28% 11%)", border: "1px solid hsl(220 28% 16%)" }}
           >
             <p style={{ color: "hsl(215 16% 65%)" }}>
-              Your Legacy Score grows every game and never resets. You earn 25 points just for showing up. Every point, rebound and assist adds to it. Earn Stamps, Tides, and Career Milestones for big bonus points. Your Legacy Score is yours forever.
+              Your Legacy Score grows every game and never resets. You earn 25 points just for showing up, plus 50 bonus points for every team win. Every point, rebound and assist adds to it. Earn Stamps, Tides, and Career Milestones for big bonus points. Your Legacy Score is yours forever.
             </p>
           </div>
         </div>
@@ -330,6 +333,7 @@ export function PlayerCard({
 
   const lp = careerTotals ?? stats;
   const gameLP  = (lp?.gamesPlayed    ?? 0) * 25;
+  const winLP   = (lp?.wins           ?? 0) * 50;
   const ptLP    = (lp?.totalPoints    ?? 0) * 10;
   const rebLP   = (lp?.totalRebounds  ?? 0) * 15;
   const astLP   = (lp?.totalAssists   ?? 0) * 20;
@@ -345,10 +349,11 @@ export function PlayerCard({
   }));
   const milestoneLP = earnedMilestones.reduce((sum, m) => sum + m.bonusLP, 0);
 
-  const legacyScore = gameLP + ptLP + rebLP + astLP + stlLP + blkLP + tovLP + stampLP + tideLP + milestoneLP;
+  const legacyScore = gameLP + winLP + ptLP + rebLP + astLP + stlLP + blkLP + tovLP + stampLP + tideLP + milestoneLP;
 
   const legacyBreakdown = {
     games: lp?.gamesPlayed   ?? 0, gameLP,
+    wins:  lp?.wins          ?? 0, winLP,
     pts:   lp?.totalPoints   ?? 0, ptLP,
     reb:   lp?.totalRebounds ?? 0, rebLP,
     ast:   lp?.totalAssists  ?? 0, astLP,

@@ -896,6 +896,8 @@ components:
           type: integer
         gamesPlayed:
           type: integer
+        wins:
+          type: integer
         totalPoints:
           type: integer
         totalRebounds:
@@ -935,6 +937,7 @@ components:
       required:
         - playerId
         - gamesPlayed
+        - wins
         - totalPoints
         - totalRebounds
         - totalAssists

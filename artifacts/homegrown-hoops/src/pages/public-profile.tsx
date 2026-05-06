@@ -80,6 +80,7 @@ export function PublicProfilePage() {
     careerGames > 0
       ? {
           gamesPlayed:    careerGames,
+          wins:           allSeasonStats?.wins ?? 0,
           totalPoints:    careerPoints,
           totalRebounds:  careerRebounds,
           totalAssists:   careerAssists,
