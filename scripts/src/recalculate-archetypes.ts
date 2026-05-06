@@ -10,7 +10,7 @@
 import pg from "pg";
 
 const DB_URL =
-  process.env.DATABASE_URL ??
+  process.env.RAILWAY_DB_URL ??
   "postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway";
 
 const pool = new pg.Pool({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } });
