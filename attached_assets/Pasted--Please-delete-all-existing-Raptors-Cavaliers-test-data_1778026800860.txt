@@ -1,0 +1,82 @@
+“Please delete all existing Raptors/Cavaliers test data from the Railway database — remove The Surge and The Lynx teams and all associated players, games, stats and user profiles. Keep Heath Manuel, Jack Manuel, Saint John Warriors, Port City and their games. Then create all the following 2001 Lakers playoff data. Use connection string postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway. Do not delete anything else.
+CREATE 5 TEAMS:
+	1.	Los Angeles Lakers
+	2.	Portland Trail Blazers
+	3.	Sacramento Kings
+	4.	San Antonio Spurs
+	5.	Philadelphia 76ers
+CREATE 8 PLAYERS PER TEAM (top 8 by minutes):
+Lakers: Shaquille O’Neal (C), Kobe Bryant (G), Derek Fisher (G), Rick Fox (F), Robert Horry (F), Horace Grant (F), Brian Shaw (G), Ron Harper (G)
+Trail Blazers: Scottie Pippen (F), Rasheed Wallace (F), Bonzi Wells (G), Damon Stoudamire (G), Dale Davis (C), Arvydas Sabonis (C), Steve Smith (G), Detlef Schrempf (F)
+Kings: Chris Webber (F), Vlade Divac (C), Peja Stojakovic (F), Mike Bibby (G), Jason Williams (G), Lawrence Funderburke (F), Bobby Jackson (G), Hedo Turkoglu (F)
+Spurs: Tim Duncan (F), David Robinson (C), Tony Parker (G), Avery Johnson (G), Derek Anderson (G), Terry Porter (G), Antonio Daniels (G), Jaren Jackson (G)
+76ers: Allen Iverson (G), Dikembe Mutombo (C), Eric Snow (G), Aaron McKie (G), Theo Ratliff (C), Tyrone Hill (F), George Lynch (F), Raja Bell (G)
+CREATE 15 GAMES:
+Round 1 — Lakers vs Trail Blazers (Lakers win 3-0):
+Game 1: Lakers 106 Trail Blazers 93 (April 21 2001)
+Game 2: Lakers 106 Trail Blazers 88 (April 24 2001)
+Game 3: Lakers 99 Trail Blazers 86 (April 29 2001)
+Round 2 — Lakers vs Kings (Lakers win 4-0):
+Game 1: Lakers 108 Kings 105 (May 6 2001)
+Game 2: Lakers 96 Kings 90 (May 8 2001)
+Game 3: Lakers 103 Kings 81 (May 11 2001)
+Game 4: Lakers 119 Kings 113 (May 13 2001)
+Conference Finals — Lakers vs Spurs (Lakers win 4-0):
+Game 1: Lakers 104 Spurs 90 (May 19 2001)
+Game 2: Lakers 88 Spurs 81 (May 21 2001)
+Game 3: Lakers 111 Spurs 72 (May 25 2001)
+Game 4: Lakers 111 Spurs 82 (May 27 2001)
+NBA Finals — Lakers vs 76ers (Lakers win 4-1):
+Game 1: 76ers 107 Lakers 101 OT (June 6 2001)
+Game 2: Lakers 98 76ers 89 (June 8 2001)
+Game 3: Lakers 96 76ers 91 (June 10 2001)
+Game 4: Lakers 100 76ers 86 (June 13 2001)
+Game 5: Lakers 108 76ers 96 (June 15 2001)
+PLAYER STATS PER GAME — use these series averages applied to each game:
+LAKERS:
+Shaq: 30pts 15reb 3ast 1stl 3blk 3to
+Kobe: 29pts 7reb 6ast 1stl 1blk 3to
+Fisher: 8pts 3reb 4ast 1stl 0blk 2to
+Fox: 9pts 4reb 2ast 1stl 0blk 1to
+Horry: 7pts 6reb 2ast 1stl 1blk 1to
+Grant: 5pts 5reb 1ast 1stl 1blk 1to
+Shaw: 6pts 3reb 3ast 0stl 0blk 2to
+Harper: 4pts 2reb 1ast 1stl 0blk 1to
+TRAIL BLAZERS:
+Pippen: 14pts 7reb 6ast 2stl 1blk 3to
+Wallace: 16pts 8reb 2ast 1stl 1blk 3to
+Wells: 13pts 4reb 2ast 1stl 0blk 2to
+Stoudamire: 12pts 3reb 5ast 1stl 0blk 3to
+Dale Davis: 6pts 8reb 1ast 1stl 1blk 2to
+Sabonis: 10pts 7reb 3ast 0stl 1blk 2to
+Smith: 8pts 3reb 2ast 1stl 0blk 1to
+Schrempf: 5pts 3reb 2ast 0stl 0blk 1to
+KINGS:
+Webber: 22pts 10reb 4ast 1stl 1blk 3to
+Divac: 9pts 8reb 4ast 0stl 1blk 2to
+Stojakovic: 18pts 5reb 2ast 0stl 0blk 1to 2x3pm
+Bibby: 14pts 3reb 5ast 1stl 0blk 3to
+Jason Williams: 10pts 2reb 6ast 1stl 0blk 4to
+Funderburke: 6pts 5reb 1ast 0stl 0blk 1to
+Bobby Jackson: 9pts 3reb 3ast 1stl 0blk 2to
+Turkoglu: 5pts 3reb 1ast 0stl 0blk 1to 1x3pm
+SPURS:
+Duncan: 24pts 12reb 3ast 1stl 3blk 3to
+Robinson: 10pts 9reb 2ast 1stl 2blk 2to
+Parker: 9pts 3reb 4ast 1stl 0blk 3to
+Avery Johnson: 11pts 2reb 5ast 2stl 0blk 3to
+Derek Anderson: 12pts 3reb 2ast 1stl 0blk 2to 1x3pm
+Terry Porter: 7pts 2reb 3ast 1stl 0blk 1to 1x3pm
+Antonio Daniels: 6pts 2reb 2ast 0stl 0blk 1to
+Jaren Jackson: 5pts 2reb 1ast 0stl 0blk 1to 1x3pm
+76ERS:
+Iverson: 35pts 5reb 5ast 2stl 0blk 4to
+Mutombo: 10pts 12reb 1ast 1stl 4blk 2to
+Snow: 8pts 3reb 5ast 1stl 0blk 2to
+McKie: 9pts 4reb 3ast 1stl 0blk 1to 1x3pm
+Ratliff: 5pts 5reb 0ast 0stl 2blk 1to
+Hill: 5pts 6reb 1ast 0stl 0blk 1to
+Lynch: 4pts 4reb 1ast 1stl 0blk 1to
+Raja Bell: 5pts 2reb 1ast 0stl 0blk 1to 1x3pm
+Note — for games where a team did NOT play (eg Trail Blazers only played 3 games, Kings played 4 games, Spurs played 4 games, 76ers played 5 games) only create stat rows for the games that team actually participated in.
+After all insertions create user profiles for all 40 players and trigger recognition recalculation for everyone so stamps archetypes and legacy scores are computed.”
