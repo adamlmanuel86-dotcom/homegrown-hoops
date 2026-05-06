@@ -44,6 +44,78 @@ interface TeamEditState {
   secondaryColor: string;
 }
 
+const TEAM_COLORS = [
+  // Oranges & Reds
+  "#FF6B00", "#FF5722", "#F97316", "#E65100",
+  "#C8102E", "#CE1141", "#BA0C2F", "#D50032",
+  // Blues & Navies
+  "#007AC1", "#1D428A", "#00538C", "#0057A8",
+  "#132237", "#002B5C", "#003DA5", "#00285E",
+  // Greens & Teals
+  "#007A33", "#00843D", "#004B27", "#008348",
+  "#00B2A9", "#009B77", "#418FDE", "#00B388",
+  // Purples & Golds
+  "#5C2F82", "#552583", "#7B2D8B", "#6336AC",
+  "#FFC72C", "#FDB927", "#F9A01B", "#FDBB30",
+  // Neutrals
+  "#000000", "#1A1A1A", "#4A4A4A", "#808080",
+  "#A0A0A0", "#C0C0C0", "#E8E8E8", "#FFFFFF",
+];
+
+function ColorSwatchPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <div>
+      {label && <label className="label-upper block mb-2">{label}</label>}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-lg border-2 border-border flex-shrink-0"
+            style={{ background: value }}
+          />
+          <span className="text-sm font-mono text-muted-foreground">{value.toUpperCase()}</span>
+        </div>
+        <div className="grid grid-cols-8 gap-1.5">
+          {TEAM_COLORS.map((color) => {
+            const selected = value.toUpperCase() === color.toUpperCase();
+            return (
+              <button
+                key={color}
+                type="button"
+                onClick={() => onChange(color)}
+                className="w-8 h-8 rounded-md transition-transform hover:scale-110 focus:outline-none"
+                style={{
+                  background: color,
+                  border: selected ? "2px solid white" : "2px solid transparent",
+                  boxShadow: selected ? `0 0 0 2px ${color}, 0 0 0 4px rgba(255,255,255,0.3)` : "inset 0 0 0 1px rgba(0,0,0,0.15)",
+                  transform: selected ? "scale(1.15)" : undefined,
+                }}
+                title={color}
+              />
+            );
+          })}
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-7 w-10 rounded border border-border cursor-pointer p-0.5 bg-transparent"
+          />
+          <span className="text-xs text-muted-foreground">Custom color</span>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export function AdminPage() {
   const { isSignedIn, isLoaded, user } = useUser();
   const [, setLocation] = useLocation();
@@ -592,29 +664,19 @@ export function AdminPage() {
                   className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                 />
               </div>
-              <div>
-                <label className="label-upper block mb-1.5">Primary Color</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newTeam.primaryColor}
-                    onChange={(e) => setNewTeam((s) => ({ ...s, primaryColor: e.target.value }))}
-                    className="h-10 w-14 rounded-lg border border-border cursor-pointer p-0.5 bg-white"
-                  />
-                  <span className="text-sm font-mono text-muted-foreground">{newTeam.primaryColor.toUpperCase()}</span>
-                </div>
+              <div className="sm:col-span-2">
+                <ColorSwatchPicker
+                  label="Primary Color"
+                  value={newTeam.primaryColor}
+                  onChange={(c) => setNewTeam((s) => ({ ...s, primaryColor: c }))}
+                />
               </div>
-              <div>
-                <label className="label-upper block mb-1.5">Secondary Color</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newTeam.secondaryColor}
-                    onChange={(e) => setNewTeam((s) => ({ ...s, secondaryColor: e.target.value }))}
-                    className="h-10 w-14 rounded-lg border border-border cursor-pointer p-0.5 bg-white"
-                  />
-                  <span className="text-sm font-mono text-muted-foreground">{newTeam.secondaryColor.toUpperCase()}</span>
-                </div>
+              <div className="sm:col-span-2">
+                <ColorSwatchPicker
+                  label="Secondary Color"
+                  value={newTeam.secondaryColor}
+                  onChange={(c) => setNewTeam((s) => ({ ...s, secondaryColor: c }))}
+                />
               </div>
             </div>
             {addTeamError && <p className="text-red-500 text-sm font-medium mt-3">{addTeamError}</p>}
@@ -658,12 +720,22 @@ export function AdminPage() {
                 <div key={team.id} className="px-6 py-4">
                   {isEditing ? (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input value={teamEdit.name} onChange={(e) => setTeamEdit((s) => ({ ...s, name: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
-                        <input value={teamEdit.city} onChange={(e) => setTeamEdit((s) => ({ ...s, city: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
-                        <input value={teamEdit.abbreviation} onChange={(e) => setTeamEdit((s) => ({ ...s, abbreviation: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
-                        <input value={teamEdit.primaryColor} onChange={(e) => setTeamEdit((s) => ({ ...s, primaryColor: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
-                        <input value={teamEdit.secondaryColor} onChange={(e) => setTeamEdit((s) => ({ ...s, secondaryColor: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <input value={teamEdit.name} onChange={(e) => setTeamEdit((s) => ({ ...s, name: e.target.value }))} placeholder="Team name" className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
+                        <input value={teamEdit.city} onChange={(e) => setTeamEdit((s) => ({ ...s, city: e.target.value }))} placeholder="City" className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
+                        <input value={teamEdit.abbreviation} onChange={(e) => setTeamEdit((s) => ({ ...s, abbreviation: e.target.value }))} placeholder="Abbr." className="w-full border border-border rounded-lg px-3 py-2.5 text-sm" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        <ColorSwatchPicker
+                          label="Primary Color"
+                          value={teamEdit.primaryColor}
+                          onChange={(c) => setTeamEdit((s) => ({ ...s, primaryColor: c }))}
+                        />
+                        <ColorSwatchPicker
+                          label="Secondary Color"
+                          value={teamEdit.secondaryColor}
+                          onChange={(c) => setTeamEdit((s) => ({ ...s, secondaryColor: c }))}
+                        />
                       </div>
                       {teamSaveError && <p className="text-red-500 text-sm font-medium">{teamSaveError}</p>}
                       <div className="flex gap-2">
