@@ -288,10 +288,11 @@ async function main() {
              (clerk_user_id, first_name, last_name, position, team_id,
               role, is_admin, stamps, tides, milestones, archetype,
               career_stats, archetype_history, verified)
-           VALUES ($1,$2,$3,$4,$5,'player',false,'[]','[]','[]','Uncharted','{}','{}',false)
+           VALUES ($1,$2,$3,$4,$5,'player',false,'[]','[]','[]','Uncharted','{}','[]',false)
            ON CONFLICT (clerk_user_id) DO UPDATE
              SET first_name=$2, last_name=$3, position=$4, team_id=$5,
-                 stamps='[]', tides='[]', milestones='[]', archetype='Uncharted'
+                 stamps='[]', tides='[]', milestones='[]', archetype='Uncharted',
+                 archetype_history='[]'
            RETURNING id`,
           [clerkId, p.firstName, p.lastName, p.position, tid]
         );
