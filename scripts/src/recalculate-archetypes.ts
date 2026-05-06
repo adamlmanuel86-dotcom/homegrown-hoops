@@ -38,33 +38,43 @@ interface GameRow {
 async function main() {
   const client = await pool.connect();
   try {
-    // ── 1. Find the current season (most recent in games table) ───────────────
-    const seasonRes = await client.query<{ season: string }>(
-      `SELECT season FROM games WHERE season IS NOT NULL
-       GROUP BY season ORDER BY MAX(game_date) DESC LIMIT 1`
+    // ── 1. Find each team's most recent season ────────────────────────────────
+    // Each team may be on a different season (e.g. NBA teams on "2001 Playoffs"
+    // vs local teams on "2025-26"), so we resolve the active season per team
+    // rather than picking one global season.
+    const teamSeasonRes = await client.query<{ teamId: number; season: string }>(
+      `SELECT DISTINCT ON (p.team_id)
+         p.team_id AS "teamId", g.season
+       FROM game_player_stats gps
+       JOIN players p ON p.id = gps.player_id
+       JOIN games   g ON g.id = gps.game_id
+       WHERE g.season IS NOT NULL AND p.team_id IS NOT NULL
+       ORDER BY p.team_id, g.game_date DESC`
     );
-    const season: string | null = seasonRes.rows[0]?.season ?? null;
-    console.log(`Current season: ${season ?? "(none — using all stats)"}`);
+    // Build map: teamId → season
+    const teamSeason = new Map<number, string>(
+      teamSeasonRes.rows.map((r) => [r.teamId, r.season])
+    );
+    console.log(`Teams with stats: ${teamSeason.size}`);
+    for (const [tid, s] of teamSeason) console.log(`  team ${tid} → "${s}"`);
 
-    // ── 2. Load per-game stats joined to players + games ──────────────────────
-    const statsQuery = season
-      ? `SELECT p.first_name AS "firstName", p.last_name AS "lastName",
+    // ── 2. Load per-game stats for each team using its own active season ───────
+    const statsRows: GameRow[] = [];
+    for (const [teamId, season] of teamSeason) {
+      const res = await client.query<GameRow>(
+        `SELECT p.first_name AS "firstName", p.last_name AS "lastName",
                 p.team_id   AS "teamId",
                 gps.points, gps.rebounds, gps.assists, gps.steals, gps.blocks,
                 gps.threes_made AS "threesMade"
          FROM game_player_stats gps
          JOIN players p ON p.id = gps.player_id
          JOIN games   g ON g.id = gps.game_id
-         WHERE g.season = $1 AND p.team_id IS NOT NULL`
-      : `SELECT p.first_name AS "firstName", p.last_name AS "lastName",
-                p.team_id   AS "teamId",
-                gps.points, gps.rebounds, gps.assists, gps.steals, gps.blocks,
-                gps.threes_made AS "threesMade"
-         FROM game_player_stats gps
-         JOIN players p ON p.id = gps.player_id
-         WHERE p.team_id IS NOT NULL`;
-
-    const statsRes = await client.query<GameRow>(statsQuery, season ? [season] : []);
+         WHERE g.season = $1 AND p.team_id = $2`,
+        [season, teamId]
+      );
+      statsRows.push(...res.rows);
+    }
+    const statsRes = { rows: statsRows };
     console.log(`Loaded ${statsRes.rows.length} game-stat rows.`);
 
     // ── 3. Group game rows by player key (firstName|lastName|teamId) ──────────
@@ -129,13 +139,13 @@ async function main() {
         const th = p.avgThrees   * 40;
 
         let archetype: string;
-        if      (sc >= 180)                          archetype = "The Mainstay";
-        else if (sc >= 150 && (rb > 90 || pl > 80)) archetype = "The Engine";
-        else if (th >= 80 && p.avgThrees >= 2)       archetype = "The Deep";
-        else if (rb >= 90)                           archetype = "The Vortex";
-        else if (pl >= 100)                          archetype = "The Current";
-        else if (st >= 70)                           archetype = "The Warden";
-        else if (bl >= 52)                           archetype = "The Wall";
+        if      (sc >= 150)                          archetype = "The Mainstay";
+        else if (sc >= 120 && (rb > 75 || pl > 60)) archetype = "The Engine";
+        else if (th >= 60 && p.avgThrees >= 1.5)     archetype = "The Deep";
+        else if (rb >= 75)                           archetype = "The Vortex";
+        else if (pl >= 75)                           archetype = "The Current";
+        else if (st >= 52)                           archetype = "The Warden";
+        else if (bl >= 35)                           archetype = "The Wall";
         else {
           const best = [
             { id: "The Mainstay", score: sc },
@@ -169,14 +179,14 @@ async function main() {
           const isTopScorer = p.key === topScorer.key;
 
           let archetype: string;
-          if      (sc >= 180 && isTopScorer)                                   archetype = "The Mainstay";
-          else if (sc >= 180)                                                   archetype = "The Voltage";
-          else if (sc >= 150 && sc < 180 && (rb > 90 || pl > 80))              archetype = "The Engine";
-          else if (isHighest(th, teamMaxThrees) && th >= 80 && p.avgThrees >= 2) archetype = "The Deep";
-          else if (isHighest(rb, teamMaxReb)    && rb >= 90)                    archetype = "The Vortex";
-          else if (isHighest(pl, teamMaxPl)     && pl >= 100)                   archetype = "The Current";
-          else if (isHighest(st, teamMaxSt)     && st >= 70)                    archetype = "The Warden";
-          else if (isHighest(bl, teamMaxBl)     && bl >= 52)                    archetype = "The Wall";
+          if      (sc >= 150 && isTopScorer)                                     archetype = "The Mainstay";
+          else if (sc >= 150)                                                    archetype = "The Voltage";
+          else if (sc >= 120 && sc < 150 && (rb > 75 || pl > 60))              archetype = "The Engine";
+          else if (isHighest(th, teamMaxThrees) && th >= 60 && p.avgThrees >= 1.5) archetype = "The Deep";
+          else if (isHighest(rb, teamMaxReb)    && rb >= 75)                    archetype = "The Vortex";
+          else if (isHighest(pl, teamMaxPl)     && pl >= 75)                    archetype = "The Current";
+          else if (isHighest(st, teamMaxSt)     && st >= 52)                    archetype = "The Warden";
+          else if (isHighest(bl, teamMaxBl)     && bl >= 35)                    archetype = "The Wall";
           else                                                                   archetype = "The Climb";
 
           archetypeByKey.set(p.key, archetype);

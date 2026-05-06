@@ -393,14 +393,14 @@ export async function recalculateTides(season: string): Promise<void> {
 //   Three-point score = 3PM × 40
 //
 // Priority rules (first match wins):
-//  1. Scoring ≥ 180 AND highest scorer on team  → The Mainstay
-//  2. Scoring ≥ 180 AND not highest scorer      → The Voltage
-//  3. Scoring 150–179 AND (rebounding > 90 OR playmaking > 80) → The Engine
-//  4. Three-point score highest AND ≥ 80 AND ≥ 2 3PM/game → The Deep
-//  5. Rebounding score highest AND ≥ 90          → The Vortex
-//  6. Playmaking score highest AND ≥ 100         → The Current
-//  7. Steals score highest AND ≥ 70              → The Warden
-//  8. Blocks score highest AND ≥ 52              → The Wall
+//  1. Scoring ≥ 150 AND highest scorer on team  → The Mainstay
+//  2. Scoring ≥ 150 AND not highest scorer      → The Voltage
+//  3. Scoring 120–149 AND (rebounding > 75 OR playmaking > 60) → The Engine
+//  4. Three-point score highest AND ≥ 60 AND ≥ 1.5 3PM/game → The Deep
+//  5. Rebounding score highest AND ≥ 75          → The Vortex
+//  6. Playmaking score highest AND ≥ 75          → The Current
+//  7. Steals score highest AND ≥ 52              → The Warden
+//  8. Blocks score highest AND ≥ 35              → The Wall
 //  9. Everything else                            → The Climb
 // No games recorded                              → Uncharted
 export async function recalculateArchetypesForTeam(
@@ -455,13 +455,13 @@ export async function recalculateArchetypesForTeam(
     const th  = p.avgThrees   * 40;
 
     let archetype: string;
-    if      (sc >= 180)                               archetype = "The Mainstay";
-    else if (sc >= 150 && (rb > 90 || pl > 80))       archetype = "The Engine";
-    else if (th >= 80 && p.avgThrees >= 2)            archetype = "The Deep";
-    else if (rb >= 90)                                archetype = "The Vortex";
-    else if (pl >= 100)                               archetype = "The Current";
-    else if (st >= 70)                                archetype = "The Warden";
-    else if (bl >= 52)                                archetype = "The Wall";
+    if      (sc >= 150)                               archetype = "The Mainstay";
+    else if (sc >= 120 && (rb > 75 || pl > 60))       archetype = "The Engine";
+    else if (th >= 60 && p.avgThrees >= 1.5)          archetype = "The Deep";
+    else if (rb >= 75)                                archetype = "The Vortex";
+    else if (pl >= 75)                                archetype = "The Current";
+    else if (st >= 52)                                archetype = "The Warden";
+    else if (bl >= 35)                                archetype = "The Wall";
     else {
       // Below all absolute thresholds — give the player the archetype for their
       // single highest weighted score so the card always reflects their game.
@@ -503,14 +503,14 @@ export async function recalculateArchetypesForTeam(
       const isTopScorer = key === topScorerKey;
 
       let archetype: string;
-      if      (sc >= 180 && isTopScorer)                                         archetype = "The Mainstay";
-      else if (sc >= 180)                                                         archetype = "The Voltage";
-      else if (sc >= 150 && sc < 180 && (rb > 90 || pl > 80))                    archetype = "The Engine";
-      else if (isHighest(th, teamMaxThrees) && th >= 80 && p.avgThrees >= 2)     archetype = "The Deep";
-      else if (isHighest(rb, teamMaxReb)    && rb >= 90)                          archetype = "The Vortex";
-      else if (isHighest(pl, teamMaxPl)     && pl >= 100)                         archetype = "The Current";
-      else if (isHighest(st, teamMaxSt)     && st >= 70)                          archetype = "The Warden";
-      else if (isHighest(bl, teamMaxBl)     && bl >= 52)                          archetype = "The Wall";
+      if      (sc >= 150 && isTopScorer)                                          archetype = "The Mainstay";
+      else if (sc >= 150)                                                          archetype = "The Voltage";
+      else if (sc >= 120 && sc < 150 && (rb > 75 || pl > 60))                    archetype = "The Engine";
+      else if (isHighest(th, teamMaxThrees) && th >= 60 && p.avgThrees >= 1.5)   archetype = "The Deep";
+      else if (isHighest(rb, teamMaxReb)    && rb >= 75)                          archetype = "The Vortex";
+      else if (isHighest(pl, teamMaxPl)     && pl >= 75)                          archetype = "The Current";
+      else if (isHighest(st, teamMaxSt)     && st >= 52)                          archetype = "The Warden";
+      else if (isHighest(bl, teamMaxBl)     && bl >= 35)                          archetype = "The Wall";
       else                                                                         archetype = "The Climb";
 
       assignments.set(key, archetype);
