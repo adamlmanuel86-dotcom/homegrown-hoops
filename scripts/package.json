@@ -8,6 +8,7 @@
     "recalc-archetypes": "tsx ./src/recalculate-archetypes.ts",
     "recalc-stamps": "tsx ./src/recalculate-stamps.ts",
     "seed-2001-lakers": "tsx ./src/seed-2001-lakers.ts",
+    "seed-nb16u-games": "tsx ./src/seed-nb16u-games.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

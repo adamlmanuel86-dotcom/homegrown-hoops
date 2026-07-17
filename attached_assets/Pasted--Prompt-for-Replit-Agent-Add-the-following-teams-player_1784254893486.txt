@@ -1,0 +1,83 @@
+# Prompt for Replit Agent
+
+Add the following teams, players, and games to the database. Jack M (#4) already exists as a player — do not create a duplicate, just link his stats to these two games.
+
+## Teams to create (if they don't exist)
+1. **Team NB 16U** (Adam's son's team — home roster)
+2. **Manitoba 14U** (opponent, Game 1)
+3. **NFLD 15U** (opponent, Game 2)
+
+## Players to add to Team NB 16U roster
+(Jack M, #4 already exists — link only)
+
+| Name | Number |
+|---|---|
+| Elliot S | 5 |
+| Dami O | 6 |
+| Eli M | 7 |
+| Soke G | 8 |
+| Hilary O | 11 |
+| Harrison H | 12 |
+| Carson M | 13 |
+| Sawyer B | 13 |
+| Parker W | 14 |
+| Mathew HM | 15 |
+| Logan S | 21 |
+
+Note: Carson M and Sawyer B are both listed as #13 in the source data — that's how it appeared on the box score, please keep as-is (likely two different jersey sets/an app quirk, not an error to fix).
+
+## Game 1
+- **Date:** Saturday, July 11, 2026
+- **Matchup:** Team NB 16U vs Manitoba 14U
+- **Final Score:** Team NB 16U 93 — Manitoba 14U 57
+- **Team NB 16U totals:** PTS 93, PF 22, FG 31-83 (37%), 3PT 10-34 (29%), FT 21-37 (57%), TO 12, ORB 32, DRB 20, REB 52, AST 24, STL 22, BLK 7
+- **Manitoba 14U totals:** PTS 57, PF 13, FG 21-42 (50%), 3PT 3-10 (30%) *(full Manitoba roster not captured in the screenshots — team totals only)*
+
+### Team NB 16U box score — Game 1
+
+| Player | PTS | FG | FG% | 3PT | 3PT% | FT | FT% | ORB | DRB | REB | AST | STL | BLK | TO | PF | +/- |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Jack M #4 | 8 | 3-5 | 60% | 2-4 | 50% | 0-0 | - | 0 | 0 | 0 | 3 | 2 | 0 | 1 | 5 | +22 |
+| Elliot S #5 | 3 | 1-7 | 14% | 1-4 | 25% | 0-0 | - | 1 | 1 | 2 | 1 | 2 | 0 | 0 | 2 | +36 |
+| Dami O #6 | 10 | 4-7 | 57% | 0-0 | - | 2-2 | 100% | 5 | 2 | 7 | 3 | 3 | 1 | 2 | 5 | +25 |
+| Eli M #7 | 10 | 3-5 | 60% | 2-3 | 67% | 2-2 | 100% | 1 | 3 | 4 | 4 | 2 | 1 | 1 | 1 | +36 |
+| Soke G #8 | 12 | 4-12 | 33% | 0-3 | 0% | 4-8 | 50% | 7 | 3 | 10 | 2 | 3 | 4 | 2 | 2 | +25 |
+| Hilary O #11 | 6 | 2-5 | 40% | 0-2 | 0% | 2-3 | 67% | 2 | 2 | 4 | 5 | 1 | 0 | 0 | 0 | +36 |
+| Harrison H #12 | 1 | 0-3 | 0% | 0-2 | 0% | 1-2 | 50% | 4 | 4 | 8 | 2 | 3 | 0 | 1 | 0 | +23 |
+| Carson M #13 | 5 | 1-4 | 25% | 1-2 | 50% | 2-4 | 50% | 1 | 2 | 3 | 0 | 0 | 0 | 1 | 3 | +36 |
+| Sawyer B #13 | 9 | 3-6 | 50% | 1-4 | 25% | 2-2 | 100% | 1 | 0 | 1 | 1 | 2 | 0 | 0 | 1 | +18 |
+| Parker W #14 | 7 | 3-5 | 60% | 0-1 | 0% | 1-4 | 25% | 4 | 0 | 4 | 2 | 0 | 1 | 1 | 0 | +33 |
+| Mathew HM #15 | 11 | 4-14 | 29% | 2-5 | 40% | 1-2 | 50% | 3 | 2 | 5 | 0 | 3 | 0 | 1 | 0 | +25 |
+| Logan S #21 | 11 | 3-10 | 30% | 1-4 | 25% | 4-8 | 50% | 3 | 1 | 4 | 1 | 1 | 0 | 2 | 3 | +22 |
+
+## Game 2
+- **Date:** Thursday, July 9, 2026
+- **Matchup:** Team NB 16U vs NFLD 15U
+- **Final Score:** Team NB 16U 84 — NFLD 15U 67
+- **Team NB 16U totals:** PTS 84, PF 17, FG 33-93 (35%), 3PT 5-33 (15%), FT 13-28 (46%), TO 13, ORB 17, DRB 25, REB 42, AST 22, STL 25, BLK 3
+- **NFLD 15U totals:** not captured in screenshots (cut off) — leave blank or add manually if you have it
+
+### Team NB 16U box score — Game 2
+
+| Player | PTS | FG | FG% | 3PT | 3PT% | FT | FT% | ORB | DRB | REB | AST | STL | BLK | TO | PF | +/- |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Jack M #4 | 0 | 0-1 | 0% | 0-1 | 0% | 0-0 | - | 0 | 1 | 1 | 2 | 0 | 0 | 0 | 1 | +3 |
+| Elliot S #5 | 11 | 4-7 | 57% | 1-3 | 33% | 2-2 | 100% | 0 | 3 | 3 | 2 | 2 | 0 | 1 | 2 | +17 |
+| Dami O #6 | 11 | 5-6 | 83% | 0-0 | - | 1-2 | 50% | 1 | 1 | 2 | 1 | 1 | 0 | 0 | 4 | +4 |
+| Eli M #7 | 4 | 2-10 | 20% | 0-4 | 0% | 0-0 | - | 1 | 1 | 2 | 7 | 1 | 0 | 1 | 0 | +17 |
+| Soke G #8 | 10 | 4-10 | 40% | 1-4 | 25% | 1-4 | 25% | 3 | 2 | 5 | 1 | 3 | 1 | 0 | 4 | +15 |
+| Hilary O #11 | 8 | 2-14 | 14% | 0-3 | 0% | 4-8 | 50% | 2 | 3 | 5 | 0 | 3 | 0 | 1 | 0 | +17 |
+| Harrison H #12 | 4 | 2-3 | 67% | 0-1 | 0% | 0-2 | 0% | 0 | 4 | 4 | 1 | 6 | 0 | 4 | 1 | +15 |
+| Carson M #13 | 16 | 7-16 | 44% | 1-5 | 20% | 1-2 | 50% | 4 | 3 | 7 | 2 | 2 | 0 | 0 | 1 | +17 |
+| Sawyer B #13 | 0 | 0-3 | 0% | 0-3 | 0% | 0-0 | - | 0 | 0 | 0 | 1 | 2 | 0 | 1 | 2 | +3 |
+| Parker W #14 | 9 | 4-11 | 36% | 1-1 | 100% | 0-1 | 0% | 4 | 4 | 8 | 0 | 0 | 1 | 0 | 1 | +17 |
+| Mathew HM #15 | 2 | 0-6 | 0% | 0-5 | 0% | 2-2 | 100% | 1 | 1 | 2 | 2 | 3 | 0 | 2 | 0 | +7 |
+| Logan S #21 | 9 | 3-6 | 50% | 1-3 | 33% | 2-5 | 40% | 1 | 2 | 3 | 3 | 2 | 1 | 3 | 1 | +3 |
+
+## Instructions for the agent
+1. Create the two opponent teams (Manitoba 14U, NFLD 15U) if not already present.
+2. Add the 11 new players to Team NB 16U's roster, linked to Jack's existing team.
+3. Create both games with dates, teams, and final scores as listed above.
+4. Insert per-player box score stats for each of the two games using the tables above.
+5. Insert team-level totals for both games (and for Manitoba 14U where available).
+6. If the schema calculates FG%/3PT%/FT% automatically from makes/attempts, just use the makes-attempts columns and skip the % columns.
