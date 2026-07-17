@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable } from "@workspace/db";
+import { parseCloudinaryUrl } from "../lib/cloudinary";
 
 const router: IRouter = Router();
 
