@@ -314,12 +314,22 @@ export function ProfilePage() {
     careerGames > 0
       ? {
           gamesPlayed:    careerGames,
+          wins:           allSeasonStats?.wins ?? 0,
           totalPoints:    careerPoints,
           totalRebounds:  careerRebounds,
           totalAssists:   careerAssists,
           totalSteals:    careerSteals,
           totalBlocks:    careerBlocks,
           totalTurnovers: careerTurnovers,
+          totalFieldGoalsMade:      allSeasonStats?.totalFieldGoalsMade      ?? 0,
+          totalFieldGoalsAttempted: allSeasonStats?.totalFieldGoalsAttempted ?? 0,
+          totalThreesMade:          allSeasonStats?.totalThreesMade          ?? 0,
+          totalThreesAttempted:     allSeasonStats?.totalThreesAttempted     ?? 0,
+          totalFreeThrowsMade:      allSeasonStats?.totalFreeThrowsMade      ?? 0,
+          totalFreeThrowsAttempted: allSeasonStats?.totalFreeThrowsAttempted ?? 0,
+          fieldGoalPct:  allSeasonStats?.fieldGoalPct  ?? 0,
+          threePointPct: allSeasonStats?.threePointPct ?? 0,
+          freeThrowPct:  allSeasonStats?.freeThrowPct  ?? 0,
           avgPoints:    careerPoints    / careerGames,
           avgRebounds:  careerRebounds  / careerGames,
           avgAssists:   careerAssists   / careerGames,
@@ -344,6 +354,15 @@ export function ProfilePage() {
           totalSteals:   seasonStats.totalSteals,
           totalBlocks:   seasonStats.totalBlocks,
           totalTurnovers:seasonStats.totalTurnovers,
+          totalFieldGoalsMade:      seasonStats.totalFieldGoalsMade      ?? 0,
+          totalFieldGoalsAttempted: seasonStats.totalFieldGoalsAttempted ?? 0,
+          totalThreesMade:          seasonStats.totalThreesMade          ?? 0,
+          totalThreesAttempted:     seasonStats.totalThreesAttempted     ?? 0,
+          totalFreeThrowsMade:      seasonStats.totalFreeThrowsMade      ?? 0,
+          totalFreeThrowsAttempted: seasonStats.totalFreeThrowsAttempted ?? 0,
+          fieldGoalPct:  seasonStats.fieldGoalPct  ?? 0,
+          threePointPct: seasonStats.threePointPct ?? 0,
+          freeThrowPct:  seasonStats.freeThrowPct  ?? 0,
         }
       : undefined
     : allSeasonStats && allSeasonStats.gamesPlayed > 0
@@ -362,6 +381,15 @@ export function ProfilePage() {
         totalSteals:   allSeasonStats.totalSteals,
         totalBlocks:   allSeasonStats.totalBlocks,
         totalTurnovers:allSeasonStats.totalTurnovers,
+        totalFieldGoalsMade:      allSeasonStats.totalFieldGoalsMade      ?? 0,
+        totalFieldGoalsAttempted: allSeasonStats.totalFieldGoalsAttempted ?? 0,
+        totalThreesMade:          allSeasonStats.totalThreesMade          ?? 0,
+        totalThreesAttempted:     allSeasonStats.totalThreesAttempted     ?? 0,
+        totalFreeThrowsMade:      allSeasonStats.totalFreeThrowsMade      ?? 0,
+        totalFreeThrowsAttempted: allSeasonStats.totalFreeThrowsAttempted ?? 0,
+        fieldGoalPct:  allSeasonStats.fieldGoalPct  ?? 0,
+        threePointPct: allSeasonStats.threePointPct ?? 0,
+        freeThrowPct:  allSeasonStats.freeThrowPct  ?? 0,
       }
     : undefined;
 
@@ -635,6 +663,55 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {displayStats && (displayStats.totalFieldGoalsAttempted ?? 0) > 0 && (
+        <div className="card-base p-4 space-y-3">
+          <p className="label-upper mb-1 px-1">Shooting Splits · {seasonLabel}</p>
+          {[
+            {
+              label: "Field Goals",
+              made: displayStats.totalFieldGoalsMade ?? 0,
+              att: displayStats.totalFieldGoalsAttempted ?? 0,
+              pct: displayStats.fieldGoalPct ?? 0,
+              color: "#F97316",
+            },
+            {
+              label: "3-Pointers",
+              made: displayStats.totalThreesMade ?? 0,
+              att: displayStats.totalThreesAttempted ?? 0,
+              pct: displayStats.threePointPct ?? 0,
+              color: "#A78BFA",
+            },
+            {
+              label: "Free Throws",
+              made: displayStats.totalFreeThrowsMade ?? 0,
+              att: displayStats.totalFreeThrowsAttempted ?? 0,
+              pct: displayStats.freeThrowPct ?? 0,
+              color: "#34D399",
+            },
+          ].map(({ label, made, att, pct, color }) => (
+            <div key={label} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color }}>
+                  {label}
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground tabular-nums">{made}-{att}</span>
+                  <span className="font-display text-lg font-black tabular-nums" style={{ color }}>
+                    {pct.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.min(100, pct)}%`, background: color }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

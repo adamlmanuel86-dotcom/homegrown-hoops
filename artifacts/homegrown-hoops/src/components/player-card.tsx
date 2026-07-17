@@ -2,7 +2,7 @@ import { useRef, useCallback, useState } from "react";
 import html2canvas from "html2canvas";
 import {
   Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
-  Shield, Castle, Activity,
+  Shield, Castle, Activity, RotateCw,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { STAMPS } from "@/components/recognition";
@@ -49,6 +49,16 @@ export type CardStats = {
   totalSteals?: number;
   totalBlocks?: number;
   totalTurnovers?: number;
+  // Shooting totals (for flip-card back face)
+  totalFieldGoalsMade?: number;
+  totalFieldGoalsAttempted?: number;
+  totalThreesMade?: number;
+  totalThreesAttempted?: number;
+  totalFreeThrowsMade?: number;
+  totalFreeThrowsAttempted?: number;
+  fieldGoalPct?: number;
+  threePointPct?: number;
+  freeThrowPct?: number;
 };
 
 export type CardProfile = {
@@ -281,6 +291,293 @@ function LegacyScorePopup({
   );
 }
 
+// ─── Card back face — career totals + shooting splits ────────────────────────
+function CardBack({
+  profile,
+  stats,
+  careerTotals,
+  primaryColor,
+  onFlip,
+}: {
+  profile: CardProfile;
+  stats?: CardStats;
+  careerTotals?: CardStats;
+  primaryColor: string;
+  onFlip: () => void;
+}) {
+  const lp = careerTotals ?? stats;
+  const BG_DEEP = "hsl(222,42%,7%)";
+  const BG_CARD = "hsl(220,36%,10%)";
+  const DIVIDER = "hsl(220,36%,14%)";
+  const MUTED = "hsl(220,20%,38%)";
+
+  const fgm  = lp?.totalFieldGoalsMade    ?? 0;
+  const fga  = lp?.totalFieldGoalsAttempted ?? 0;
+  const tpm  = lp?.totalThreesMade         ?? 0;
+  const tpa  = lp?.totalThreesAttempted    ?? 0;
+  const ftm  = lp?.totalFreeThrowsMade     ?? 0;
+  const fta  = lp?.totalFreeThrowsAttempted ?? 0;
+  const fgPct  = lp?.fieldGoalPct  ?? (fga  > 0 ? Math.round((fgm  / fga)  * 1000) / 10 : 0);
+  const tpPct  = lp?.threePointPct ?? (tpa  > 0 ? Math.round((tpm  / tpa)  * 1000) / 10 : 0);
+  const ftPct  = lp?.freeThrowPct  ?? (fta  > 0 ? Math.round((ftm  / fta)  * 1000) / 10 : 0);
+
+  const totals = [
+    { label: "PTS",  value: lp?.totalPoints    ?? 0, color: "#F97316" },
+    { label: "REB",  value: lp?.totalRebounds  ?? 0, color: "#38BDF8" },
+    { label: "AST",  value: lp?.totalAssists   ?? 0, color: "#34D399" },
+    { label: "STL",  value: lp?.totalSteals    ?? 0, color: "#A78BFA" },
+    { label: "BLK",  value: lp?.totalBlocks    ?? 0, color: "#6366F1" },
+  ];
+
+  const shooting = [
+    { label: "FG",  made: fgm, att: fga, pct: fgPct,  color: "#F97316" },
+    { label: "3PT", made: tpm, att: tpa, pct: tpPct,  color: "#A78BFA" },
+    { label: "FT",  made: ftm, att: fta, pct: ftPct,  color: "#34D399" },
+  ];
+
+  return (
+    <div
+      style={{
+        width: 320,
+        background: `linear-gradient(140deg, ${primaryColor}, hsl(220,36%,10%) 55%, ${primaryColor}88)`,
+        borderRadius: 22,
+        padding: 2,
+        boxShadow: `0 8px 40px ${primaryColor}44, 0 2px 8px #0008`,
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+        transform: "rotateY(180deg)",
+        position: "absolute",
+        top: 0,
+        left: 0,
+      }}
+    >
+      <div
+        style={{
+          background: BG_DEEP,
+          borderRadius: 20,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "14px 20px 12px",
+            background: BG_CARD,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                fontSize: 18,
+                fontWeight: 800,
+                color: "#ffffff",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                margin: 0,
+                lineHeight: 1,
+              }}
+            >
+              {profile.firstName} {profile.lastName}
+            </p>
+            <p
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                color: MUTED,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                margin: "4px 0 0",
+              }}
+            >
+              Career Totals · {lp?.gamesPlayed ?? 0} GP
+            </p>
+          </div>
+          {profile.number && (
+            <p
+              style={{
+                fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                fontSize: 28,
+                fontWeight: 900,
+                color: primaryColor,
+                letterSpacing: "-0.02em",
+                lineHeight: 1,
+                textShadow: `0 0 14px ${primaryColor}66`,
+              }}
+            >
+              #{profile.number}
+            </p>
+          )}
+        </div>
+
+        <div style={{ height: 1, background: DIVIDER }} />
+
+        {/* Career stat totals */}
+        <div style={{ display: "flex", padding: "14px 20px" }}>
+          {totals.map((s, i) => (
+            <div
+              key={s.label}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                borderRight: i < totals.length - 1 ? `1px solid ${DIVIDER}` : "none",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                  fontSize: 24,
+                  fontWeight: 800,
+                  color: s.color,
+                  margin: 0,
+                  lineHeight: 1,
+                }}
+              >
+                {s.value}
+              </p>
+              <p
+                style={{
+                  fontSize: 8,
+                  fontWeight: 700,
+                  color: MUTED,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginTop: 4,
+                }}
+              >
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
+
+        {/* Shooting splits */}
+        <div style={{ padding: "12px 20px 14px" }}>
+          <p
+            style={{
+              fontSize: 8,
+              fontWeight: 700,
+              color: MUTED,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              margin: "0 0 10px 0",
+            }}
+          >
+            Shooting Splits
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {shooting.map((s) => (
+              <div
+                key={s.label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: `${s.color}0d`,
+                  border: `1px solid ${s.color}28`,
+                  borderRadius: 10,
+                  padding: "8px 12px",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    color: s.color,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    width: 28,
+                    margin: 0,
+                  }}
+                >
+                  {s.label}
+                </p>
+                <p
+                  style={{
+                    fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    margin: 0,
+                    lineHeight: 1,
+                    flex: 1,
+                  }}
+                >
+                  {s.made}-{s.att}
+                </p>
+                <p
+                  style={{
+                    fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: s.color,
+                    margin: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  {s.pct.toFixed(1)}%
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
+
+        {/* Footer — flip back button */}
+        <div style={{ padding: "12px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{
+                width: 18, height: 18, borderRadius: "50%", background: "#F97316",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1,
+              }}
+            >
+              🏀
+            </div>
+            <span
+              style={{
+                fontSize: 7, fontWeight: 800, color: MUTED,
+                textTransform: "uppercase", letterSpacing: "0.07em",
+              }}
+            >
+              Homegrown Hoops
+            </span>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onFlip(); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              background: "hsl(220,36%,14%)",
+              border: "1px solid hsl(220,36%,20%)",
+              borderRadius: 8,
+              padding: "5px 10px",
+              cursor: "pointer",
+              color: MUTED,
+              fontSize: 9,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+            }}
+          >
+            <RotateCw style={{ width: 10, height: 10 }} />
+            Flip
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlayerCard({
   profile,
   stats,
@@ -293,6 +590,7 @@ export function PlayerCard({
   const [showLegacyPopup, setShowLegacyPopup] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [flipped, setFlipped] = useState(false);
 
   const earnedIds = new Set((profile.stamps ?? []).map((s) => s.id));
   const earnedStamps = STAMPS.filter((s) => earnedIds.has(s.id));
@@ -323,10 +621,6 @@ export function PlayerCard({
     );
   }
 
-  // Legacy Score formula:
-  //   games×25 + pts×10 + reb×15 + ast×20 + stl×35 + blk×35 + tov×(−10) + uniqueStamps×200 + tides×1000 + milestoneBonus
-  // careerTotals is used for the score when provided (career-based, never decreases).
-  // profile.tides, profile.stamps, profile.milestones are ALWAYS career-wide.
   const uniqueStampCount = new Set((profile.stamps ?? []).map((s) => s.id)).size;
   const totalTides = (profile.tides ?? []).length;
   const archetypeKey = profile.archetype ?? "Uncharted";
@@ -381,7 +675,6 @@ export function PlayerCard({
       const el = cardRef.current;
       const filename = `${profile.firstName}-${profile.lastName}-hgh-card.png`;
 
-      // Wait for the DOM to be fully rendered before html2canvas reads it.
       await new Promise<void>((resolve) => setTimeout(resolve, 500));
 
       const canvas = await html2canvas(el, {
@@ -399,7 +692,6 @@ export function PlayerCard({
 
       const file = new File([blob], filename, { type: "image/png" });
 
-      // ── iOS Safari / modern mobile: Web Share API with file ──────────────────
       if (
         typeof navigator.share === "function" &&
         typeof navigator.canShare === "function" &&
@@ -409,7 +701,6 @@ export function PlayerCard({
         return;
       }
 
-      // ── Desktop / browsers without file-share support: blob URL download ─────
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -464,426 +755,492 @@ export function PlayerCard({
     ...candidateStats.map(({ label, raw }) => ({ label, value: raw.toFixed(1) })),
   ];
 
+  // Card height — measured as inner content; the flip wrapper must match this
+  const CARD_HEIGHT = 568;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-      {/* ── Card (captured region) ── */}
+
+      {/* ── Flip container ── */}
       <div
-        ref={cardRef}
         style={{
-          width: 320,
-          background: `linear-gradient(140deg, ${primaryColor}, ${secondaryColor} 55%, ${primaryColor}88)`,
-          borderRadius: 22,
-          padding: 2,
-          boxShadow: `0 8px 40px ${primaryColor}44, 0 2px 8px #0008`,
+          width: 324,
+          height: CARD_HEIGHT,
+          perspective: "1200px",
+          cursor: "pointer",
         }}
+        onClick={() => {
+          if (!showStampsPopup && !showLegacyPopup) setFlipped((f) => !f);
+        }}
+        title={flipped ? "Click to flip back" : "Click to see career totals"}
       >
         <div
           style={{
-            background: BG_DEEP,
-            borderRadius: 20,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            transformStyle: "preserve-3d",
+            transition: "transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
           }}
         >
-          {/* ── Photo / silhouette section ── */}
+          {/* ── FRONT: original card ── */}
           <div
+            ref={cardRef}
             style={{
-              height: 190,
-              background: `linear-gradient(180deg, ${BG_CARD} 0%, ${BG_DEEP} 100%)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 320,
+              background: `linear-gradient(140deg, ${primaryColor}, ${secondaryColor} 55%, ${primaryColor}88)`,
+              borderRadius: 22,
+              padding: 2,
+              boxShadow: `0 8px 40px ${primaryColor}44, 0 2px 8px #0008`,
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
           >
             <div
               style={{
-                position: "absolute",
-                width: 160,
-                height: 160,
-                borderRadius: "50%",
-                background: `radial-gradient(circle, ${archetypeColor}28, transparent 65%)`,
-              }}
-            />
-            {/* Jersey number — top-right corner badge */}
-            {profile.number != null && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  right: 14,
-                  fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
-                  fontSize: 22,
-                  fontWeight: 900,
-                  color: primaryColor,
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1,
-                  textShadow: `0 0 14px ${primaryColor}66`,
-                  userSelect: "none",
-                }}
-              >
-                #{profile.number}
-              </div>
-            )}
-
-            <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div
-                style={{
-                  width: 90,
-                  height: 90,
-                  borderRadius: "50%",
-                  background: "hsl(220,36%,13%)",
-                  border: `2px solid ${archetypeColor}55`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: `0 0 24px ${archetypeColor}33`,
-                  overflow: "hidden",
-                  flexShrink: 0,
-                }}
-              >
-                {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={`${profile.firstName} ${profile.lastName}`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    crossOrigin="anonymous"
-                  />
-                ) : (
-                  <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
-                )}
-              </div>
-              <div
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
-                  background: `${archetypeColor}1a`,
-                  border: `1.5px solid ${archetypeColor}55`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: `0 0 10px ${archetypeColor}33`,
-                }}
-              >
-                <ArchetypeIcon style={{ width: 14, height: 14, color: archetypeColor }} />
-              </div>
-            </div>
-          </div>
-
-          {/* ── Name / school / archetype ── */}
-          <div
-            style={{
-              padding: "16px 20px 14px",
-              textAlign: "center",
-              background: BG_DEEP,
-            }}
-          >
-            <p
-              style={{
-                fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
-                fontSize: 26,
-                fontWeight: 800,
-                color: "#ffffff",
-                textTransform: "uppercase",
-                letterSpacing: "0.03em",
-                lineHeight: 1.05,
-                margin: 0,
-              }}
-            >
-              {profile.firstName} {profile.lastName}
-            </p>
-            {profile.school && (
-              <p
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#F97316",
-                  marginTop: 5,
-                  letterSpacing: "0.05em",
-                  margin: "5px 0 0",
-                }}
-              >
-                {profile.school}
-              </p>
-            )}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                width: "fit-content",
-                marginTop: 9,
-                margin: "9px auto 0",
-                padding: "4px 12px",
+                background: BG_DEEP,
                 borderRadius: 20,
-                background: `${archetypeColor}18`,
-                border: `1px solid ${archetypeColor}44`,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
-              <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor, verticalAlign: "middle" }} />
-              <span
+              {/* ── Photo / silhouette section ── */}
+              <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  color: archetypeColor,
-                  textShadow: `0 0 14px ${archetypeColor}`,
-                  verticalAlign: "middle",
+                  height: 190,
+                  background: `linear-gradient(180deg, ${BG_CARD} 0%, ${BG_DEEP} 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
                 }}
               >
-                {archetypeLabel}
-              </span>
-            </div>
-          </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    width: 160,
+                    height: 160,
+                    borderRadius: "50%",
+                    background: `radial-gradient(circle, ${archetypeColor}28, transparent 65%)`,
+                  }}
+                />
+                {/* Jersey number — top-right corner badge */}
+                {profile.number != null && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 10,
+                      right: 14,
+                      fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                      fontSize: 22,
+                      fontWeight: 900,
+                      color: primaryColor,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1,
+                      textShadow: `0 0 14px ${primaryColor}66`,
+                      userSelect: "none",
+                    }}
+                  >
+                    #{profile.number}
+                  </div>
+                )}
 
-          {/* Divider */}
-          <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
+                {/* Flip hint — top-left */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    left: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    background: "rgba(255,255,255,0.07)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 6,
+                    padding: "3px 7px",
+                  }}
+                >
+                  <RotateCw style={{ width: 8, height: 8, color: MUTED }} />
+                  <span style={{ fontSize: 7, fontWeight: 700, color: MUTED, letterSpacing: "0.07em", textTransform: "uppercase" }}>
+                    Tap to flip
+                  </span>
+                </div>
 
-          {/* ── Stats strip ── */}
-          <div style={{ display: "flex", padding: "12px 20px" }}>
-            {statItems.map((stat, i) => (
+                <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 90,
+                      height: 90,
+                      borderRadius: "50%",
+                      background: "hsl(220,36%,13%)",
+                      border: `2px solid ${archetypeColor}55`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: `0 0 24px ${archetypeColor}33`,
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {profile.avatarUrl ? (
+                      <img
+                        src={profile.avatarUrl}
+                        alt={`${profile.firstName} ${profile.lastName}`}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        crossOrigin="anonymous"
+                      />
+                    ) : (
+                      <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      background: `${archetypeColor}1a`,
+                      border: `1.5px solid ${archetypeColor}55`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: `0 0 10px ${archetypeColor}33`,
+                    }}
+                  >
+                    <ArchetypeIcon style={{ width: 14, height: 14, color: archetypeColor }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Name / school / archetype ── */}
               <div
-                key={i}
                 style={{
-                  flex: 1,
+                  padding: "16px 20px 14px",
                   textAlign: "center",
-                  borderRight: i < statItems.length - 1 ? `1px solid ${DIVIDER}` : "none",
+                  background: BG_DEEP,
                 }}
               >
                 <p
                   style={{
                     fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: 800,
-                    color: "#F97316",
+                    color: "#ffffff",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.03em",
+                    lineHeight: 1.05,
                     margin: 0,
-                    lineHeight: 1,
                   }}
                 >
-                  {stat.value}
+                  {profile.firstName} {profile.lastName}
                 </p>
+                {profile.school && (
+                  <p
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#F97316",
+                      marginTop: 5,
+                      letterSpacing: "0.05em",
+                      margin: "5px 0 0",
+                    }}
+                  >
+                    {profile.school}
+                  </p>
+                )}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    width: "fit-content",
+                    marginTop: 9,
+                    margin: "9px auto 0",
+                    padding: "4px 12px",
+                    borderRadius: 20,
+                    background: `${archetypeColor}18`,
+                    border: `1px solid ${archetypeColor}44`,
+                  }}
+                >
+                  <ArchetypeIcon style={{ width: 11, height: 11, color: archetypeColor, verticalAlign: "middle" }} />
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      color: archetypeColor,
+                      textShadow: `0 0 14px ${archetypeColor}`,
+                      verticalAlign: "middle",
+                    }}
+                  >
+                    {archetypeLabel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
+
+              {/* ── Stats strip ── */}
+              <div style={{ display: "flex", padding: "12px 20px" }}>
+                {statItems.map((stat, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: 1,
+                      textAlign: "center",
+                      borderRight: i < statItems.length - 1 ? `1px solid ${DIVIDER}` : "none",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: "#F97316",
+                        margin: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {stat.value}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 8,
+                        fontWeight: 700,
+                        color: MUTED,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        marginTop: 4,
+                      }}
+                    >
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
+
+              {/* ── Stamps row ── */}
+              <div style={{ padding: "11px 20px 13px" }}>
                 <p
                   style={{
                     fontSize: 8,
                     fontWeight: 700,
                     color: MUTED,
                     textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    marginTop: 4,
+                    letterSpacing: "0.12em",
+                    margin: "0 0 9px 0",
                   }}
                 >
-                  {stat.label}
+                  Stamps
                 </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
-
-          {/* ── Stamps row ── */}
-          <div style={{ padding: "11px 20px 13px" }}>
-            <p
-              style={{
-                fontSize: 8,
-                fontWeight: 700,
-                color: MUTED,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
-                margin: "0 0 9px 0",
-              }}
-            >
-              Stamps
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-              {displayStamps.map(({ stamp, earned }) => {
-                const Icon = stamp.icon;
-                const count = earned ? (stampCountMap.get(stamp.id) ?? 1) : 0;
-                return (
-                  <div
-                    key={stamp.id}
-                    style={{ position: "relative", display: "inline-flex" }}
-                  >
+                <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                  {displayStamps.map(({ stamp, earned }) => {
+                    const Icon = stamp.icon;
+                    const count = earned ? (stampCountMap.get(stamp.id) ?? 1) : 0;
+                    return (
+                      <div
+                        key={stamp.id}
+                        style={{ position: "relative", display: "inline-flex" }}
+                      >
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
+                            border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: earned ? 1 : 0.3,
+                            boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
+                          }}
+                        >
+                          <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                        </div>
+                        {count >= 2 && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              bottom: -3,
+                              right: -3,
+                              background: "#F97316",
+                              color: "#fff",
+                              fontSize: 7,
+                              fontWeight: 800,
+                              lineHeight: 1,
+                              padding: "1.5px 3px",
+                              borderRadius: 4,
+                              letterSpacing: "0.02em",
+                              pointerEvents: "none",
+                              border: "1px solid hsl(222,42%,9%)",
+                            }}
+                          >
+                            ×{count}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {overflowCount > 0 && (
                     <div
+                      onClick={(e) => { e.stopPropagation(); setShowStampsPopup(true); }}
                       style={{
                         width: 32,
                         height: 32,
                         borderRadius: "50%",
-                        background: earned ? `${stamp.color}20` : "hsl(220,36%,12%)",
-                        border: `1.5px solid ${earned ? stamp.color + "55" : "hsl(220,36%,17%)"}`,
+                        background: "#F9731618",
+                        border: "1.5px solid #F9731655",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        opacity: earned ? 1 : 0.3,
-                        boxShadow: earned ? `0 0 8px ${stamp.color}33` : "none",
+                        cursor: "pointer",
                       }}
                     >
-                      <Icon style={{ width: 14, height: 14, color: earned ? stamp.color : "hsl(220,20%,30%)" }} />
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "#F97316" }}>
+                        +{overflowCount}
+                      </span>
                     </div>
-                    {count >= 2 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: -3,
-                          right: -3,
-                          background: "#F97316",
-                          color: "#fff",
-                          fontSize: 7,
-                          fontWeight: 800,
-                          lineHeight: 1,
-                          padding: "1.5px 3px",
-                          borderRadius: 4,
-                          letterSpacing: "0.02em",
-                          pointerEvents: "none",
-                          border: "1px solid hsl(222,42%,9%)",
-                        }}
-                      >
-                        ×{count}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {overflowCount > 0 && (
-                <div
-                  onClick={() => setShowStampsPopup(true)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: "#F9731618",
-                    border: "1.5px solid #F9731655",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                  }}
+                  )}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
+
+              {/* ── Bottom section ── */}
+              <div style={{ padding: "4px 20px 16px", position: "relative" }}>
+                {/* Wave graphic */}
+                <svg
+                  viewBox="0 0 280 28"
+                  style={{ width: "100%", display: "block", marginBottom: 6, opacity: 0.18 }}
                 >
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#F97316" }}>
-                    +{overflowCount}
+                  <path
+                    d="M0 14 C18 4, 38 24, 58 14 S100 4, 120 14 S162 24, 182 14 S222 4, 242 14 S268 24, 280 14 L280 28 L0 28Z"
+                    fill={primaryColor}
+                  />
+                </svg>
+
+                {/* Legacy Score — clickable */}
+                <div
+                  style={{ textAlign: "center", marginBottom: 12, cursor: "pointer" }}
+                  onClick={(e) => { e.stopPropagation(); setShowLegacyPopup(true); }}
+                  title="Tap to see how Legacy Score is calculated"
+                >
+                  <p
+                    style={{
+                      fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
+                      fontSize: 38,
+                      fontWeight: 900,
+                      color: "#ffffff",
+                      margin: 0,
+                      lineHeight: 1,
+                      textShadow: `0 0 20px ${primaryColor}66`,
+                    }}
+                  >
+                    {legacyScore.toLocaleString()}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 8,
+                      fontWeight: 700,
+                      color: MUTED,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.14em",
+                      marginTop: 6,
+                    }}
+                  >
+                    Legacy Score
+                  </p>
+                </div>
+
+                {/* Logo + year */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        background: "#F97316",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        lineHeight: 1,
+                      }}
+                    >
+                      🏀
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 7,
+                        fontWeight: 800,
+                        color: MUTED,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.07em",
+                      }}
+                    >
+                      Homegrown Hoops
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 7,
+                      fontWeight: 700,
+                      color: "hsl(220,20%,28%)",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    2026
                   </span>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height: 1, background: DIVIDER, margin: "0 20px" }} />
-
-          {/* ── Bottom section ── */}
-          <div style={{ padding: "4px 20px 16px", position: "relative" }}>
-            {/* Wave graphic */}
-            <svg
-              viewBox="0 0 280 28"
-              style={{ width: "100%", display: "block", marginBottom: 6, opacity: 0.18 }}
-            >
-              <path
-                d="M0 14 C18 4, 38 24, 58 14 S100 4, 120 14 S162 24, 182 14 S222 4, 242 14 S268 24, 280 14 L280 28 L0 28Z"
-                fill={primaryColor}
-              />
-            </svg>
-
-            {/* Legacy Score — clickable */}
-            <div
-              style={{ textAlign: "center", marginBottom: 12, cursor: "pointer" }}
-              onClick={() => setShowLegacyPopup(true)}
-              title="Tap to see how Legacy Score is calculated"
-            >
-              <p
-                style={{
-                  fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
-                  fontSize: 38,
-                  fontWeight: 900,
-                  color: "#ffffff",
-                  margin: 0,
-                  lineHeight: 1,
-                  textShadow: `0 0 20px ${primaryColor}66`,
-                }}
-              >
-                {legacyScore.toLocaleString()}
-              </p>
-              <p
-                style={{
-                  fontSize: 8,
-                  fontWeight: 700,
-                  color: MUTED,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  marginTop: 6,
-                }}
-              >
-                Legacy Score
-              </p>
-            </div>
-
-            {/* Logo + year */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: "50%",
-                    background: "#F97316",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 10,
-                    lineHeight: 1,
-                  }}
-                >
-                  🏀
-                </div>
-                <span
-                  style={{
-                    fontSize: 7,
-                    fontWeight: 800,
-                    color: MUTED,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.07em",
-                  }}
-                >
-                  Homegrown Hoops
-                </span>
               </div>
-              <span
-                style={{
-                  fontSize: 7,
-                  fontWeight: 700,
-                  color: "hsl(220,20%,28%)",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                2026
-              </span>
             </div>
           </div>
+
+          {/* ── BACK: career totals ── */}
+          <CardBack
+            profile={profile}
+            stats={stats}
+            careerTotals={careerTotals}
+            primaryColor={primaryColor}
+            onFlip={() => setFlipped(false)}
+          />
         </div>
       </div>
 
-      {/* ── Share / download button ── */}
-      <div style={{ width: 320, display: "flex", flexDirection: "column", gap: 8 }}>
-        <button
-          onClick={handleDownload}
-          disabled={saving}
-          style={{ width: "100%" }}
-          className="btn-primary"
-        >
-          {saving ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Generating Card…</>
-          ) : (
-            <><Share2 className="h-4 w-4" /> Save Card to Device</>
+      {/* ── Share / download button (front only) ── */}
+      {!flipped && (
+        <div style={{ width: 320, display: "flex", flexDirection: "column", gap: 8 }}>
+          <button
+            onClick={handleDownload}
+            disabled={saving}
+            style={{ width: "100%" }}
+            className="btn-primary"
+          >
+            {saving ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Generating Card…</>
+            ) : (
+              <><Share2 className="h-4 w-4" /> Save Card to Device</>
+            )}
+          </button>
+          {saveError && (
+            <p style={{ fontSize: 12, color: "#F97316", textAlign: "center", lineHeight: 1.4 }}>
+              {saveError}
+            </p>
           )}
-        </button>
-        {saveError && (
-          <p style={{ fontSize: 12, color: "#F97316", textAlign: "center", lineHeight: 1.4 }}>
-            {saveError}
-          </p>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Popups (outside card ref so they don't appear in download) ── */}
       {showStampsPopup && (

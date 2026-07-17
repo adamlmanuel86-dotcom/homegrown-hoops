@@ -912,6 +912,16 @@ components:
           type: integer
         totalThreesMade:
           type: integer
+        totalThreesAttempted:
+          type: integer
+        totalFieldGoalsMade:
+          type: integer
+        totalFieldGoalsAttempted:
+          type: integer
+        totalFreeThrowsMade:
+          type: integer
+        totalFreeThrowsAttempted:
+          type: integer
         avgPoints:
           type: number
         avgRebounds:
@@ -945,6 +955,11 @@ components:
         - totalBlocks
         - totalTurnovers
         - totalThreesMade
+        - totalThreesAttempted
+        - totalFieldGoalsMade
+        - totalFieldGoalsAttempted
+        - totalFreeThrowsMade
+        - totalFreeThrowsAttempted
         - avgPoints
         - avgRebounds
         - avgAssists

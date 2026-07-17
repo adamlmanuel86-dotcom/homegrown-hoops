@@ -1,0 +1,25 @@
+# Prompt for Replit Agent
+
+Three related features to add:
+
+## 1. Player accounts/cards for the full roster
+Right now only Jack has a player profile/card. Every player seeded from the two Team NB 16U games (and any other rostered player in the DB) should get the same treatment Jack has — a player record that generates a card, a profile page, and whatever "account" scaffolding Jack's record includes (stamps, archetype calculation, etc.), even though these aren't real user logins.
+
+- Check how Jack's player record differs from the other 11 (e.g. flags, joined tables, or a player_profile/card row that only he has) and backfill the same structure for the rest of the roster.
+- Confirm stamps/archetype calc already ran for these players from the last seed — if the card generation is a separate step from that, run it now.
+- Result: every player on Team NB 16U should be viewable/clickable the same way Jack is, across roster views, game box scores, and any leaderboard.
+
+## 2. Add shooting percentages to player pages
+Add FG%, 3PT%, and FT% to each player's page (front of card or stats section — wherever the other shooting stats currently live). These should either be pulled from the stored %-columns in the box score data or computed from makes/attempts if the schema only stores raw counts. Show them at the game level (per-game box score) and, per #3 below, as career aggregates.
+
+## 3. Career totals + flip card
+Add a "flip" interaction to the player card: tapping/clicking flips it to a back face showing career totals.
+
+- **Back of card should show:** career PTS, REB, AST, STL, BLK, and the three shooting percentages (FG%, 3PT%, FT%) as season/career aggregates (attempts and makes summed across all games, percentage computed from the totals — not averaged per-game percentages, to avoid skew from small-sample games).
+- **Interaction:** simple flip animation (CSS 3D flip or a fade/slide swap is fine — match whatever's idiomatic for the existing frontend stack) triggered by tap on mobile / click on desktop.
+- Make sure this works for every player, not just Jack, once #1 is done.
+
+## Notes for the agent
+- Check current DB schema and existing Jack-specific components before writing new code — reuse whatever pattern already renders his card rather than building a parallel one.
+- If "career totals" needs a new aggregation query or materialized view, keep it consistent with how stamps/archetypes are already calculated (weighted category scores, Legacy Score system) so the numbers don't diverge from what's shown elsewhere.
+- After implementing, spot check 2-3 non-Jack players' career totals against their two-game box scores to confirm the math (e.g. Carson M should show combined PTS from both games, FG made/attempted summed, etc.).

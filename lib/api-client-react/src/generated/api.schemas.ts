@@ -128,6 +128,11 @@ export interface PlayerStats {
   totalBlocks: number;
   totalTurnovers: number;
   totalThreesMade: number;
+  totalThreesAttempted: number;
+  totalFieldGoalsMade: number;
+  totalFieldGoalsAttempted: number;
+  totalFreeThrowsMade: number;
+  totalFreeThrowsAttempted: number;
   avgPoints: number;
   avgRebounds: number;
   avgAssists: number;
