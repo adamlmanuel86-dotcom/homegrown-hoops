@@ -1,0 +1,20 @@
+# Prompt: Avatar Creator
+
+Build a custom 2D avatar creator for player profiles, replacing photo upload as the default option. This needs to work as the sprite source for the existing platformer mini-game, so check how that game currently renders the player avatar before designing the data structure — the output needs to plug into what's already built there, not require a rework of the platformer's sprite system.
+
+## Core feature
+- Players build a custom avatar by picking from preset options across categories: face/skin tone, hair style/color, jersey color, and accessories (headband, wristband, etc. — keep it basketball-flavored).
+- Include a genuine range of skin tone and hair/feature options so kids of different ethnicities can make an avatar that looks like them — this should be a real, respectful range, not an afterthought default.
+- Also include some fun/goofy accessory or style options alongside the realistic ones (e.g. a wild hair color, a silly accessory) — should feel fun to build, not just functional.
+- Editable at any time from the player's profile — no lock-in once created.
+- Store the avatar as structured data (which piece was picked per category), not a flattened image, so it can be re-rendered at different sizes/contexts (player card vs. platformer sprite vs. small icon in a leaderboard) without quality loss.
+
+## Where it needs to show up
+- Player card (front of card, replacing/alongside photo)
+- Platformer mini-game sprite (already expects an avatar per the current build — confirm the data shape needed and match it)
+- Anywhere else a player's photo currently appears (leaderboards, rosters, etc.) — audit the app for existing photo slots and swap them to avatar rendering
+
+## Notes for the agent
+- Check the current player-card and platformer code before building — reuse component patterns already established rather than parallel-building a new rendering system.
+- Keep the picker UI simple enough for a kid to use without instructions — tap through categories, see a live preview, save.
+- If real photo upload already exists, decide whether avatar becomes the only option going forward or an alternative alongside photo upload — default assumption is avatar becomes the primary/default path since it also sidesteps needing real photos of minors, but flag this decision rather than assuming silently.
