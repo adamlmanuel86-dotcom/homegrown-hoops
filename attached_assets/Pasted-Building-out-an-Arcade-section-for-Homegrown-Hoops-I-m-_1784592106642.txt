@@ -1,0 +1,54 @@
+Building out an "Arcade" section for Homegrown Hoops. I'm attaching three
+files: avatar-creator-prototype.html, beat-the-d-prototype.html, and
+HigherLowerDemo.jsx. Work through these steps in order — each one depends
+on the step before it.
+
+STEP 1 — Avatar Creator
+Build the avatar creator: players customize a 2D cartoon avatar (skin
+tone, hair, build, jersey color/style, accessories, expression — see
+avatar-creator-prototype.html for the full customization set and the
+exact character-rendering approach) and can choose to use it in place of
+a photo on their player card. Store the avatar config as JSON per player.
+Check the current player card page/component first so this fits existing
+conventions.
+
+STEP 2 — Arcade nav + hub page
+Add "Arcade" to the site's dropdown navigation. It links to a new Arcade
+page listing our mini-games as tiles: "Fast Break!", "Who Ya Got?", and
+"Shot Clock". Each tile launches its game.
+
+STEP 3 — Stats storage (shared across all 3 games)
+Add per-player storage for mini-game stats: high score, fgm/fga, tpm/tpa
+(to compute FG%/3PT%), best streak, and highest level reached (Fast
+Break!-specific — Who Ya Got? uses best streak, Shot Clock uses best
+score/reaction time). Add an API endpoint each game calls at the end of a
+session to submit that session's results; only overwrite "best" values if
+beaten, always add to career totals where relevant. Add a stats section
+to the player card page showing these.
+
+STEP 4 — "Fast Break!" (the platformer)
+Port in beat-the-d-prototype.html — it's a complete, working Phaser game.
+Rename all player-facing "Beat the D" references to "Fast Break!". Wire
+it to: (a) use the player's avatar from Step 1 as the in-game sprite
+instead of the random "Choose Your Hooper" screen, falling back to that
+random-pick screen if no avatar exists yet, (b) call the Step 3 API at
+session end (score, fgm/fga, tpm/tpa, best streak, level reached).
+
+STEP 5 — "Who Ya Got?" (NBA stat comparison)
+Port in HigherLowerDemo.jsx — it's a complete, working React game.
+Rename all player-facing references to "Who Ya Got?". Swap the
+placeholder PlayerAvatar component for our real avatar system from Step
+1 (fall back to initials if a player has no avatar yet). Wire it to the
+Step 3 stats API (best streak) at session end. The player dataset is
+hardcoded in the file for now — leave as-is unless we already have a
+better NBA stats source wired up elsewhere.
+
+STEP 6 — "Shot Clock" (new — reaction/timing game)
+New mini-game: a shot-clock-style reaction/timing test — e.g. release a
+shot at the right moment as a bar sweeps across a meter, or react to a
+"go" signal as fast as possible within a shrinking window, scoring based
+on precision/reaction time. Keep the scope simple for a first version.
+Wire to the Step 3 stats API (best score/reaction time).
+
+Check the current codebase structure before starting each step so
+everything matches existing patterns.
