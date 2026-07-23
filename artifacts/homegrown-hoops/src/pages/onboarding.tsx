@@ -1131,7 +1131,7 @@ export function OnboardingPage() {
         ))}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+      <div className={`flex-1 flex flex-col items-center px-6 py-8 ${step === "photo" ? "justify-start overflow-y-auto" : "justify-center"}`}>
         <div className="w-full max-w-sm" style={{ animation: "fadeUp 0.5s ease both" }}>
 
           {/* ── NAME ── */}
@@ -1363,13 +1363,46 @@ export function OnboardingPage() {
 
           {/* ── PHOTO ── */}
           {step === "photo" && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
                 <p className="label-upper text-xs text-primary mb-2">Step 6 of 6</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
-                  ADD A PHOTO
+                  ADD YOUR LOOK
                 </h2>
-                <p className="text-white/40 text-sm mt-2 font-medium">Optional — skip either or both.</p>
+                <p className="text-white/40 text-sm mt-2 font-medium">Both optional — add what you like.</p>
+              </div>
+
+              {/* Avatar CTA — shown first so it's always above the fold */}
+              <button
+                type="button"
+                onClick={() => setStep("avatar")}
+                style={{
+                  width: "100%",
+                  padding: "16px 12px",
+                  borderRadius: 14,
+                  border: "none",
+                  background: "hsl(22,78%,46%)",
+                  color: "#ffffff",
+                  fontSize: 16,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  letterSpacing: "0.02em",
+                  textTransform: "uppercase" as const,
+                  boxShadow: "0 4px 20px hsl(22 78% 46% / 35%)",
+                }}
+              >
+                🎮 Create My Avatar
+              </button>
+
+              {/* Divider */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 600 }}>or add a photo</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
               </div>
 
               <PhotoPicker
@@ -1377,30 +1410,6 @@ export function OnboardingPage() {
                 onFileChange={handleFileChange}
                 onClear={() => { setAvatarPreview(null); setAvatarFile(null); }}
               />
-
-              {/* Avatar CTA */}
-              <button
-                type="button"
-                onClick={() => setStep("avatar")}
-                style={{
-                  width: "100%",
-                  padding: "15px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(249,115,22,0.35)",
-                  background: "rgba(249,115,22,0.07)",
-                  color: "hsl(22,78%,60%)",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  letterSpacing: "0.01em",
-                }}
-              >
-                🎮 Create My Avatar
-              </button>
 
               {uploadError && (
                 <p className="text-red-400 text-sm font-medium">{uploadError}</p>
