@@ -560,8 +560,8 @@ export function MyProfilePage() {
         />
       )}
 
-      {/* Arcade Stats — visible in view mode when profile exists */}
-      {!showForm && profile && arcadeStats && (arcadeStats.fastBreak || arcadeStats.whoYaGot || arcadeStats.shotClock) && (
+      {/* Arcade Stats — always visible in view mode when profile exists */}
+      {!showForm && profile && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Gamepad2 className="h-4 w-4 text-primary" />
@@ -569,11 +569,11 @@ export function MyProfilePage() {
           </div>
 
           {/* ── FAST BREAK ─────────────────────────────────────────────── */}
-          {arcadeStats.fastBreak && (() => {
-            const fb = arcadeStats.fastBreak!;
-            const fgPct = fb.totalFga && fb.totalFga > 0
+          {(() => {
+            const fb = arcadeStats?.fastBreak ?? null;
+            const fgPct = fb && fb.totalFga && fb.totalFga > 0
               ? Math.round((fb.totalFgm! / fb.totalFga) * 100) : null;
-            const tpPct = fb.totalTpa && fb.totalTpa > 0
+            const tpPct = fb && fb.totalTpa && fb.totalTpa > 0
               ? Math.round((fb.totalTpm! / fb.totalTpa) * 100) : null;
             return (
               <Link href="/fast-break">
@@ -581,11 +581,9 @@ export function MyProfilePage() {
                   className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
                   style={{ background: "linear-gradient(135deg, #0f1a10 0%, #1a2e1a 100%)" }}
                 >
-                  {/* Glow accent */}
                   <div className="absolute inset-0 pointer-events-none" style={{
                     background: "radial-gradient(ellipse at 0% 50%, rgba(255,140,0,0.18) 0%, transparent 60%)",
                   }} />
-                  {/* Top bar */}
                   <div className="flex items-center justify-between px-4 pt-4 pb-2">
                     <div className="flex items-center gap-2">
                       <span style={{ fontSize: 18 }}>🏀</span>
@@ -598,82 +596,80 @@ export function MyProfilePage() {
                       Shooting
                     </span>
                   </div>
-                  {/* Score + shooting percentages */}
-                  <div className="flex items-end gap-6 px-4 pb-4">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-0.5">High Score</p>
-                      <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#ff8c00" }}>
-                        {fb.bestScore}
-                      </p>
-                    </div>
-                    <div className="flex-1 space-y-2 pb-1">
-                      {/* FG% */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">FG%</span>
-                          <span className="text-[11px] font-black text-white">
-                            {fgPct !== null ? `${fgPct}%` : "—"}
-                            <span className="text-white/30 font-normal text-[9px] ml-1">
-                              {fb.totalFgm ?? 0}/{fb.totalFga ?? 0}
-                            </span>
-                          </span>
+                  {fb ? (
+                    <>
+                      <div className="flex items-end gap-6 px-4 pb-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-0.5">High Score</p>
+                          <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#ff8c00" }}>
+                            {fb.bestScore}
+                          </p>
                         </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${fgPct ?? 0}%`, background: "linear-gradient(90deg,#ff8c00,#ffb347)" }}
-                          />
-                        </div>
-                      </div>
-                      {/* 3PT% */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">3PT%</span>
-                          <span className="text-[11px] font-black text-white">
-                            {tpPct !== null ? `${tpPct}%` : "—"}
-                            <span className="text-white/30 font-normal text-[9px] ml-1">
-                              {fb.totalTpm ?? 0}/{fb.totalTpa ?? 0}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${tpPct ?? 0}%`, background: "linear-gradient(90deg,#ff4500,#ff8c00)" }}
-                          />
+                        <div className="flex-1 space-y-2 pb-1">
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">FG%</span>
+                              <span className="text-[11px] font-black text-white">
+                                {fgPct !== null ? `${fgPct}%` : "—"}
+                                <span className="text-white/30 font-normal text-[9px] ml-1">
+                                  {fb.totalFgm ?? 0}/{fb.totalFga ?? 0}
+                                </span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${fgPct ?? 0}%`, background: "linear-gradient(90deg,#ff8c00,#ffb347)" }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">3PT%</span>
+                              <span className="text-[11px] font-black text-white">
+                                {tpPct !== null ? `${tpPct}%` : "—"}
+                                <span className="text-white/30 font-normal text-[9px] ml-1">
+                                  {fb.totalTpm ?? 0}/{fb.totalTpa ?? 0}
+                                </span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${tpPct ?? 0}%`, background: "linear-gradient(90deg,#ff4500,#ff8c00)" }} />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  {/* Footer stats row */}
-                  <div
-                    className="flex items-center gap-0 border-t border-white/10"
-                    style={{ background: "rgba(0,0,0,0.3)" }}
-                  >
-                    {[
-                      { label: "Dunks", val: fb.totalDunks ?? 0 },
-                      { label: "Best Streak", val: fb.bestStreak },
-                      { label: "Games", val: fb.gamesPlayed },
-                    ].map((s, i) => (
-                      <div key={s.label} className={`flex-1 py-2.5 text-center ${i < 2 ? "border-r border-white/10" : ""}`}>
-                        <p className="font-black text-base text-white leading-none">{s.val}</p>
-                        <p className="text-[9px] uppercase tracking-wider text-white/35 mt-0.5">{s.label}</p>
+                      <div className="flex items-center border-t border-white/10" style={{ background: "rgba(0,0,0,0.3)" }}>
+                        {[
+                          { label: "Dunks", val: fb.totalDunks ?? 0 },
+                          { label: "Best Streak", val: fb.bestStreak },
+                          { label: "Games", val: fb.gamesPlayed },
+                        ].map((s, i) => (
+                          <div key={s.label} className={`flex-1 py-2.5 text-center ${i < 2 ? "border-r border-white/10" : ""}`}>
+                            <p className="font-black text-base text-white leading-none">{s.val}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/35 mt-0.5">{s.label}</p>
+                          </div>
+                        ))}
+                        <div className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-orange-400 group-hover:text-orange-300 transition-colors border-l border-white/10">
+                          Play →
+                        </div>
                       </div>
-                    ))}
-                    <div className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-orange-400 group-hover:text-orange-300 transition-colors border-l border-white/10">
-                      Play →
+                    </>
+                  ) : (
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <p className="text-sm text-white/30 italic">No games yet</p>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-orange-400 group-hover:text-orange-300 transition-colors">
+                        Play Now →
+                      </span>
                     </div>
-                  </div>
+                  )}
                 </div>
               </Link>
             );
           })()}
 
           {/* ── WHO YA GOT ─────────────────────────────────────────────── */}
-          {arcadeStats.whoYaGot && (() => {
-            const wyg = arcadeStats.whoYaGot!;
-            const wygPlayed = wyg.gamesPlayed ?? 0;
-            const wygScore  = wyg.bestScore ?? 0;
+          {(() => {
+            const wyg = arcadeStats?.whoYaGot ?? null;
+            const wygPlayed = wyg?.gamesPlayed ?? 0;
+            const wygScore  = wyg?.bestScore ?? 0;
             const goatIq = wygPlayed > 0
               ? Math.round((wygScore / Math.max(wygPlayed * 3, 1)) * 100)
               : 0;
@@ -686,15 +682,11 @@ export function MyProfilePage() {
                   <div className="absolute inset-0 pointer-events-none" style={{
                     background: "radial-gradient(ellipse at 100% 0%, rgba(168,85,247,0.2) 0%, transparent 55%)",
                   }} />
-                  {/* Trophy halo top-right */}
                   <div
                     className="absolute top-0 right-0 w-28 h-28 pointer-events-none"
-                    style={{
-                      background: "radial-gradient(circle at 80% 20%, rgba(234,179,8,0.12) 0%, transparent 70%)",
-                    }}
+                    style={{ background: "radial-gradient(circle at 80% 20%, rgba(234,179,8,0.12) 0%, transparent 70%)" }}
                   />
                   <div className="flex items-stretch">
-                    {/* Left — score column */}
                     <div className="p-4 flex flex-col justify-between" style={{ minWidth: 130 }}>
                       <div className="flex items-center gap-1.5">
                         <span style={{ fontSize: 16 }}>🏆</span>
@@ -703,7 +695,7 @@ export function MyProfilePage() {
                       <div className="mt-3">
                         <p className="text-[9px] font-bold uppercase tracking-widest text-purple-400/70 mb-0.5">High Score</p>
                         <p className="font-display leading-none" style={{ fontSize: "clamp(48px,11vw,68px)", color: "#c084fc" }}>
-                          {wyg.bestScore}
+                          {wyg ? wyg.bestScore : "—"}
                         </p>
                       </div>
                       <span
@@ -713,41 +705,44 @@ export function MyProfilePage() {
                         Trivia
                       </span>
                     </div>
-                    {/* Divider */}
                     <div className="w-px self-stretch" style={{ background: "rgba(255,255,255,0.07)" }} />
-                    {/* Right — stats */}
                     <div className="flex-1 p-4 flex flex-col justify-between">
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Best Streak</p>
-                          <div className="flex items-baseline gap-1">
-                            <span className="font-display text-3xl text-yellow-400">{wyg.bestStreak}</span>
-                            <span className="text-[10px] text-white/30">in a row</span>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">GOAT IQ</p>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-white/8 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${Math.min(goatIq, 100)}%`,
-                                  background: "linear-gradient(90deg,#a855f7,#eab308)",
-                                }}
-                              />
+                      {wyg ? (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Best Streak</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-display text-3xl text-yellow-400">{wyg.bestStreak}</span>
+                              <span className="text-[10px] text-white/30">in a row</span>
                             </div>
-                            <span className="text-[11px] font-black text-white">{Math.min(goatIq, 100)}</span>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">GOAT IQ</p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-white/8 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(goatIq, 100)}%`, background: "linear-gradient(90deg,#a855f7,#eab308)" }} />
+                              </div>
+                              <span className="text-[11px] font-black text-white">{Math.min(goatIq, 100)}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Games Played</p>
+                            <span className="font-display text-3xl text-white/80">{wyg.gamesPlayed}</span>
                           </div>
                         </div>
-                        <div>
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Games Played</p>
-                          <span className="font-display text-3xl text-white/80">{wyg.gamesPlayed}</span>
+                      ) : (
+                        <div className="flex flex-col justify-center h-full gap-1">
+                          <p className="text-sm text-white/30 italic">No games yet</p>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">
+                            Play Now →
+                          </span>
                         </div>
-                      </div>
-                      <div className="mt-2 self-end text-[10px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">
-                        Play →
-                      </div>
+                      )}
+                      {wyg && (
+                        <div className="mt-2 self-end text-[10px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">
+                          Play →
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -756,8 +751,8 @@ export function MyProfilePage() {
           })()}
 
           {/* ── SHOT CLOCK ─────────────────────────────────────────────── */}
-          {arcadeStats.shotClock && (() => {
-            const sc = arcadeStats.shotClock!;
+          {(() => {
+            const sc = arcadeStats?.shotClock ?? null;
             return (
               <Link href="/shot-clock">
                 <div
@@ -767,7 +762,6 @@ export function MyProfilePage() {
                   <div className="absolute inset-0 pointer-events-none" style={{
                     background: "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.15) 0%, transparent 60%)",
                   }} />
-                  {/* Top section */}
                   <div className="flex items-center justify-between px-4 pt-4">
                     <div className="flex items-center gap-2">
                       <span style={{ fontSize: 18 }}>⏱</span>
@@ -780,49 +774,52 @@ export function MyProfilePage() {
                       Pressure
                     </span>
                   </div>
-                  {/* Main score row */}
-                  <div className="flex items-center gap-4 px-4 py-3">
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">High Score</p>
-                      <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#ef4444" }}>
-                        {sc.bestScore}
-                      </p>
-                    </div>
-                    {/* Pulsing clock visual */}
-                    <div className="flex-1 flex justify-end items-center pr-2">
-                      <div className="relative w-16 h-16">
-                        <div className="absolute inset-0 rounded-full border-2 border-red-800/50" />
-                        <div
-                          className="absolute inset-1 rounded-full border-2 border-red-600/40"
-                          style={{ animation: "ping 1.8s cubic-bezier(0,0,0.2,1) infinite" }}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="font-display text-xl text-red-500">{sc.bestStreak}</span>
+                  {sc ? (
+                    <>
+                      <div className="flex items-center gap-4 px-4 py-3">
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">High Score</p>
+                          <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#ef4444" }}>
+                            {sc.bestScore}
+                          </p>
                         </div>
-                        <p className="absolute -bottom-4 left-0 right-0 text-center text-[8px] uppercase tracking-wider text-white/30">streak</p>
+                        <div className="flex-1 flex justify-end items-center pr-2">
+                          <div className="relative w-16 h-16">
+                            <div className="absolute inset-0 rounded-full border-2 border-red-800/50" />
+                            <div
+                              className="absolute inset-1 rounded-full border-2 border-red-600/40"
+                              style={{ animation: "ping 1.8s cubic-bezier(0,0,0.2,1) infinite" }}
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="font-display text-xl text-red-500">{sc.bestStreak}</span>
+                            </div>
+                            <p className="absolute -bottom-4 left-0 right-0 text-center text-[8px] uppercase tracking-wider text-white/30">streak</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  {/* Stat blocks */}
-                  <div className="flex border-t border-white/8" style={{ background: "rgba(0,0,0,0.35)" }}>
-                    {[
-                      { label: "Best Streak", val: sc.bestStreak, highlight: true },
-                      { label: "Games Played", val: sc.gamesPlayed, highlight: false },
-                    ].map((s, i) => (
-                      <div
-                        key={s.label}
-                        className={`flex-1 py-3 text-center ${i < 1 ? "border-r border-white/8" : ""}`}
-                      >
-                        <p className={`font-black text-xl leading-none ${s.highlight ? "text-red-400" : "text-white"}`}>
-                          {s.val}
-                        </p>
-                        <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">{s.label}</p>
+                      <div className="flex border-t border-white/8" style={{ background: "rgba(0,0,0,0.35)" }}>
+                        {[
+                          { label: "Best Streak", val: sc.bestStreak, highlight: true },
+                          { label: "Games Played", val: sc.gamesPlayed, highlight: false },
+                        ].map((s, i) => (
+                          <div key={s.label} className={`flex-1 py-3 text-center ${i < 1 ? "border-r border-white/8" : ""}`}>
+                            <p className={`font-black text-xl leading-none ${s.highlight ? "text-red-400" : "text-white"}`}>{s.val}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">{s.label}</p>
+                          </div>
+                        ))}
+                        <div className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors border-l border-white/8">
+                          Play →
+                        </div>
                       </div>
-                    ))}
-                    <div className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors border-l border-white/8">
-                      Play →
+                    </>
+                  ) : (
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <p className="text-sm text-white/30 italic">No games yet</p>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors">
+                        Play Now →
+                      </span>
                     </div>
-                  </div>
+                  )}
                 </div>
               </Link>
             );
