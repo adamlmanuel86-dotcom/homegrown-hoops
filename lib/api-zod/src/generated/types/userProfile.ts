@@ -53,4 +53,6 @@ export interface UserProfile {
    * @nullable
    */
   requestedRole?: string | null;
+  /** Player IDs linked as My Ballers (parent accounts only) */
+  myBallers: number[];
 }

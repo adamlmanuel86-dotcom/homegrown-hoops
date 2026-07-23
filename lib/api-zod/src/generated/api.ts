@@ -769,6 +769,9 @@ export const ClaimJerseyNumberResponse = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 
 /**
@@ -1079,6 +1082,9 @@ export const ListProfilesResponseItem = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 export const ListProfilesResponse = zod.array(ListProfilesResponseItem);
 
@@ -1192,6 +1198,9 @@ export const GetMyProfileResponse = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 
 /**
@@ -1213,6 +1222,10 @@ export const CreateMyProfileBody = zod.object({
     .describe(
       "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true.",
     ),
+  myBallers: zod
+    .array(zod.number())
+    .optional()
+    .describe("Initial My Ballers player IDs (parent accounts only)"),
 });
 
 /**
@@ -1335,6 +1348,9 @@ export const UpdateMyProfileResponse = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 
 /**
@@ -1451,6 +1467,9 @@ export const GetProfileResponse = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 
 /**
@@ -1572,6 +1591,9 @@ export const UpdateProfileResponse = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 
 /**
@@ -1640,6 +1662,146 @@ export const DeleteGameVideoParams = zod.object({
   id: zod.coerce.number(),
   videoId: zod.coerce.number(),
 });
+
+/**
+ * @summary Replace the current user's My Ballers list
+ */
+export const UpdateMyBallersBody = zod.object({
+  playerIds: zod.array(zod.number()),
+});
+
+export const UpdateMyBallersResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
+  isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
+  avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
+    })
+    .nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
+    }),
+  ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
+  archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
+});
+
+/**
+ * @summary Get My Ballers player details for a profile
+ */
+export const GetProfileBallersParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const GetProfileBallersResponseItem = zod.object({
+  id: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  position: zod.string().nullish(),
+  number: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  teamName: zod.string().nullish(),
+});
+export const GetProfileBallersResponse = zod.array(
+  GetProfileBallersResponseItem,
+);
 
 /**
  * @summary Save avatar config for current user
@@ -1783,6 +1945,9 @@ export const SaveAvatarConfigResponse = zod.object({
     .string()
     .nullish()
     .describe("Role requested at signup: 'parent' or 'manager'"),
+  myBallers: zod
+    .array(zod.number())
+    .describe("Player IDs linked as My Ballers (parent accounts only)"),
 });
 
 /**

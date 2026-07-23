@@ -917,6 +917,52 @@ paths:
         "404":
           description: Not found
 
+  /profiles/me/ballers:
+    put:
+      operationId: updateMyBallers
+      tags: [profiles]
+      summary: Replace the current user's My Ballers list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMyBallersBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Profile not found
+
+  /profiles/{clerkUserId}/ballers:
+    get:
+      operationId: getProfileBallers
+      tags: [profiles]
+      summary: Get My Ballers player details for a profile
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of baller players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BallerPlayer"
+        "404":
+          description: Profile not found
+
   /profiles/me/avatar-config:
     patch:
       operationId: saveAvatarConfig
@@ -1735,6 +1781,11 @@ components:
         requestedRole:
           type: ["string", "null"]
           description: "Role requested at signup: 'parent' or 'manager'"
+        myBallers:
+          type: array
+          items:
+            type: integer
+          description: "Player IDs linked as My Ballers (parent accounts only)"
       required:
         - id
         - clerkUserId
@@ -1747,8 +1798,43 @@ components:
         - stamps
         - tides
         - milestones
+        - myBallers
         - createdAt
         - updatedAt
+
+    BallerPlayer:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        position:
+          type: ["string", "null"]
+        number:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        teamId:
+          type: ["integer", "null"]
+        teamName:
+          type: ["string", "null"]
+      required:
+        - id
+        - firstName
+        - lastName
+
+    UpdateMyBallersBody:
+      type: object
+      properties:
+        playerIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - playerIds
 
     UpdateUserRoleBody:
       type: object
@@ -1831,6 +1917,11 @@ components:
         requestedRole:
           type: ["string", "null"]
           description: "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true."
+        myBallers:
+          type: array
+          items:
+            type: integer
+          description: "Initial My Ballers player IDs (parent accounts only)"
       required:
         - firstName
         - lastName

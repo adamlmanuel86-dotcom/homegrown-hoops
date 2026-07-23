@@ -56,6 +56,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   archetype: text("archetype").default("Uncharted"),
   careerStats: json("career_stats").$type<CareerStats | null>().default(null),
   archetypeHistory: json("archetype_history").$type<ArchetypeHistoryEntry[] | null>().default(null),
+  myBallers: json("my_ballers").$type<number[]>().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

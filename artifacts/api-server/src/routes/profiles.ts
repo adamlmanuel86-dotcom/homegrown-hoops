@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and, isNull, ne } from "drizzle-orm";
+import { eq, count, and, isNull, ne, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, teamsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
@@ -98,6 +98,7 @@ import {
   UpdateProfileBody,
   GetMyProfileResponse,
   GetProfileResponse,
+  UpdateMyBallersBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -488,6 +489,69 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   }
 
   res.status(204).send();
+});
+
+// PUT /profiles/me/ballers — replace the current user's My Ballers list
+router.put("/profiles/me/ballers", async (req, res): Promise<void> => {
+  const userId = requireAuth(req, res);
+  if (!userId) return;
+
+  const parsed = UpdateMyBallersBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [updated] = await db
+    .update(userProfilesTable)
+    .set({ myBallers: parsed.data.playerIds, updatedAt: new Date() })
+    .where(eq(userProfilesTable.clerkUserId, userId))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Profile not found" });
+    return;
+  }
+
+  res.json(GetMyProfileResponse.parse(serializeRow(updated)));
+});
+
+// GET /profiles/:clerkUserId/ballers — get My Ballers player details for a profile
+router.get("/profiles/:clerkUserId/ballers", async (req, res): Promise<void> => {
+  const { clerkUserId } = req.params;
+
+  const [profile] = await db
+    .select({ myBallers: userProfilesTable.myBallers })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
+  if (!profile) {
+    res.status(404).json({ error: "Profile not found" });
+    return;
+  }
+
+  const ids = profile.myBallers ?? [];
+  if (ids.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const players = await db
+    .select({
+      id: playersTable.id,
+      firstName: playersTable.firstName,
+      lastName: playersTable.lastName,
+      position: playersTable.position,
+      number: playersTable.number,
+      avatarUrl: playersTable.avatarUrl,
+      teamId: playersTable.teamId,
+      teamName: teamsTable.name,
+    })
+    .from(playersTable)
+    .leftJoin(teamsTable, eq(playersTable.teamId, teamsTable.id))
+    .where(inArray(playersTable.id, ids));
+
+  res.json(serializeRows(players));
 });
 
 // PATCH /profiles/me/avatar-config — save the current user's avatar config

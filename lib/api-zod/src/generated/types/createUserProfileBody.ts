@@ -31,4 +31,6 @@ export interface CreateUserProfileBody {
    * @nullable
    */
   requestedRole?: string | null;
+  /** Initial My Ballers player IDs (parent accounts only) */
+  myBallers?: number[];
 }

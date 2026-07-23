@@ -454,6 +454,28 @@ export interface UserProfile {
    * @nullable
    */
   requestedRole?: string | null;
+  /** Player IDs linked as My Ballers (parent accounts only) */
+  myBallers: number[];
+}
+
+export interface BallerPlayer {
+  id: number;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  position?: string | null;
+  /** @nullable */
+  number?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  teamId?: number | null;
+  /** @nullable */
+  teamName?: string | null;
+}
+
+export interface UpdateMyBallersBody {
+  playerIds: number[];
 }
 
 export interface UpdateUserRoleBody {
@@ -505,6 +527,8 @@ export interface CreateUserProfileBody {
    * @nullable
    */
   requestedRole?: string | null;
+  /** Initial My Ballers player IDs (parent accounts only) */
+  myBallers?: number[];
 }
 
 export interface UpdateUserProfileBody {

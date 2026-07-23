@@ -5,6 +5,7 @@ import {
   useGetMyProfile,
   useCreateMyProfile,
   useListTeams,
+  useListPlayers,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ChevronRight, Camera, Compass, X, Upload, Gamepad2, Users, ClipboardList, Clock } from "lucide-react";
@@ -30,6 +31,7 @@ type Step =
   | "avatar"
   | "reveal"
   | "pendingReveal"
+  | "ballers"
   | "walkthrough";
 
 const PROFILE_STEPS: Step[] = ["name", "school", "position", "number", "year", "photo"];
@@ -56,6 +58,7 @@ export function OnboardingPage() {
     query: { enabled: isSignedIn === true, retry: false },
   });
   const { data: teams } = useListTeams({ query: { enabled: isSignedIn === true } });
+  const { data: allPlayers } = useListPlayers(undefined, { query: { enabled: isSignedIn === true } });
   const createProfile = useCreateMyProfile();
 
   // ── ALL useState / useRef declarations come first ──────────────────────────
@@ -91,6 +94,8 @@ export function OnboardingPage() {
   const [justCreated, setJustCreated] = useState(false);
   const [pendingAvatarConfig, setPendingAvatarConfig] = useState<AvatarConfig | null>(null);
   const [showAvatarCreator, setShowAvatarCreator] = useState(false);
+  const [pendingBallers, setPendingBallers] = useState<number[]>([]);
+  const [ballerSearch, setBallerSearch] = useState("");
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
@@ -244,6 +249,9 @@ export function OnboardingPage() {
           firstName: form.firstName,
           lastName: form.lastName,
           requestedRole: form.accountType as "parent" | "manager",
+          ...(form.accountType === "parent" && pendingBallers.length > 0
+            ? { myBallers: pendingBallers }
+            : {}),
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -1108,6 +1116,176 @@ export function OnboardingPage() {
   }
 
   // ──────────────────────────────────────────────────
+  // BALLERS STEP (parent only — pick which players are their kids)
+  // ──────────────────────────────────────────────────
+  if (step === "ballers") {
+    const lc = ballerSearch.toLowerCase();
+    const filtered = (allPlayers ?? []).filter(
+      (p) =>
+        !p.isJerseyStub &&
+        (`${p.firstName} ${p.lastName}`.toLowerCase().includes(lc))
+    );
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(22 78% 12% / 0.3), hsl(222 42% 5%) 60%)" }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 20px 8px", flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setStep("name")}
+            style={{
+              flexShrink: 0, padding: "8px 14px", borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.15)", background: "transparent",
+              color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            ← Back
+          </button>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "hsl(22,78%,52%)", margin: 0 }}>
+              Optional
+            </p>
+            <h2 style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: "clamp(22px,6vw,28px)", fontWeight: 900, color: "#fff", lineHeight: 1.05, margin: 0, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+              Who Are Your Ballers?
+            </h2>
+          </div>
+        </div>
+
+        <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, padding: "0 20px 12px", margin: 0, flexShrink: 0 }}>
+          Select the players you're here to support. You can always update this later.
+        </p>
+
+        {/* Search */}
+        <div style={{ padding: "0 20px 12px", flexShrink: 0 }}>
+          <input
+            value={ballerSearch}
+            onChange={(e) => setBallerSearch(e.target.value)}
+            placeholder="Search by name…"
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "10px 16px", borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "#fff", fontSize: 14, fontWeight: 500, outline: "none",
+            }}
+          />
+        </div>
+
+        {/* Player list */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+          {filtered.length === 0 ? (
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, textAlign: "center", marginTop: 40 }}>
+              {allPlayers?.length === 0 ? "No registered players yet." : "No players match your search."}
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 16 }}>
+              {filtered.map((player) => {
+                const selected = pendingBallers.includes(player.id);
+                return (
+                  <button
+                    key={player.id}
+                    type="button"
+                    onClick={() => {
+                      setPendingBallers((prev) =>
+                        prev.includes(player.id)
+                          ? prev.filter((id) => id !== player.id)
+                          : [...prev, player.id]
+                      );
+                    }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "12px 14px", borderRadius: 14, border: "none",
+                      background: selected ? "rgba(249,115,22,0.15)" : "rgba(255,255,255,0.05)",
+                      outline: selected ? "1.5px solid hsl(22,78%,50%)" : "1px solid rgba(255,255,255,0.08)",
+                      cursor: "pointer", textAlign: "left", width: "100%",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {/* Avatar circle */}
+                    <div style={{
+                      width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                      background: selected ? "hsl(22,78%,30%)" : "rgba(255,255,255,0.1)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      overflow: "hidden",
+                    }}>
+                      {player.avatarUrl ? (
+                        <img src={player.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: 16 }}>🏀</span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, color: selected ? "hsl(22,78%,75%)" : "#fff", margin: 0, lineHeight: 1.2 }}>
+                        {player.firstName} {player.lastName}
+                        {player.number && <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 500, fontSize: 12, marginLeft: 6 }}>#{player.number}</span>}
+                      </p>
+                      {player.position && (
+                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", margin: "2px 0 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          {player.position}
+                        </p>
+                      )}
+                    </div>
+                    {/* Checkmark */}
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                      background: selected ? "hsl(22,78%,46%)" : "rgba(255,255,255,0.08)",
+                      border: selected ? "none" : "1.5px solid rgba(255,255,255,0.15)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", fontSize: 13, fontWeight: 900,
+                    }}>
+                      {selected && "✓"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div style={{ padding: "16px 20px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          {pendingBallers.length > 0 && (
+            <p style={{ textAlign: "center", fontSize: 13, color: "hsl(22,78%,65%)", margin: 0, fontWeight: 600 }}>
+              {pendingBallers.length} baller{pendingBallers.length !== 1 ? "s" : ""} selected
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => { void handlePendingSubmit(); }}
+            disabled={isSubmitting}
+            style={{
+              width: "100%", padding: "15px 20px", borderRadius: 14,
+              background: "linear-gradient(135deg, #F97316, #B45309)",
+              border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
+              letterSpacing: "0.03em", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              opacity: isSubmitting ? 0.7 : 1,
+            }}
+          >
+            {isSubmitting ? "Submitting…" : pendingBallers.length > 0 ? "Request Access →" : "Request Access →"}
+            {!isSubmitting && <ArrowRight style={{ width: 18, height: 18 }} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPendingBallers([]); void handlePendingSubmit(); }}
+            disabled={isSubmitting}
+            style={{
+              width: "100%", padding: "10px 20px", borderRadius: 14,
+              background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Skip — I'll add ballers later
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
   // PROFILE STEPS
   // ──────────────────────────────────────────────────
   const currentStepIdx = stepIndex(step);
@@ -1166,7 +1344,9 @@ export function OnboardingPage() {
               <button
                 onClick={() => {
                   if (!form.firstName || !form.lastName) return;
-                  if (form.accountType === "parent" || form.accountType === "manager") {
+                  if (form.accountType === "parent") {
+                    setStep("ballers");
+                  } else if (form.accountType === "manager") {
                     void handlePendingSubmit();
                   } else {
                     setStep("school");
@@ -1175,7 +1355,7 @@ export function OnboardingPage() {
                 disabled={!form.firstName || !form.lastName || isSubmitting}
                 className="btn-primary w-full justify-center py-3.5 text-base"
               >
-                {isSubmitting ? "Submitting…" : form.accountType === "parent" || form.accountType === "manager" ? "Request Access" : "Next"}
+                {isSubmitting ? "Submitting…" : form.accountType === "manager" ? "Request Access" : "Next"}
                 {!isSubmitting && <ChevronRight className="h-5 w-5" />}
               </button>
             </div>

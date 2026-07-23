@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useUser, useAuth } from "@clerk/react";
 import { useLocation, Link } from "wouter";
-import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams, useGetMyArcadeStats, useGetMyArcadeRank, useGetIsoBallProfile, useGetIsoBallRank } from "@workspace/api-client-react";
+import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams, useGetMyArcadeStats, useGetMyArcadeRank, useGetIsoBallProfile, useGetIsoBallRank, useGetProfileBallers, useUpdateMyBallers, useListPlayers } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X, Gamepad2 } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
@@ -73,6 +73,19 @@ export function MyProfilePage() {
   );
   const { data: isoBallData } = useGetIsoBallProfile(user?.id ?? null, { query: { enabled: isSignedIn === true } });
   const { data: ibRank } = useGetIsoBallRank({ query: { enabled: isSignedIn === true } });
+
+  const isParent = profile?.role === "parent";
+  const { data: myBallers, refetch: refetchBallers } = useGetProfileBallers(user?.id ?? "", {
+    query: { enabled: isSignedIn === true && isParent && !!user?.id },
+  });
+  const { data: allPlayersList } = useListPlayers(undefined, {
+    query: { enabled: isSignedIn === true && isParent },
+  });
+  const updateBallers = useUpdateMyBallers();
+  const [showBallerPicker, setShowBallerPicker] = useState(false);
+  const [pickerSelection, setPickerSelection] = useState<number[]>([]);
+  const [ballerSearch, setBallerSearch] = useState("");
+  const [ballerSaveError, setBallerSaveError] = useState<string | null>(null);
 
   const isNew = !isLoading && !profile && (error as { status?: number } | null)?.status === 404;
 
@@ -572,6 +585,212 @@ export function MyProfilePage() {
           archetype={profile.archetype}
           showArchetypeLink
         />
+      )}
+
+      {/* ── MY BALLERS — parent accounts only ── */}
+      {!showForm && isParent && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: 16 }}>🏀</span>
+              <h3 className="label-upper text-xs text-muted-foreground">My Ballers</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPickerSelection((myBallers ?? []).map((b) => b.id));
+                setBallerSearch("");
+                setBallerSaveError(null);
+                setShowBallerPicker((v) => !v);
+              }}
+              className="text-xs font-bold text-primary hover:underline"
+            >
+              {showBallerPicker ? "Cancel" : "Edit Ballers"}
+            </button>
+          </div>
+
+          {!showBallerPicker && (
+            <>
+              {(myBallers ?? []).length === 0 ? (
+                <div
+                  className="border border-border rounded-xl p-5 text-center"
+                  style={{ background: "hsl(var(--card))" }}
+                >
+                  <p className="text-sm text-muted-foreground mb-3">
+                    No ballers added yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerSelection([]);
+                      setBallerSearch("");
+                      setShowBallerPicker(true);
+                    }}
+                    className="btn-primary text-sm py-2"
+                  >
+                    + Add Ballers
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {(myBallers ?? []).map((baller) => (
+                    <div
+                      key={baller.id}
+                      className="border border-border rounded-xl overflow-hidden"
+                      style={{ background: "hsl(var(--card))" }}
+                    >
+                      <div
+                        className="flex flex-col items-center gap-2 p-4"
+                      >
+                        {/* Avatar */}
+                        <div
+                          className="rounded-full overflow-hidden flex items-center justify-center"
+                          style={{ width: 52, height: 52, background: "hsl(var(--muted))" }}
+                        >
+                          {baller.avatarUrl ? (
+                            <img
+                              src={baller.avatarUrl}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: 22 }}>🏀</span>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-sm text-foreground leading-tight">
+                            {baller.number && (
+                              <span className="text-primary mr-1">#{baller.number}</span>
+                            )}
+                            {baller.firstName} {baller.lastName}
+                          </p>
+                          {baller.teamName && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{baller.teamName}</p>
+                          )}
+                          {baller.position && (
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5 opacity-70">
+                              {baller.position}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Baller picker — inline edit mode */}
+          {showBallerPicker && (
+            <div
+              className="border border-border rounded-xl p-4 space-y-3"
+              style={{ background: "hsl(var(--card))" }}
+            >
+              <input
+                value={ballerSearch}
+                onChange={(e) => setBallerSearch(e.target.value)}
+                placeholder="Search players…"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {(allPlayersList ?? [])
+                  .filter(
+                    (p) =>
+                      !p.isJerseyStub &&
+                      `${p.firstName} ${p.lastName}`
+                        .toLowerCase()
+                        .includes(ballerSearch.toLowerCase())
+                  )
+                  .map((player) => {
+                    const selected = pickerSelection.includes(player.id);
+                    return (
+                      <button
+                        key={player.id}
+                        type="button"
+                        onClick={() =>
+                          setPickerSelection((prev) =>
+                            prev.includes(player.id)
+                              ? prev.filter((id) => id !== player.id)
+                              : [...prev, player.id]
+                          )
+                        }
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors"
+                        style={{
+                          background: selected
+                            ? "hsl(22 78% 46% / 0.12)"
+                            : "hsl(var(--muted))",
+                          outline: selected
+                            ? "1.5px solid hsl(22 78% 46%)"
+                            : "none",
+                        }}
+                      >
+                        <div
+                          className="rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+                          style={{ width: 32, height: 32, background: "hsl(var(--muted-foreground) / 0.15)" }}
+                        >
+                          {player.avatarUrl ? (
+                            <img src={player.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <span style={{ fontSize: 14 }}>🏀</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm leading-tight">
+                            {player.firstName} {player.lastName}
+                            {player.number && (
+                              <span className="text-muted-foreground font-normal text-xs ml-1.5">#{player.number}</span>
+                            )}
+                          </p>
+                          {player.position && (
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">
+                              {player.position}
+                            </p>
+                          )}
+                        </div>
+                        <div
+                          className="flex-shrink-0 rounded-full flex items-center justify-center text-white text-xs font-black"
+                          style={{
+                            width: 20, height: 20,
+                            background: selected ? "hsl(22 78% 46%)" : "transparent",
+                            border: selected ? "none" : "1.5px solid hsl(var(--border))",
+                          }}
+                        >
+                          {selected && "✓"}
+                        </div>
+                      </button>
+                    );
+                  })}
+                {(allPlayersList ?? []).filter((p) => !p.isJerseyStub).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No registered players yet.</p>
+                )}
+              </div>
+              {ballerSaveError && (
+                <p className="text-red-500 text-sm">{ballerSaveError}</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={updateBallers.isPending}
+                  onClick={async () => {
+                    setBallerSaveError(null);
+                    try {
+                      await updateBallers.mutateAsync({ data: { playerIds: pickerSelection } });
+                      await refetchBallers();
+                      setShowBallerPicker(false);
+                    } catch {
+                      setBallerSaveError("Failed to save. Please try again.");
+                    }
+                  }}
+                  className="btn-primary flex-1 justify-center py-2.5 text-sm"
+                >
+                  <Save className="h-4 w-4" />
+                  {updateBallers.isPending ? "Saving…" : "Save My Ballers"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Arcade Stats — always visible in view mode when profile exists */}

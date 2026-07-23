@@ -23,6 +23,7 @@ import type {
   ArcadeLeaderboardEntry,
   ArcadeRank,
   ArcadeSession,
+  BallerPlayer,
   ClaimJerseyBody,
   CreateGameBody,
   CreatePlayerBody,
@@ -54,6 +55,7 @@ import type {
   Team,
   TeamStats,
   UpdateGameBody,
+  UpdateMyBallersBody,
   UpdatePlayerBody,
   UpdateTeamBody,
   UpdateUserProfileBody,
@@ -3662,6 +3664,181 @@ export const useDeleteGameVideo = <
 > => {
   return useMutation(getDeleteGameVideoMutationOptions(options));
 };
+
+/**
+ * @summary Replace the current user's My Ballers list
+ */
+export const getUpdateMyBallersUrl = () => {
+  return `/api/profiles/me/ballers`;
+};
+
+export const updateMyBallers = async (
+  updateMyBallersBody: UpdateMyBallersBody,
+  options?: RequestInit,
+): Promise<UserProfile> => {
+  return customFetch<UserProfile>(getUpdateMyBallersUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateMyBallersBody),
+  });
+};
+
+export const getUpdateMyBallersMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMyBallers>>,
+    TError,
+    { data: BodyType<UpdateMyBallersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMyBallers>>,
+  TError,
+  { data: BodyType<UpdateMyBallersBody> },
+  TContext
+> => {
+  const mutationKey = ["updateMyBallers"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMyBallers>>,
+    { data: BodyType<UpdateMyBallersBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateMyBallers(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMyBallersMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMyBallers>>
+>;
+export type UpdateMyBallersMutationBody = BodyType<UpdateMyBallersBody>;
+export type UpdateMyBallersMutationError = ErrorType<void>;
+
+/**
+ * @summary Replace the current user's My Ballers list
+ */
+export const useUpdateMyBallers = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMyBallers>>,
+    TError,
+    { data: BodyType<UpdateMyBallersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMyBallers>>,
+  TError,
+  { data: BodyType<UpdateMyBallersBody> },
+  TContext
+> => {
+  return useMutation(getUpdateMyBallersMutationOptions(options));
+};
+
+/**
+ * @summary Get My Ballers player details for a profile
+ */
+export const getGetProfileBallersUrl = (clerkUserId: string) => {
+  return `/api/profiles/${clerkUserId}/ballers`;
+};
+
+export const getProfileBallers = async (
+  clerkUserId: string,
+  options?: RequestInit,
+): Promise<BallerPlayer[]> => {
+  return customFetch<BallerPlayer[]>(getGetProfileBallersUrl(clerkUserId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProfileBallersQueryKey = (clerkUserId: string) => {
+  return [`/api/profiles/${clerkUserId}/ballers`] as const;
+};
+
+export const getGetProfileBallersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProfileBallers>>,
+  TError = ErrorType<void>,
+>(
+  clerkUserId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProfileBallers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetProfileBallersQueryKey(clerkUserId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getProfileBallers>>
+  > = ({ signal }) =>
+    getProfileBallers(clerkUserId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!clerkUserId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProfileBallers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProfileBallersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProfileBallers>>
+>;
+export type GetProfileBallersQueryError = ErrorType<void>;
+
+/**
+ * @summary Get My Ballers player details for a profile
+ */
+
+export function useGetProfileBallers<
+  TData = Awaited<ReturnType<typeof getProfileBallers>>,
+  TError = ErrorType<void>,
+>(
+  clerkUserId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProfileBallers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProfileBallersQueryOptions(clerkUserId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Save avatar config for current user

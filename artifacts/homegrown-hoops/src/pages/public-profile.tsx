@@ -8,6 +8,7 @@ import {
   useGetPlayerSeasons,
   useGetPlayerStatsBySeason,
   useGetIsoBallProfile,
+  useGetProfileBallers,
 } from "@workspace/api-client-react";
 import { User, Trophy, Calendar, School, ExternalLink, ChevronDown, Brain, Medal } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
@@ -64,6 +65,10 @@ export function PublicProfilePage() {
   const teamLabel = team?.name ?? "Unaffiliated / No Team";
 
   const { data: isoBallData } = useGetIsoBallProfile(clerkUserId || null);
+  const isParentProfile = profile?.role === "parent";
+  const { data: profileBallers } = useGetProfileBallers(clerkUserId, {
+    query: { enabled: !!clerkUserId && isParentProfile },
+  });
 
   // ── Career totals for Legacy Score ─────────────────────────────────────────
   // All game stats are permanently in the DB — allSeasonStats (no season filter)
@@ -426,7 +431,7 @@ export function PublicProfilePage() {
         {/* Player Card */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
           <PlayerCard
-            profile={displayProfile}
+            profile={displayProfile as import("@/components/player-card").CardProfile}
             stats={displayStats}
             careerTotals={careerTotalsForCard}
             primaryColor={team?.primaryColor ?? "#B45309"}
@@ -608,6 +613,66 @@ export function PublicProfilePage() {
             </div>
           )}
         </div>
+
+        {/* My Ballers — shown only for parent profiles */}
+        {isParentProfile && (profileBallers ?? []).length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "hsl(215, 16%, 45%)", marginBottom: 12 }}>
+              🏀 My Ballers
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {(profileBallers ?? []).map((baller) => (
+                <Link key={baller.id} href={`/players/${baller.id}`}>
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      background: "hsl(220, 36%, 10%)",
+                      border: "1px solid hsl(220, 28%, 16%)",
+                      padding: "14px 12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
+                      transition: "border-color 0.15s",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 52, height: 52, borderRadius: "50%",
+                        background: "hsl(220, 28%, 16%)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        overflow: "hidden", flexShrink: 0,
+                      }}
+                    >
+                      {baller.avatarUrl ? (
+                        <img src={baller.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: 24 }}>🏀</span>
+                      )}
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontWeight: 700, fontSize: 13, color: "#fff", margin: 0, lineHeight: 1.2 }}>
+                        {baller.number && (
+                          <span style={{ color: "hsl(22,78%,60%)", marginRight: 4 }}>#{baller.number}</span>
+                        )}
+                        {baller.firstName} {baller.lastName}
+                      </p>
+                      {baller.teamName && (
+                        <p style={{ fontSize: 11, color: "hsl(215, 16%, 50%)", margin: "3px 0 0" }}>{baller.teamName}</p>
+                      )}
+                      {baller.position && (
+                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(215, 16%, 40%)", margin: "2px 0 0" }}>
+                          {baller.position}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recognition — stamps always career-wide; tides season-filtered when season selected */}
         <RecognitionBlock
