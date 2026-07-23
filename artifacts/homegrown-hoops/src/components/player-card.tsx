@@ -586,14 +586,26 @@ function AvatarThumb({ config }: { config: AvatarConfig }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    renderAvatarToCanvas(canvas, config, { scale: 2 });
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const off = document.createElement("canvas");
+    off.width = 88;
+    off.height = 128;
+    renderAvatarToCanvas(off, config, { scale: 2 });
+    const scale = Math.min(90 / off.width, 90 / off.height);
+    const dw = off.width * scale;
+    const dh = off.height * scale;
+    const dx = (90 - dw) / 2;
+    const dy = (90 - dh) / 2;
+    ctx.clearRect(0, 0, 90, 90);
+    ctx.drawImage(off, dx, dy, dw, dh);
   }, [config]);
   return (
     <canvas
       ref={canvasRef}
-      width={88}
-      height={128}
-      style={{ height: "90px", width: "auto", display: "block" }}
+      width={90}
+      height={90}
+      style={{ display: "block" }}
     />
   );
 }
