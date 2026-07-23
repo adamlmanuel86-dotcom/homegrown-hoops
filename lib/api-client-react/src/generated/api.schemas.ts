@@ -628,6 +628,21 @@ export interface ArcadeRank {
   bestScore: number;
 }
 
+export interface IsoBallLeaderboardEntry {
+  rank: number;
+  displayName: string;
+  totalPoints: number;
+  sessions: number;
+  level: string;
+}
+
+export interface IsoBallRank {
+  /** @nullable */
+  rank: number | null;
+  total: number;
+  totalPoints: number;
+}
+
 export interface MyArcadeStats {
   fastBreak: ArcadeGameStats;
   whoYaGot: ArcadeGameStats;
@@ -787,3 +802,7 @@ export const GetMyArcadeRankGame = {
   "who-ya-got": "who-ya-got",
   "shot-clock": "shot-clock",
 } as const;
+
+export type GetIsoBallLeaderboardParams = {
+  limit?: number;
+};

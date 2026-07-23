@@ -32,8 +32,11 @@ import type {
   GamePlayerStat,
   GameVideo,
   GetArcadeLeaderboardParams,
+  GetIsoBallLeaderboardParams,
   GetMyArcadeRankParams,
   HealthStatus,
+  IsoBallLeaderboardEntry,
+  IsoBallRank,
   JerseyStub,
   ListGamesParams,
   ListPlayersParams,
@@ -4096,6 +4099,184 @@ export function useGetMyArcadeRank<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetMyArcadeRankQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get top players by Iso Ball total points
+ */
+export const getGetIsoBallLeaderboardUrl = (
+  params?: GetIsoBallLeaderboardParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/iso-ball/leaderboard?${stringifiedParams}`
+    : `/api/iso-ball/leaderboard`;
+};
+
+export const getIsoBallLeaderboard = async (
+  params?: GetIsoBallLeaderboardParams,
+  options?: RequestInit,
+): Promise<IsoBallLeaderboardEntry[]> => {
+  return customFetch<IsoBallLeaderboardEntry[]>(
+    getGetIsoBallLeaderboardUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetIsoBallLeaderboardQueryKey = (
+  params?: GetIsoBallLeaderboardParams,
+) => {
+  return [`/api/iso-ball/leaderboard`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetIsoBallLeaderboardQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIsoBallLeaderboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetIsoBallLeaderboardParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getIsoBallLeaderboard>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetIsoBallLeaderboardQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getIsoBallLeaderboard>>
+  > = ({ signal }) =>
+    getIsoBallLeaderboard(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIsoBallLeaderboard>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIsoBallLeaderboardQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIsoBallLeaderboard>>
+>;
+export type GetIsoBallLeaderboardQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get top players by Iso Ball total points
+ */
+
+export function useGetIsoBallLeaderboard<
+  TData = Awaited<ReturnType<typeof getIsoBallLeaderboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetIsoBallLeaderboardParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getIsoBallLeaderboard>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIsoBallLeaderboardQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get current user's Iso Ball rank
+ */
+export const getGetIsoBallRankUrl = () => {
+  return `/api/iso-ball/rank`;
+};
+
+export const getIsoBallRank = async (
+  options?: RequestInit,
+): Promise<IsoBallRank> => {
+  return customFetch<IsoBallRank>(getGetIsoBallRankUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIsoBallRankQueryKey = () => {
+  return [`/api/iso-ball/rank`] as const;
+};
+
+export const getGetIsoBallRankQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIsoBallRank>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIsoBallRank>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIsoBallRankQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getIsoBallRank>>> = ({
+    signal,
+  }) => getIsoBallRank({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIsoBallRank>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIsoBallRankQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIsoBallRank>>
+>;
+export type GetIsoBallRankQueryError = ErrorType<void>;
+
+/**
+ * @summary Get current user's Iso Ball rank
+ */
+
+export function useGetIsoBallRank<
+  TData = Awaited<ReturnType<typeof getIsoBallRank>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIsoBallRank>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIsoBallRankQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

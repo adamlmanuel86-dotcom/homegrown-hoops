@@ -654,20 +654,18 @@ export function IsoBallPage() {
               {leaderboard.slice(0, 10).map((entry) => {
                 const levelColor = getLevelColor(entry.level);
                 const isElite = entry.level === "Elite Playmaker";
-                const isMe = isSignedIn && user?.id === entry.clerkUserId;
                 return (
                   <div
-                    key={entry.clerkUserId}
-                    className={`flex items-center gap-4 px-5 py-3.5 transition-colors ${isMe ? "bg-primary/8" : ""}`}
+                    key={entry.rank}
+                    className="flex items-center gap-4 px-5 py-3.5 transition-colors"
                   >
                     <span className={`text-sm font-black w-6 text-center tabular-nums ${entry.rank <= 3 ? "text-primary" : "text-muted-foreground"}`}>
                       {entry.rank}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className={`text-sm font-bold truncate ${isMe ? "text-primary" : "text-foreground"}`}>
-                          {entry.firstName} {entry.lastName}
-                          {isMe && <span className="text-xs text-primary/70 font-medium ml-1">(you)</span>}
+                        <p className="text-sm font-bold truncate text-foreground">
+                          {entry.displayName}
                         </p>
                         {isElite && (
                           <Medal className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "#c084fc" }} />

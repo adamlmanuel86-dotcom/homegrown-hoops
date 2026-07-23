@@ -1868,3 +1868,32 @@ export const GetMyArcadeRankResponse = zod.object({
   total: zod.number(),
   bestScore: zod.number(),
 });
+
+/**
+ * @summary Get top players by Iso Ball total points
+ */
+export const getIsoBallLeaderboardQueryLimitDefault = 10;
+
+export const GetIsoBallLeaderboardQueryParams = zod.object({
+  limit: zod.coerce.number().default(getIsoBallLeaderboardQueryLimitDefault),
+});
+
+export const GetIsoBallLeaderboardResponseItem = zod.object({
+  rank: zod.number(),
+  displayName: zod.string(),
+  totalPoints: zod.number(),
+  sessions: zod.number(),
+  level: zod.string(),
+});
+export const GetIsoBallLeaderboardResponse = zod.array(
+  GetIsoBallLeaderboardResponseItem,
+);
+
+/**
+ * @summary Get current user's Iso Ball rank
+ */
+export const GetIsoBallRankResponse = zod.object({
+  rank: zod.number().nullable(),
+  total: zod.number(),
+  totalPoints: zod.number(),
+});

@@ -345,12 +345,12 @@ router.get("/iso-ball/leaderboard", async (req, res) => {
   const leaderboard = rows.map((r, i) => {
     const prof = profileMap.get(r.clerkUserId);
     const totalPoints = Number(r.totalPoints ?? 0);
+    const firstName = prof?.firstName ?? "Unknown";
+    const lastName = prof?.lastName ?? "";
     return {
       rank: i + 1,
       clerkUserId: r.clerkUserId,
-      firstName: prof?.firstName ?? "Unknown",
-      lastName: prof?.lastName ?? "",
-      avatarUrl: prof?.avatarUrl ?? null,
+      displayName: lastName ? `${firstName} ${lastName}` : firstName,
       totalPoints,
       sessions: Number(r.sessions ?? 0),
       level: getBallKnowledgeLevel(totalPoints),
@@ -358,6 +358,31 @@ router.get("/iso-ball/leaderboard", async (req, res) => {
   });
 
   res.json(leaderboard);
+});
+
+// GET /iso-ball/rank — auth required; returns signed-in user's rank by total points
+router.get("/iso-ball/rank", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      clerkUserId: isoBallSessionsTable.clerkUserId,
+      totalPoints: sum(isoBallSessionsTable.pointsEarned),
+    })
+    .from(isoBallSessionsTable)
+    .groupBy(isoBallSessionsTable.clerkUserId)
+    .orderBy(desc(sum(isoBallSessionsTable.pointsEarned)));
+
+  const total = rows.length;
+  const myIndex = rows.findIndex((r) => r.clerkUserId === userId);
+  const rank = myIndex === -1 ? null : myIndex + 1;
+  const totalPoints = myIndex === -1 ? 0 : Number(rows[myIndex].totalPoints ?? 0);
+
+  res.json({ rank, total, totalPoints });
 });
 
 // DELETE /iso-ball/sessions/:clerkUserId — admin: reset a player's ball knowledge

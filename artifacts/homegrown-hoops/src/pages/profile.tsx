@@ -12,6 +12,7 @@ import {
   useGetIsoBallProfile,
   useGetMyArcadeStats,
   useGetMyArcadeRank,
+  useGetIsoBallRank,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award, Gamepad2 } from "lucide-react";
@@ -296,6 +297,7 @@ export function ProfilePage() {
     { game: "shot-clock" },
     { query: { enabled: isOwner } },
   );
+  const { data: ibRank } = useGetIsoBallRank({ query: { enabled: isOwner } });
 
   if (isLoading) {
     return (
@@ -1055,6 +1057,61 @@ export function ProfilePage() {
                     <div className="px-4 pb-4 flex items-center justify-between">
                       <p className="text-sm text-white/30 italic">No games yet</p>
                       <span className="text-[11px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors">Play Now →</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })()}
+
+          {/* ── ISO BALL ────────────────────────────────────────────────── */}
+          {(() => {
+            const ib = isoBallData && isoBallData.sessionCount > 0 ? isoBallData : null;
+            return (
+              <Link href="/iso-ball">
+                <div
+                  className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
+                  style={{ background: "linear-gradient(135deg, #0d0a1a 0%, #1a1030 100%)" }}
+                >
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.18) 0%, transparent 60%)" }} />
+                  <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontSize: 18 }}>🧠</span>
+                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Iso Ball</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-purple-500/60" style={{ color: "#a855f7", background: "rgba(168,85,247,0.1)" }}>
+                      Trivia
+                    </span>
+                  </div>
+                  {ib ? (
+                    <>
+                      <div className="flex items-end gap-5 px-4 pb-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-0.5">Total Points</p>
+                          <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#a855f7" }}>{ib.totalPoints}</p>
+                        </div>
+                        <div className="pb-1 space-y-1.5">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/35">Level</p>
+                          <p className="text-sm font-black text-purple-300">{ib.level}</p>
+                          <p className="text-[10px] text-white/30">{ib.sessionCount} sessions</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center border-t border-white/8" style={{ background: "rgba(0,0,0,0.3)" }}>
+                        {ibRank?.rank != null && (
+                          <div className="py-2.5 text-center px-4 border-r border-white/10">
+                            <p className="font-black text-base text-purple-400 leading-none">#{ibRank.rank}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/35 mt-0.5">of {ibRank.total}</p>
+                          </div>
+                        )}
+                        <div className="flex-1 py-2.5 px-4 text-right text-[10px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">
+                          Play →
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <p className="text-sm text-white/30 italic">No games yet</p>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">Play Now →</span>
                     </div>
                   )}
                 </div>

@@ -1026,6 +1026,43 @@ paths:
         "401":
           description: Unauthorized
 
+  /iso-ball/leaderboard:
+    get:
+      operationId: getIsoBallLeaderboard
+      tags: [iso-ball]
+      summary: Get top players by Iso Ball total points
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Iso Ball leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IsoBallLeaderboardEntry"
+
+  /iso-ball/rank:
+    get:
+      operationId: getIsoBallRank
+      tags: [iso-ball]
+      summary: Get current user's Iso Ball rank
+      responses:
+        "200":
+          description: User Iso Ball rank
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IsoBallRank"
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
     HealthStatus:
@@ -2036,6 +2073,32 @@ components:
         bestScore:
           type: integer
       required: [rank, total, bestScore]
+
+    IsoBallLeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        displayName:
+          type: string
+        totalPoints:
+          type: integer
+        sessions:
+          type: integer
+        level:
+          type: string
+      required: [rank, displayName, totalPoints, sessions, level]
+
+    IsoBallRank:
+      type: object
+      properties:
+        rank:
+          type: ["integer", "null"]
+        total:
+          type: integer
+        totalPoints:
+          type: integer
+      required: [rank, total, totalPoints]
 
     MyArcadeStats:
       type: object
