@@ -183,6 +183,20 @@ export async function runMigrations(): Promise<void> {
     `);
     console.log("[migrate] iso_ball_daily_questions OK");
 
+    // ── arcade_sessions ──────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS arcade_sessions (
+        id            serial    PRIMARY KEY,
+        clerk_user_id text      NOT NULL,
+        game          text      NOT NULL,
+        score         integer   NOT NULL DEFAULT 0,
+        best_streak   integer   NOT NULL DEFAULT 0,
+        rounds_played integer   NOT NULL DEFAULT 0,
+        played_at     timestamp NOT NULL DEFAULT now()
+      );
+    `);
+    console.log("[migrate] arcade_sessions OK");
+
     // ── Additive column migrations (idempotent) ───────────────────────────────
     const addCol = (table: string, col: string, def: string) =>
       client.query(
