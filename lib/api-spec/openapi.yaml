@@ -1758,6 +1758,11 @@ components:
           type: ["string", "null"]
         teamId:
           type: ["integer", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        number:
+          type: ["string", "null"]
+          description: "Player jersey number"
         requestedRole:
           type: ["string", "null"]
           description: "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true."

@@ -1205,6 +1205,8 @@ export const CreateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
+  avatarUrl: zod.string().nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
   requestedRole: zod
     .string()
     .nullish()

@@ -19,6 +19,13 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /**
+   * Player jersey number
+   * @nullable
+   */
+  number?: string | null;
   /**
    * Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true.
    * @nullable
