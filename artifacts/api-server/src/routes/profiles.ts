@@ -450,6 +450,17 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
     return;
   }
 
+  // Prevent deletion of other admin accounts (protected-admin guard)
+  const [targetProfile] = await db
+    .select({ isAdmin: userProfilesTable.isAdmin, role: userProfilesTable.role })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
+  if (targetProfile?.isAdmin || targetProfile?.role === "admin") {
+    res.status(403).json({ error: "Admin accounts cannot be deleted." });
+    return;
+  }
+
   const [deleted] = await db
     .delete(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, clerkUserId))
