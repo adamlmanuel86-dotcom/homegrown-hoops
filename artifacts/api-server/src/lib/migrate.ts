@@ -195,6 +195,7 @@ export async function runMigrations(): Promise<void> {
     await addCol("user_profiles", "archetype",         "text DEFAULT 'Uncharted'");
     await addCol("user_profiles", "tides",             "json NOT NULL DEFAULT '[]'");
     await addCol("user_profiles", "number",            "text");
+    await addCol("user_profiles", "avatar_config",     "jsonb DEFAULT NULL");
     await addCol("games",         "external_links",    "json NOT NULL DEFAULT '[]'");
     await addCol("games",         "notes",             "text");
     await addCol("teams",         "current_season",    "text");
