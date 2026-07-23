@@ -1082,7 +1082,7 @@ export function OnboardingPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 20px 8px" }}>
           <button
             type="button"
-            onClick={() => setStep("photo")}
+            onClick={() => form.accountType === "parent" ? setStep("ballers") : setStep("year")}
             style={{
               flexShrink: 0,
               padding: "8px 14px",
@@ -1116,6 +1116,24 @@ export function OnboardingPage() {
               void advanceFromPhoto(false, config);
             }}
           />
+
+          {/* Secondary escape hatches */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingBottom: 8 }}>
+            <button
+              type="button"
+              onClick={() => setStep("photo")}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              Use a photo instead →
+            </button>
+            <button
+              type="button"
+              onClick={() => void advanceFromPhoto(true)}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.22)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              Skip — create profile without a look
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1259,7 +1277,7 @@ export function OnboardingPage() {
           )}
           <button
             type="button"
-            onClick={() => setStep("photo")}
+            onClick={() => setStep("avatar")}
             style={{
               width: "100%", padding: "15px 20px", borderRadius: 14,
               background: "linear-gradient(135deg, #F97316, #B45309)",
@@ -1273,7 +1291,7 @@ export function OnboardingPage() {
           </button>
           <button
             type="button"
-            onClick={() => { setPendingBallers([]); setStep("photo"); }}
+            onClick={() => { setPendingBallers([]); setStep("avatar"); }}
             style={{
               width: "100%", padding: "10px 20px", borderRadius: 14,
               background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
@@ -1535,7 +1553,7 @@ export function OnboardingPage() {
                   Back
                 </button>
                 <button
-                  onClick={() => setStep("photo")}
+                  onClick={() => setStep("avatar")}
                   className="flex-[2] btn-primary justify-center py-3.5 text-base"
                 >
                   Next <ChevronRight className="h-5 w-5" />
@@ -1607,14 +1625,10 @@ export function OnboardingPage() {
                   type="button"
                   onTouchEnd={(e) => {
                     e.preventDefault();
-                    if (form.accountType === "parent") { setStep("ballers"); return; }
-                    console.log("[HH] Skip onTouchEnd fired, isSubmitting:", isSubmittingRef.current);
-                    advanceFromPhoto(true);
+                    setStep("avatar");
                   }}
                   onClick={() => {
-                    if (form.accountType === "parent") { setStep("ballers"); return; }
-                    console.log("[HH] Skip onClick fired, isSubmitting:", isSubmittingRef.current);
-                    advanceFromPhoto(true);
+                    setStep("avatar");
                   }}
                   style={{
                     flex: 1,
@@ -1622,17 +1636,17 @@ export function OnboardingPage() {
                     borderRadius: 12,
                     border: "1px solid rgba(255,255,255,0.15)",
                     background: "transparent",
-                    color: isSubmitting ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.6)",
+                    color: "rgba(255,255,255,0.6)",
                     fontSize: 14,
                     fontWeight: 600,
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    cursor: "pointer",
                     touchAction: "manipulation",
                     WebkitTapHighlightColor: "transparent",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                   }}
                 >
-                  {form.accountType === "parent" ? "← Back" : (isSubmitting ? "…" : "Skip")}
+                  ← Back
                 </button>
 
                 {/* CREATE MY CARD button — no btn-primary, pure inline styles */}
