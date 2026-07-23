@@ -1077,7 +1077,7 @@ export function OnboardingPage() {
         ))}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+      <div className={`flex-1 flex flex-col items-center px-6 py-8 ${step === "photo" ? "justify-start overflow-y-auto" : "justify-center"}`}>
         <div className="w-full max-w-sm" style={{ animation: "fadeUp 0.5s ease both" }}>
 
           {/* ── NAME ── */}
