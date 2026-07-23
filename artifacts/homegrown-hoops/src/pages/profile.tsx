@@ -12,7 +12,7 @@ import {
   useGetIsoBallProfile,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award } from "lucide-react";
+import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award, Gamepad2 } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
 import { MILESTONE_BONUSES } from "@/components/player-card";
@@ -776,9 +776,12 @@ export function ProfilePage() {
         )}
 
         {isOwner && (
-          <div className="pt-2 border-t border-border">
+          <div className="pt-2 border-t border-border flex flex-wrap gap-2">
             <Link href="/my-profile" className="btn-primary">
               <Pencil className="h-4 w-4" /> Edit Profile
+            </Link>
+            <Link href="/my-avatar" className="btn-secondary flex items-center gap-1.5">
+              <Gamepad2 className="h-4 w-4" /> Customize Avatar
             </Link>
           </div>
         )}

@@ -110,7 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     )}
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/my-profile"
+                        href={user?.id ? `/profiles/${user.id}` : "/sign-in"}
                         className="flex items-center gap-2 cursor-pointer text-white/80 hover:text-white focus:bg-white/10 focus:text-white"
                       >
                         <User className="h-4 w-4" />
@@ -202,7 +202,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   </Link>
                 )}
                 <Link
-                  href="/my-profile"
+                  href={user?.id ? `/profiles/${user.id}` : "/sign-in"}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors"
                 >
