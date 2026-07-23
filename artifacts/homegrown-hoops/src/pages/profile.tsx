@@ -806,54 +806,229 @@ export function ProfilePage() {
         archetype={displayArchetype}
       />
 
-      {isOwner && arcadeStats && (
-        <div className="card-base p-6 space-y-4">
+      {isOwner && (
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Gamepad2 className="h-4 w-4 text-primary" />
-            <h3 className="label-upper text-xs text-muted-foreground">Arcade Stats</h3>
+            <h3 className="label-upper text-xs text-muted-foreground">Arcade</h3>
           </div>
-          {!(arcadeStats.fastBreak || arcadeStats.whoYaGot || arcadeStats.shotClock) ? (
-            <p className="text-xs text-muted-foreground/70">No arcade sessions yet — play a game!</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {arcadeStats.fastBreak && (
-                <button
-                  onClick={() => setArcadeModal("fastBreak")}
-                  className="bg-muted/40 hover:bg-muted/70 rounded-lg p-3 space-y-1 text-left transition-colors border border-transparent hover:border-primary/30 w-full"
+
+          {/* ── FAST BREAK ────────────────────────────────────────────── */}
+          {(() => {
+            const fb = arcadeStats?.fastBreak ?? null;
+            const fgPct = fb && fb.totalFga && fb.totalFga > 0
+              ? Math.round((fb.totalFgm! / fb.totalFga) * 100) : null;
+            const tpPct = fb && fb.totalTpa && fb.totalTpa > 0
+              ? Math.round((fb.totalTpm! / fb.totalTpa) * 100) : null;
+            return (
+              <Link href="/fast-break">
+                <div
+                  className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
+                  style={{ background: "linear-gradient(135deg, #0f1a10 0%, #1a2e1a 100%)" }}
                 >
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fast Break</p>
-                  <p className="font-display text-2xl text-primary">{arcadeStats.fastBreak.bestScore}</p>
-                  <p className="text-xs text-muted-foreground">Best Score</p>
-                  <p className="text-xs text-foreground/70">{arcadeStats.fastBreak.gamesPlayed} games · {arcadeStats.fastBreak.bestStreak} streak</p>
-                  <p className="text-[10px] text-primary/60 font-bold">Tap for full stats →</p>
-                </button>
-              )}
-              {arcadeStats.whoYaGot && (
-                <button
-                  onClick={() => setArcadeModal("whoYaGot")}
-                  className="bg-muted/40 hover:bg-muted/70 rounded-lg p-3 space-y-1 text-left transition-colors border border-transparent hover:border-primary/30 w-full"
+                  <div className="absolute inset-0 pointer-events-none" style={{
+                    background: "radial-gradient(ellipse at 0% 50%, rgba(255,140,0,0.18) 0%, transparent 60%)",
+                  }} />
+                  <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontSize: 18 }}>🏀</span>
+                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Fast Break</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-orange-500/60" style={{ color: "#ff8c00", background: "rgba(255,140,0,0.1)" }}>
+                      Shooting
+                    </span>
+                  </div>
+                  {fb ? (
+                    <>
+                      <div className="flex items-end gap-6 px-4 pb-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-0.5">High Score</p>
+                          <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#ff8c00" }}>{fb.bestScore}</p>
+                        </div>
+                        <div className="flex-1 space-y-2 pb-1">
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">FG%</span>
+                              <span className="text-[11px] font-black text-white">
+                                {fgPct !== null ? `${fgPct}%` : "—"}
+                                <span className="text-white/30 font-normal text-[9px] ml-1">{fb.totalFgm ?? 0}/{fb.totalFga ?? 0}</span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${fgPct ?? 0}%`, background: "linear-gradient(90deg,#ff8c00,#ffb347)" }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">3PT%</span>
+                              <span className="text-[11px] font-black text-white">
+                                {tpPct !== null ? `${tpPct}%` : "—"}
+                                <span className="text-white/30 font-normal text-[9px] ml-1">{fb.totalTpm ?? 0}/{fb.totalTpa ?? 0}</span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${tpPct ?? 0}%`, background: "linear-gradient(90deg,#ff4500,#ff8c00)" }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center border-t border-white/10" style={{ background: "rgba(0,0,0,0.3)" }}>
+                        {[
+                          { label: "Dunks", val: fb.totalDunks ?? 0 },
+                          { label: "Best Streak", val: fb.bestStreak },
+                          { label: "Games", val: fb.gamesPlayed },
+                        ].map((s, i) => (
+                          <div key={s.label} className={`flex-1 py-2.5 text-center ${i < 2 ? "border-r border-white/10" : ""}`}>
+                            <p className="font-black text-base text-white leading-none">{s.val}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/35 mt-0.5">{s.label}</p>
+                          </div>
+                        ))}
+                        <div className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-orange-400 group-hover:text-orange-300 transition-colors border-l border-white/10">Play →</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <p className="text-sm text-white/30 italic">No games yet</p>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-orange-400 group-hover:text-orange-300 transition-colors">Play Now →</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })()}
+
+          {/* ── WHO YA GOT ────────────────────────────────────────────── */}
+          {(() => {
+            const wyg = arcadeStats?.whoYaGot ?? null;
+            const wygPlayed = wyg?.gamesPlayed ?? 0;
+            const wygScore  = wyg?.bestScore ?? 0;
+            const goatIq = wygPlayed > 0
+              ? Math.round((wygScore / Math.max(wygPlayed * 3, 1)) * 100) : 0;
+            return (
+              <Link href="/who-ya-got">
+                <div
+                  className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
+                  style={{ background: "linear-gradient(135deg, #0e0a1f 0%, #1a1040 100%)" }}
                 >
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Who Ya Got</p>
-                  <p className="font-display text-2xl text-primary">{arcadeStats.whoYaGot.bestScore}</p>
-                  <p className="text-xs text-muted-foreground">Best Score</p>
-                  <p className="text-xs text-foreground/70">{arcadeStats.whoYaGot.gamesPlayed} games · {arcadeStats.whoYaGot.bestStreak} streak</p>
-                  <p className="text-[10px] text-primary/60 font-bold">Tap for full stats →</p>
-                </button>
-              )}
-              {arcadeStats.shotClock && (
-                <button
-                  onClick={() => setArcadeModal("shotClock")}
-                  className="bg-muted/40 hover:bg-muted/70 rounded-lg p-3 space-y-1 text-left transition-colors border border-transparent hover:border-primary/30 w-full"
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 100% 0%, rgba(168,85,247,0.2) 0%, transparent 55%)" }} />
+                  <div className="absolute top-0 right-0 w-28 h-28 pointer-events-none" style={{ background: "radial-gradient(circle at 80% 20%, rgba(234,179,8,0.12) 0%, transparent 70%)" }} />
+                  <div className="flex items-stretch">
+                    <div className="p-4 flex flex-col justify-between" style={{ minWidth: 130 }}>
+                      <div className="flex items-center gap-1.5">
+                        <span style={{ fontSize: 16 }}>🏆</span>
+                        <span className="font-display text-xs tracking-widest text-white/50 uppercase">Who Ya Got</span>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-purple-400/70 mb-0.5">High Score</p>
+                        <p className="font-display leading-none" style={{ fontSize: "clamp(48px,11vw,68px)", color: "#c084fc" }}>
+                          {wyg ? wyg.bestScore : "—"}
+                        </p>
+                      </div>
+                      <span className="mt-3 self-start text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-purple-500/50" style={{ color: "#a855f7", background: "rgba(168,85,247,0.1)" }}>
+                        Trivia
+                      </span>
+                    </div>
+                    <div className="w-px self-stretch" style={{ background: "rgba(255,255,255,0.07)" }} />
+                    <div className="flex-1 p-4 flex flex-col justify-between">
+                      {wyg ? (
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Best Streak</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-display text-3xl text-yellow-400">{wyg.bestStreak}</span>
+                              <span className="text-[10px] text-white/30">in a row</span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">GOAT IQ</p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-white/8 rounded-full overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: `${Math.min(goatIq, 100)}%`, background: "linear-gradient(90deg,#a855f7,#eab308)" }} />
+                              </div>
+                              <span className="text-[11px] font-black text-white">{Math.min(goatIq, 100)}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Games Played</p>
+                            <span className="font-display text-3xl text-white/80">{wyg.gamesPlayed}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col justify-center h-full gap-1">
+                          <p className="text-sm text-white/30 italic">No games yet</p>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">Play Now →</span>
+                        </div>
+                      )}
+                      {wyg && (
+                        <div className="mt-2 self-end text-[10px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">Play →</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })()}
+
+          {/* ── SHOT CLOCK ────────────────────────────────────────────── */}
+          {(() => {
+            const sc = arcadeStats?.shotClock ?? null;
+            return (
+              <Link href="/shot-clock">
+                <div
+                  className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
+                  style={{ background: "linear-gradient(135deg, #1a0808 0%, #2a1010 100%)" }}
                 >
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Shot Clock</p>
-                  <p className="font-display text-2xl text-primary">{arcadeStats.shotClock.bestScore}</p>
-                  <p className="text-xs text-muted-foreground">Best Score</p>
-                  <p className="text-xs text-foreground/70">{arcadeStats.shotClock.gamesPlayed} games · {arcadeStats.shotClock.bestStreak} streak</p>
-                  <p className="text-[10px] text-primary/60 font-bold">Tap for full stats →</p>
-                </button>
-              )}
-            </div>
-          )}
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.15) 0%, transparent 60%)" }} />
+                  <div className="flex items-center justify-between px-4 pt-4">
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontSize: 18 }}>⏱</span>
+                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Shot Clock</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-red-500/60" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>
+                      Pressure
+                    </span>
+                  </div>
+                  {sc ? (
+                    <>
+                      <div className="flex items-center gap-4 px-4 py-3">
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">High Score</p>
+                          <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#ef4444" }}>{sc.bestScore}</p>
+                        </div>
+                        <div className="flex-1 flex justify-end items-center pr-2">
+                          <div className="relative w-16 h-16">
+                            <div className="absolute inset-0 rounded-full border-2 border-red-800/50" />
+                            <div className="absolute inset-1 rounded-full border-2 border-red-600/40" style={{ animation: "ping 1.8s cubic-bezier(0,0,0.2,1) infinite" }} />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="font-display text-xl text-red-500">{sc.bestStreak}</span>
+                            </div>
+                            <p className="absolute -bottom-4 left-0 right-0 text-center text-[8px] uppercase tracking-wider text-white/30">streak</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex border-t border-white/8" style={{ background: "rgba(0,0,0,0.35)" }}>
+                        {[
+                          { label: "Best Streak", val: sc.bestStreak, highlight: true },
+                          { label: "Games Played", val: sc.gamesPlayed, highlight: false },
+                        ].map((s, i) => (
+                          <div key={s.label} className={`flex-1 py-3 text-center ${i < 1 ? "border-r border-white/8" : ""}`}>
+                            <p className={`font-black text-xl leading-none ${s.highlight ? "text-red-400" : "text-white"}`}>{s.val}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">{s.label}</p>
+                          </div>
+                        ))}
+                        <div className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors border-l border-white/8">Play →</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="px-4 pb-4 flex items-center justify-between">
+                      <p className="text-sm text-white/30 italic">No games yet</p>
+                      <span className="text-[11px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors">Play Now →</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })()}
         </div>
       )}
 
