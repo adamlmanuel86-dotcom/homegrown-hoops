@@ -670,3 +670,70 @@
   transition: opacity 0.15s;
 }
 .hgh-tracker .modal-save:active { opacity: 0.85; }
+
+/* ── Add buttons row ───────────────────────────────────────────────── */
+.hgh-tracker .add-btns {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.hgh-tracker .add-btns .add-btn { flex: 1; margin-top: 0; }
+.hgh-tracker .guest-btn {
+  border-color: #f97316; color: #f97316;
+}
+.hgh-tracker .guest-btn:active { border-color: var(--orange); }
+
+/* ── Guest player row ──────────────────────────────────────────────── */
+.hgh-tracker .guest-row .jersey-wrap {
+  border-color: #f97316; opacity: 0.8;
+}
+.hgh-tracker .guest-name-cell {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1.5px solid #f97316;
+  border-radius: 12px; padding: 11px 14px; overflow: hidden;
+}
+.hgh-tracker .guest-name {
+  flex: 1; font-size: 14px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hgh-tracker .guest-badge {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+  color: #f97316; border: 1.5px solid #f97316;
+  border-radius: 4px; padding: 1px 5px; flex-shrink: 0;
+}
+
+/* ── Guest search modal ────────────────────────────────────────────── */
+.hgh-tracker .guest-search-modal {
+  max-height: 85vh; display: flex; flex-direction: column;
+}
+.hgh-tracker .guest-search-body {
+  flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 10px;
+  padding: 0 20px 20px;
+}
+.hgh-tracker .guest-search-input {
+  width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text); font-size: 15px;
+  padding: 12px 16px; outline: none; box-sizing: border-box;
+}
+.hgh-tracker .guest-search-input:focus { border-color: #f97316; }
+.hgh-tracker .guest-search-hint {
+  font-size: 11px; color: var(--muted); line-height: 1.4;
+}
+.hgh-tracker .guest-search-results {
+  flex: 1; overflow-y: auto;
+  border: 1.5px solid var(--border); border-radius: 12px;
+}
+.hgh-tracker .guest-result {
+  padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.hgh-tracker .guest-result:last-child { border-bottom: none; }
+.hgh-tracker .guest-result:hover { background: rgba(249,115,22,0.08); }
+.hgh-tracker .guest-result-name {
+  font-size: 14px; font-weight: 600; color: var(--text);
+}
+.hgh-tracker .guest-result-num { color: #f97316; font-weight: 700; }
+.hgh-tracker .guest-result-meta {
+  font-size: 12px; color: var(--muted); margin-top: 2px;
+}
+.hgh-tracker .guest-no-results {
+  padding: 24px 16px; text-align: center; color: var(--muted); font-size: 14px;
+}

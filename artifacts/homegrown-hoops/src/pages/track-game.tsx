@@ -17,6 +17,7 @@ interface SetupPlayer {
   jerseyNum: string;
   pos: string;
   playerId: number | null;
+  isGuest?: boolean;
 }
 
 interface TrackerPlayer {
@@ -135,6 +136,10 @@ export function TrackGamePage() {
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editVals, setEditVals] = useState<Record<string, number>>({});
 
+  // Guest search state
+  const [guestSearchTeam, setGuestSearchTeam] = useState<"home" | "away" | null>(null);
+  const [guestSearchQuery, setGuestSearchQuery] = useState("");
+
   // Toast state
   const [toastMsg, setToastMsg] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
@@ -202,6 +207,45 @@ export function TrackGamePage() {
     if (team === "home") setHomeSetupPlayers((p) => p.filter((x) => x.uid !== id));
     else setAwaySetupPlayers((p) => p.filter((x) => x.uid !== id));
   }
+
+  function openGuestSearch(team: "home" | "away") {
+    setGuestSearchQuery("");
+    setGuestSearchTeam(team);
+  }
+
+  function closeGuestSearch() {
+    setGuestSearchTeam(null);
+    setGuestSearchQuery("");
+  }
+
+  function addGuestPlayer(team: "home" | "away", player: NonNullable<typeof allPlayers>[number]) {
+    const sp: SetupPlayer = {
+      uid: uid(),
+      name: `${player.firstName} ${player.lastName}`.trim(),
+      jerseyNum: player.number ?? "",
+      pos: player.position ?? "PG",
+      playerId: player.id,
+      isGuest: true,
+    };
+    if (team === "home") setHomeSetupPlayers((p) => [...p, sp]);
+    else setAwaySetupPlayers((p) => [...p, sp]);
+    closeGuestSearch();
+    showToast("Guest player added ✓");
+  }
+
+  const guestSearchRosterIds = new Set(
+    (guestSearchTeam === "home" ? homeSetupPlayers : awaySetupPlayers)
+      .map((p) => p.playerId)
+      .filter((id): id is number => id !== null)
+  );
+
+  const filteredGuestPlayers = (allPlayers ?? []).filter((p) => {
+    if (p.firstName.startsWith("#") && !p.lastName) return false;
+    if (guestSearchRosterIds.has(p.id)) return false;
+    if (!guestSearchQuery.trim()) return true;
+    const q = guestSearchQuery.toLowerCase();
+    return `${p.firstName} ${p.lastName}`.toLowerCase().includes(q);
+  });
 
   // ── Start game
   function startGame() {
@@ -527,7 +571,7 @@ export function TrackGamePage() {
               <span className="section-label">Home Roster</span>
             </div>
             {homeSetupPlayers.map((sp) => (
-              <div key={sp.uid} className="player-row">
+              <div key={sp.uid} className={`player-row${sp.isGuest ? " guest-row" : ""}`}>
                 <div className="jersey-wrap">
                   <span className="jersey-hash">#</span>
                   <input
@@ -535,16 +579,24 @@ export function TrackGamePage() {
                     className="jersey-num"
                     placeholder="—"
                     maxLength={3}
+                    readOnly={sp.isGuest}
                     value={sp.jerseyNum}
-                    onChange={(e) => updateSetupPlayer("home", sp.uid, "jerseyNum", e.target.value.replace(/\D/g, ""))}
+                    onChange={sp.isGuest ? undefined : (e) => updateSetupPlayer("home", sp.uid, "jerseyNum", e.target.value.replace(/\D/g, ""))}
                   />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Player name (optional)"
-                  value={sp.name}
-                  onChange={(e) => updateSetupPlayer("home", sp.uid, "name", e.target.value)}
-                />
+                {sp.isGuest ? (
+                  <div className="guest-name-cell">
+                    <span className="guest-name">{sp.name}</span>
+                    <span className="guest-badge">GUEST</span>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="Player name (optional)"
+                    value={sp.name}
+                    onChange={(e) => updateSetupPlayer("home", sp.uid, "name", e.target.value)}
+                  />
+                )}
                 <select
                   className="pos-select"
                   value={sp.pos}
@@ -555,7 +607,10 @@ export function TrackGamePage() {
                 <button className="remove-btn" onClick={() => removeSetupPlayer("home", sp.uid)}>×</button>
               </div>
             ))}
-            <button className="add-btn" onClick={() => addSetupPlayer("home")}>+ Add Player</button>
+            <div className="add-btns">
+              <button className="add-btn" onClick={() => addSetupPlayer("home")}>+ By # Only</button>
+              <button className="add-btn guest-btn" onClick={() => openGuestSearch("home")}>⊕ Guest Player</button>
+            </div>
           </div>
 
           {/* Away roster (both mode) */}
@@ -565,7 +620,7 @@ export function TrackGamePage() {
                 <span className="section-label away">Away Roster</span>
               </div>
               {awaySetupPlayers.map((sp) => (
-                <div key={sp.uid} className="player-row">
+                <div key={sp.uid} className={`player-row${sp.isGuest ? " guest-row" : ""}`}>
                   <div className="jersey-wrap">
                     <span className="jersey-hash">#</span>
                     <input
@@ -573,16 +628,24 @@ export function TrackGamePage() {
                       className="jersey-num"
                       placeholder="—"
                       maxLength={3}
+                      readOnly={sp.isGuest}
                       value={sp.jerseyNum}
-                      onChange={(e) => updateSetupPlayer("away", sp.uid, "jerseyNum", e.target.value.replace(/\D/g, ""))}
+                      onChange={sp.isGuest ? undefined : (e) => updateSetupPlayer("away", sp.uid, "jerseyNum", e.target.value.replace(/\D/g, ""))}
                     />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Player name (optional)"
-                    value={sp.name}
-                    onChange={(e) => updateSetupPlayer("away", sp.uid, "name", e.target.value)}
-                  />
+                  {sp.isGuest ? (
+                    <div className="guest-name-cell">
+                      <span className="guest-name">{sp.name}</span>
+                      <span className="guest-badge">GUEST</span>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Player name (optional)"
+                      value={sp.name}
+                      onChange={(e) => updateSetupPlayer("away", sp.uid, "name", e.target.value)}
+                    />
+                  )}
                   <select
                     className="pos-select"
                     value={sp.pos}
@@ -593,7 +656,10 @@ export function TrackGamePage() {
                   <button className="remove-btn" onClick={() => removeSetupPlayer("away", sp.uid)}>×</button>
                 </div>
               ))}
-              <button className="add-btn" onClick={() => addSetupPlayer("away")}>+ Add Player</button>
+              <div className="add-btns">
+                <button className="add-btn" onClick={() => addSetupPlayer("away")}>+ By # Only</button>
+                <button className="add-btn guest-btn" onClick={() => openGuestSearch("away")}>⊕ Guest Player</button>
+              </div>
             </div>
           )}
 
@@ -930,6 +996,64 @@ export function TrackGamePage() {
 
             <div className="modal-footer">
               <button className="modal-save" onClick={saveEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ GUEST SEARCH MODAL ══════════════════════ */}
+      {guestSearchTeam !== null && (
+        <div
+          className="modal-overlay open"
+          onClick={(e) => { if (e.target === e.currentTarget) closeGuestSearch(); }}
+        >
+          <div className="modal guest-search-modal">
+            <div className="modal-handle" />
+            <div className="modal-header">
+              <div className="modal-title">
+                Add Guest — <span className="modal-player-name">
+                  {guestSearchTeam === "home" ? homeTeamName : awayTeamName}
+                </span>
+              </div>
+              <button className="modal-close" onClick={closeGuestSearch}>✕</button>
+            </div>
+            <div className="guest-search-body">
+              <input
+                type="text"
+                className="guest-search-input"
+                placeholder="Search by name…"
+                value={guestSearchQuery}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                onChange={(e) => setGuestSearchQuery(e.target.value)}
+              />
+              <div className="guest-search-hint">
+                Guest stats count toward their main profile Legacy Score &amp; recognition.
+              </div>
+              <div className="guest-search-results">
+                {filteredGuestPlayers.length === 0 ? (
+                  <div className="guest-no-results">
+                    {guestSearchQuery.trim() ? "No players found" : "Start typing to search…"}
+                  </div>
+                ) : (
+                  filteredGuestPlayers.map((p) => (
+                    <div
+                      key={p.id}
+                      className="guest-result"
+                      onClick={() => addGuestPlayer(guestSearchTeam, p)}
+                    >
+                      <div className="guest-result-name">
+                        {p.firstName} {p.lastName}
+                        {p.number ? <span className="guest-result-num"> #{p.number}</span> : null}
+                      </div>
+                      <div className="guest-result-meta">
+                        {teams?.find((t) => t.id === p.teamId)?.name ?? "Free Agent"}
+                        {p.position ? ` · ${p.position}` : ""}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
