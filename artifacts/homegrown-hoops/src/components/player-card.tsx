@@ -1,4 +1,6 @@
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
+import { renderAvatarToCanvas } from "@/lib/avatarCanvas";
+import type { AvatarConfig } from "@/lib/avatarCanvas";
 import html2canvas from "html2canvas";
 import {
   Share2, Loader2, User, Compass, Anchor, Wind, Zap, Target, Mountain, Flame, X,
@@ -67,6 +69,7 @@ export type CardProfile = {
   school?: string | null;
   archetype?: string | null;
   avatarUrl?: string | null;
+  avatarConfig?: AvatarConfig | null;
   stamps?: { id: string; earnedAt: string }[] | null;
   tides?: { id: string; earnedAt: string }[] | null;
   milestones?: { id: string; earnedAt: string }[] | null;
@@ -578,6 +581,23 @@ function CardBack({
   );
 }
 
+function AvatarThumb({ config }: { config: AvatarConfig }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    renderAvatarToCanvas(canvas, config, { scale: 2 });
+  }, [config]);
+  return (
+    <canvas
+      ref={canvasRef}
+      width={88}
+      height={128}
+      style={{ height: "90px", width: "auto", display: "block" }}
+    />
+  );
+}
+
 export function PlayerCard({
   profile,
   stats,
@@ -894,6 +914,8 @@ export function PlayerCard({
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                         crossOrigin="anonymous"
                       />
+                    ) : profile.avatarConfig ? (
+                      <AvatarThumb config={profile.avatarConfig} />
                     ) : (
                       <User style={{ width: 40, height: 40, color: "hsl(220,20%,28%)" }} />
                     )}
