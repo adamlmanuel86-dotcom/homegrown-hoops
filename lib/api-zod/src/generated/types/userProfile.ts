@@ -46,4 +46,11 @@ export interface UserProfile {
   archetypeHistory?: ArchetypeHistoryEntry[] | null;
   createdAt: string;
   updatedAt: string;
+  /** True when account is awaiting admin approval (parent/manager signups) */
+  isPending: boolean;
+  /**
+   * Role requested at signup: 'parent' or 'manager'
+   * @nullable
+   */
+  requestedRole?: string | null;
 }

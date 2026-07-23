@@ -314,6 +314,7 @@ export const UserRole = {
   manager: "manager",
   coach: "coach",
   player: "player",
+  parent: "parent",
 } as const;
 
 export interface RecognitionEntry {
@@ -446,6 +447,13 @@ export interface UserProfile {
   archetypeHistory?: ArchetypeHistoryEntry[] | null;
   createdAt: string;
   updatedAt: string;
+  /** True when account is awaiting admin approval (parent/manager signups) */
+  isPending: boolean;
+  /**
+   * Role requested at signup: 'parent' or 'manager'
+   * @nullable
+   */
+  requestedRole?: string | null;
 }
 
 export interface UpdateUserRoleBody {
@@ -462,6 +470,16 @@ export interface AdminUserListItem {
   createdAt: string;
 }
 
+export interface PendingAccountItem {
+  id: number;
+  clerkUserId: string;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  requestedRole?: string | null;
+  createdAt: string;
+}
+
 export interface CreateUserProfileBody {
   firstName: string;
   lastName: string;
@@ -475,6 +493,11 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /**
+   * Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true.
+   * @nullable
+   */
+  requestedRole?: string | null;
 }
 
 export interface UpdateUserProfileBody {

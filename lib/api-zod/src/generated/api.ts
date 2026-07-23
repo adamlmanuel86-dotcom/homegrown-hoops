@@ -603,7 +603,7 @@ export const ListAdminUsersResponseItem = zod.object({
   clerkUserId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
@@ -617,7 +617,7 @@ export const UpdateUserRoleParams = zod.object({
 });
 
 export const UpdateUserRoleBody = zod.object({
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
 });
 
 export const UpdateUserRoleResponse = zod.object({
@@ -625,7 +625,7 @@ export const UpdateUserRoleResponse = zod.object({
   clerkUserId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
@@ -674,7 +674,7 @@ export const ClaimJerseyNumberResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -760,6 +760,62 @@ export const ClaimJerseyNumberResponse = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
+});
+
+/**
+ * @summary List accounts awaiting approval (parent/manager signups)
+ */
+export const ListPendingAccountsResponseItem = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  requestedRole: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const ListPendingAccountsResponse = zod.array(
+  ListPendingAccountsResponseItem,
+);
+
+/**
+ * @summary Approve a pending account (sets role to requestedRole, clears isPending)
+ */
+export const ApprovePendingAccountParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const ApprovePendingAccountResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  requestedRole: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Reject a pending account (clears isPending, keeps as player)
+ */
+export const RejectPendingAccountParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const RejectPendingAccountResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  requestedRole: zod.string().nullish(),
+  createdAt: zod.string(),
 });
 
 /**
@@ -928,7 +984,7 @@ export const ListProfilesResponseItem = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1014,6 +1070,15 @@ export const ListProfilesResponseItem = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
 });
 export const ListProfilesResponse = zod.array(ListProfilesResponseItem);
 
@@ -1032,7 +1097,7 @@ export const GetMyProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1118,6 +1183,15 @@ export const GetMyProfileResponse = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
 });
 
 /**
@@ -1131,6 +1205,12 @@ export const CreateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe(
+      "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true.",
+    ),
 });
 
 /**
@@ -1158,7 +1238,7 @@ export const UpdateMyProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1244,6 +1324,15 @@ export const UpdateMyProfileResponse = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
 });
 
 /**
@@ -1265,7 +1354,7 @@ export const GetProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1351,6 +1440,15 @@ export const GetProfileResponse = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
 });
 
 /**
@@ -1377,7 +1475,7 @@ export const UpdateProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1463,6 +1561,15 @@ export const UpdateProfileResponse = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
 });
 
 /**
@@ -1579,7 +1686,7 @@ export const SaveAvatarConfigResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "manager", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player", "parent"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1665,6 +1772,15 @@ export const SaveAvatarConfigResponse = zod.object({
     .describe("Per-season archetype history, archived at season end."),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+  isPending: zod
+    .boolean()
+    .describe(
+      "True when account is awaiting admin approval (parent\/manager signups)",
+    ),
+  requestedRole: zod
+    .string()
+    .nullish()
+    .describe("Role requested at signup: 'parent' or 'manager'"),
 });
 
 /**

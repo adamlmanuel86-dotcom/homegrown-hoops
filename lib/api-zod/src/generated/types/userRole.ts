@@ -13,4 +13,5 @@ export const UserRole = {
   manager: "manager",
   coach: "coach",
   player: "player",
+  parent: "parent",
 } as const;

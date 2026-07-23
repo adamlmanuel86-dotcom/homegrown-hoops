@@ -142,7 +142,8 @@ export function TrackGamePage() {
     isSignedIn &&
     (myProfile?.role === "admin" ||
       myProfile?.role === "manager" ||
-      myProfile?.role === "coach");
+      myProfile?.role === "coach") &&
+    !myProfile?.isPending;
 
   // ── Pre-populate rosters from DB when team changes
   useEffect(() => {

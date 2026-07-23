@@ -19,4 +19,9 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /**
+   * Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true.
+   * @nullable
+   */
+  requestedRole?: string | null;
 }

@@ -15,9 +15,12 @@ import {
   useListGames,
   useListJerseyStubs,
   useClaimJerseyNumber,
+  useListPendingAccounts,
+  useApprovePendingAccount,
+  useRejectPendingAccount,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain, Hash } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain, Hash, Clock } from "lucide-react";
 import { TIDES } from "@/components/recognition";
 
 import { apiBase } from "@/lib/api";
@@ -284,6 +287,11 @@ export function AdminPage() {
   const [claimJerseyForm, setClaimJerseyForm] = useState<{ jerseyNumber: string; teamId: string; season: string }>({ jerseyNumber: "", teamId: "", season: "" });
   const [claimJerseyError, setClaimJerseyError] = useState<string | null>(null);
   const { data: jerseyStubs } = useListJerseyStubs();
+  const { data: pendingAccounts, refetch: refetchPending } = useListPendingAccounts({
+    query: { enabled: isAdmin === true },
+  });
+  const approvePending = useApprovePendingAccount();
+  const rejectPending = useRejectPendingAccount();
   const claimJersey = useClaimJerseyNumber({
     mutation: {
       onSuccess: () => {
@@ -534,6 +542,62 @@ export function AdminPage() {
         <h1 className="font-display text-4xl md:text-5xl text-secondary">ADMIN PANEL</h1>
         <p className="text-muted-foreground mt-2">Manage teams, users, and league settings.</p>
       </div>
+
+      {/* Pending Accounts Queue */}
+      {pendingAccounts && pendingAccounts.length > 0 && (
+        <div className="card-base overflow-hidden border-2 border-yellow-500">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-yellow-500/10">
+            <Clock className="h-5 w-5 text-yellow-500" />
+            <h2 className="font-bold text-secondary">Pending Accounts</h2>
+            <span className="ml-auto text-xs font-bold bg-yellow-500 text-black px-2 py-0.5 rounded-full">
+              {pendingAccounts.length}
+            </span>
+          </div>
+          <div className="divide-y divide-border">
+            {pendingAccounts.map((account) => (
+              <div key={account.clerkUserId} className="flex items-center gap-4 px-6 py-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-secondary truncate">
+                    {account.firstName} {account.lastName}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Requested:{" "}
+                    <span className="font-semibold text-yellow-600 capitalize">
+                      {account.requestedRole ?? "unknown"}
+                    </span>
+                    {" · "}
+                    {new Date(account.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={async () => {
+                      await approvePending.mutateAsync({ clerkUserId: account.clerkUserId });
+                      void refetchPending();
+                    }}
+                    disabled={approvePending.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600/15 border border-green-600/40 text-green-400 hover:bg-green-600/25 transition-colors"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Approve
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await rejectPending.mutateAsync({ clerkUserId: account.clerkUserId });
+                      void refetchPending();
+                    }}
+                    disabled={rejectPending.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600/15 border border-red-600/40 text-red-400 hover:bg-red-600/25 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick Links */}
       <div className="card-base overflow-hidden">

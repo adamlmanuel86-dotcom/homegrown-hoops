@@ -13,6 +13,7 @@ import isoBallRouter from "./iso-ball";
 import arcadeRouter from "./arcade";
 import trackGameRouter from "./trackGame";
 import jerseyStubsRouter from "./jerseyStubs";
+import pendingAccountsRouter from "./pendingAccounts";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(isoBallRouter);
 router.use(arcadeRouter);
 router.use(trackGameRouter);
 router.use(jerseyStubsRouter);
+router.use(pendingAccountsRouter);
 
 export default router;

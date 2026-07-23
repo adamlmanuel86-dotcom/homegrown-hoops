@@ -519,6 +519,75 @@ paths:
         "404":
           description: User or stub not found
 
+  /admin/pending-accounts:
+    get:
+      operationId: listPendingAccounts
+      tags: [admin]
+      summary: List accounts awaiting approval (parent/manager signups)
+      responses:
+        "200":
+          description: List of pending accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingAccountItem"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/pending-accounts/{clerkUserId}/approve:
+    post:
+      operationId: approvePendingAccount
+      tags: [admin]
+      summary: Approve a pending account (sets role to requestedRole, clears isPending)
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingAccountItem"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Account not found
+
+  /admin/pending-accounts/{clerkUserId}/reject:
+    post:
+      operationId: rejectPendingAccount
+      tags: [admin]
+      summary: Reject a pending account (clears isPending, keeps as player)
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingAccountItem"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Account not found
+
   /track-game/submit:
     post:
       operationId: submitTrackGame
@@ -1494,7 +1563,7 @@ components:
 
     UserRole:
       type: string
-      enum: [admin, manager, coach, player]
+      enum: [admin, manager, coach, player, parent]
 
     ExternalLink:
       type: object
@@ -1595,6 +1664,12 @@ components:
           type: string
         updatedAt:
           type: string
+        isPending:
+          type: boolean
+          description: "True when account is awaiting admin approval (parent/manager signups)"
+        requestedRole:
+          type: ["string", "null"]
+          description: "Role requested at signup: 'parent' or 'manager'"
       required:
         - id
         - clerkUserId
@@ -1603,6 +1678,7 @@ components:
         - verified
         - isAdmin
         - role
+        - isPending
         - stamps
         - tides
         - milestones
@@ -1643,6 +1719,28 @@ components:
         - isAdmin
         - createdAt
 
+    PendingAccountItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        requestedRole:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - clerkUserId
+        - firstName
+        - lastName
+        - createdAt
+
     CreateUserProfileBody:
       type: object
       properties:
@@ -1660,6 +1758,9 @@ components:
           type: ["string", "null"]
         teamId:
           type: ["integer", "null"]
+        requestedRole:
+          type: ["string", "null"]
+          description: "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true."
       required:
         - firstName
         - lastName

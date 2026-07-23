@@ -40,6 +40,7 @@ export * from "./jerseyStub";
 export * from "./listGamesParams";
 export * from "./listPlayersParams";
 export * from "./myArcadeStats";
+export * from "./pendingAccountItem";
 export * from "./pendingGamePlayerStat";
 export * from "./pendingGameReview";
 export * from "./player";

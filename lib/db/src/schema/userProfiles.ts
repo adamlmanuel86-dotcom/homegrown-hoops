@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb } from 
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const USER_ROLES = ["admin", "manager", "coach", "player"] as const;
+export const USER_ROLES = ["admin", "manager", "coach", "player", "parent"] as const;
 export type UserRole = typeof USER_ROLES[number];
 
 export type AvatarConfig = {
@@ -48,6 +48,8 @@ export const userProfilesTable = pgTable("user_profiles", {
   number: text("number"),
   isAdmin: boolean("is_admin").notNull().default(false),
   role: text("role").notNull().default("player"),
+  isPending: boolean("is_pending").notNull().default(false),
+  requestedRole: text("requested_role"),
   stamps: json("stamps").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),
   tides: json("tides").$type<TideEntry[]>().notNull().default([]),
   milestones: json("milestones").$type<{ id: string; earnedAt: string }[]>().notNull().default([]),

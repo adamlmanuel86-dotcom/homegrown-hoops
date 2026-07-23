@@ -36,6 +36,7 @@ import type {
   ListGamesParams,
   ListPlayersParams,
   MyArcadeStats,
+  PendingAccountItem,
   PendingGameReview,
   Player,
   PlayerStats,
@@ -2060,6 +2061,255 @@ export const useClaimJerseyNumber = <
   TContext
 > => {
   return useMutation(getClaimJerseyNumberMutationOptions(options));
+};
+
+/**
+ * @summary List accounts awaiting approval (parent/manager signups)
+ */
+export const getListPendingAccountsUrl = () => {
+  return `/api/admin/pending-accounts`;
+};
+
+export const listPendingAccounts = async (
+  options?: RequestInit,
+): Promise<PendingAccountItem[]> => {
+  return customFetch<PendingAccountItem[]>(getListPendingAccountsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPendingAccountsQueryKey = () => {
+  return [`/api/admin/pending-accounts`] as const;
+};
+
+export const getListPendingAccountsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPendingAccounts>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingAccounts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPendingAccountsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPendingAccounts>>
+  > = ({ signal }) => listPendingAccounts({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingAccounts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPendingAccountsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPendingAccounts>>
+>;
+export type ListPendingAccountsQueryError = ErrorType<void>;
+
+/**
+ * @summary List accounts awaiting approval (parent/manager signups)
+ */
+
+export function useListPendingAccounts<
+  TData = Awaited<ReturnType<typeof listPendingAccounts>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingAccounts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPendingAccountsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve a pending account (sets role to requestedRole, clears isPending)
+ */
+export const getApprovePendingAccountUrl = (clerkUserId: string) => {
+  return `/api/admin/pending-accounts/${clerkUserId}/approve`;
+};
+
+export const approvePendingAccount = async (
+  clerkUserId: string,
+  options?: RequestInit,
+): Promise<PendingAccountItem> => {
+  return customFetch<PendingAccountItem>(
+    getApprovePendingAccountUrl(clerkUserId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getApprovePendingAccountMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approvePendingAccount>>,
+    TError,
+    { clerkUserId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approvePendingAccount>>,
+  TError,
+  { clerkUserId: string },
+  TContext
+> => {
+  const mutationKey = ["approvePendingAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approvePendingAccount>>,
+    { clerkUserId: string }
+  > = (props) => {
+    const { clerkUserId } = props ?? {};
+
+    return approvePendingAccount(clerkUserId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApprovePendingAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approvePendingAccount>>
+>;
+
+export type ApprovePendingAccountMutationError = ErrorType<void>;
+
+/**
+ * @summary Approve a pending account (sets role to requestedRole, clears isPending)
+ */
+export const useApprovePendingAccount = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approvePendingAccount>>,
+    TError,
+    { clerkUserId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approvePendingAccount>>,
+  TError,
+  { clerkUserId: string },
+  TContext
+> => {
+  return useMutation(getApprovePendingAccountMutationOptions(options));
+};
+
+/**
+ * @summary Reject a pending account (clears isPending, keeps as player)
+ */
+export const getRejectPendingAccountUrl = (clerkUserId: string) => {
+  return `/api/admin/pending-accounts/${clerkUserId}/reject`;
+};
+
+export const rejectPendingAccount = async (
+  clerkUserId: string,
+  options?: RequestInit,
+): Promise<PendingAccountItem> => {
+  return customFetch<PendingAccountItem>(
+    getRejectPendingAccountUrl(clerkUserId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getRejectPendingAccountMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectPendingAccount>>,
+    TError,
+    { clerkUserId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rejectPendingAccount>>,
+  TError,
+  { clerkUserId: string },
+  TContext
+> => {
+  const mutationKey = ["rejectPendingAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rejectPendingAccount>>,
+    { clerkUserId: string }
+  > = (props) => {
+    const { clerkUserId } = props ?? {};
+
+    return rejectPendingAccount(clerkUserId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectPendingAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rejectPendingAccount>>
+>;
+
+export type RejectPendingAccountMutationError = ErrorType<void>;
+
+/**
+ * @summary Reject a pending account (clears isPending, keeps as player)
+ */
+export const useRejectPendingAccount = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectPendingAccount>>,
+    TError,
+    { clerkUserId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rejectPendingAccount>>,
+  TError,
+  { clerkUserId: string },
+  TContext
+> => {
+  return useMutation(getRejectPendingAccountMutationOptions(options));
 };
 
 /**

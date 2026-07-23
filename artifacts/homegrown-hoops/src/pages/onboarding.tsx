@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import {
@@ -7,7 +7,7 @@ import {
   useListTeams,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ChevronRight, Camera, Compass, X, Upload, Gamepad2 } from "lucide-react";
+import { ArrowRight, ChevronRight, Camera, Compass, X, Upload, Gamepad2, Users, ClipboardList, Clock } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { Walkthrough } from "@/components/walkthrough";
@@ -17,6 +17,7 @@ const GRAD_YEARS = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() 
 
 type Step =
   | "welcome"
+  | "accountType"
   | "name"
   | "school"
   | "position"
@@ -25,6 +26,7 @@ type Step =
   | "photo"
   | "submitting"
   | "reveal"
+  | "pendingReveal"
   | "walkthrough";
 
 const PROFILE_STEPS: Step[] = ["name", "school", "position", "number", "year", "photo"];
@@ -67,6 +69,7 @@ export function OnboardingPage() {
     jerseyNumber: "",
     graduationYear: "",
     avatarUrl: "",
+    accountType: "" as "" | "player" | "parent" | "manager",
   });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -206,6 +209,32 @@ export function OnboardingPage() {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
       console.log("[HH] advanceFromPhoto done, isSubmitting reset to false");
+    }
+  }
+
+  async function handlePendingSubmit() {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setJustCreated(true);
+    try {
+      await createProfile.mutateAsync({
+        data: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          requestedRole: form.accountType as "parent" | "manager",
+        },
+      });
+      await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      setStep("pendingReveal");
+    } catch (err) {
+      console.log("[HH] handlePendingSubmit error:", err);
+      setSubmitError("Something went wrong. Please try again.");
+      setStep("name");
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   }
 
@@ -809,11 +838,11 @@ export function OnboardingPage() {
           </p>
 
           <button
-            onClick={() => setStep("name")}
+            onClick={() => setStep("accountType")}
             className="btn-primary text-base px-8 py-3.5 mt-2"
             style={{ animation: "fadeUp 0.8s ease 1s both" }}
           >
-            Build My Profile <ArrowRight className="h-5 w-5" />
+            Get Started <ArrowRight className="h-5 w-5" />
           </button>
         </div>
 
@@ -823,6 +852,180 @@ export function OnboardingPage() {
             50%  { transform: scale(1.05); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
           }
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
+  // ACCOUNT TYPE SELECTION
+  // ──────────────────────────────────────────────────
+  if (step === "accountType") {
+    const options: { id: "player" | "parent" | "manager"; icon: React.ReactNode; label: string; sub: string }[] = [
+      {
+        id: "player",
+        icon: <span style={{ fontSize: 28 }}>🏀</span>,
+        label: "Player",
+        sub: "I play in the league — track my stats and build my legacy",
+      },
+      {
+        id: "parent",
+        icon: <Users style={{ width: 26, height: 26, color: "#F97316" }} />,
+        label: "Parent",
+        sub: "I support a player — follow their journey and stats",
+      },
+      {
+        id: "manager",
+        icon: <ClipboardList style={{ width: 26, height: 26, color: "#F97316" }} />,
+        label: "Manager / Coach",
+        sub: "I manage or coach a team — I'll track games and submit stats",
+      },
+    ];
+
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col items-center justify-center px-6"
+        style={{ background: "radial-gradient(ellipse at 50% 60%, hsl(22 78% 16% / 0.4), hsl(222 42% 5%) 70%)" }}
+      >
+        <div className="w-full max-w-sm" style={{ animation: "fadeUp 0.5s ease both" }}>
+          <p className="label-upper text-xs text-primary mb-2">Who are you?</p>
+          <h2 className="font-display text-4xl text-white leading-tight mb-8">
+            SELECT YOUR<br />ACCOUNT TYPE
+          </h2>
+
+          <div className="space-y-3">
+            {options.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => {
+                  setForm((f) => ({ ...f, accountType: opt.id }));
+                  setStep("name");
+                }}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: "18px 20px",
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1.5px solid rgba(255,255,255,0.12)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <div style={{
+                  width: 48, height: 48, borderRadius: 12,
+                  background: "rgba(249,115,22,0.12)",
+                  border: "1px solid rgba(249,115,22,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  {opt.icon}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 3 }}>{opt.label}</p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>{opt.sub}</p>
+                </div>
+                <ArrowRight style={{ width: 16, height: 16, color: "rgba(249,115,22,0.6)", flexShrink: 0 }} />
+              </button>
+            ))}
+          </div>
+          {submitError && (
+            <p className="text-red-400 text-sm mt-4 text-center">{submitError}</p>
+          )}
+        </div>
+        <style>{`
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
+  // PENDING APPROVAL SCREEN
+  // ──────────────────────────────────────────────────
+  if (step === "pendingReveal") {
+    const isPendingManager = form.accountType === "manager";
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col items-center justify-center px-6"
+        style={{ background: "radial-gradient(ellipse at 50% 60%, hsl(22 78% 16% / 0.4), hsl(222 42% 5%) 70%)" }}
+      >
+        <div className="w-full max-w-sm flex flex-col items-center gap-6 text-center" style={{ animation: "fadeUp 0.8s ease both" }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 20,
+            background: "rgba(249,115,22,0.12)",
+            border: "1.5px solid rgba(249,115,22,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Clock style={{ width: 34, height: 34, color: "#F97316" }} />
+          </div>
+
+          <div>
+            <h2 className="font-display text-4xl text-white leading-tight mb-3">
+              YOU'RE ON<br />DECK
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 15, lineHeight: 1.6 }}>
+              Your {isPendingManager ? "Manager / Coach" : "Parent"} account is pending approval.
+              An admin will review your application and activate your access.
+            </p>
+          </div>
+
+          {isPendingManager && (
+            <div style={{
+              width: "100%",
+              padding: "14px 18px",
+              borderRadius: 12,
+              background: "rgba(249,115,22,0.06)",
+              border: "1px solid rgba(249,115,22,0.2)",
+              textAlign: "left",
+            }}>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                Once approved, you'll be able to track games and submit stats for any team.
+              </p>
+            </div>
+          )}
+
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13 }}>
+            You can sign back in at any time to check your status.
+          </p>
+
+          <button
+            onClick={enterLeague}
+            style={{
+              width: "100%",
+              padding: "15px 20px",
+              borderRadius: 14,
+              background: "linear-gradient(135deg, #F97316, #B45309)",
+              border: "none",
+              color: "#fff",
+              fontSize: 15,
+              fontWeight: 700,
+              letterSpacing: "0.03em",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            View the League <ArrowRight style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+        <style>{`
           @keyframes fadeUp {
             from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -885,12 +1088,23 @@ export function OnboardingPage() {
                   className="onboarding-input"
                 />
               </div>
+              {submitError && (
+                <p className="text-red-400 text-sm text-center">{submitError}</p>
+              )}
               <button
-                onClick={() => { if (form.firstName && form.lastName) setStep("school"); }}
-                disabled={!form.firstName || !form.lastName}
+                onClick={() => {
+                  if (!form.firstName || !form.lastName) return;
+                  if (form.accountType === "parent" || form.accountType === "manager") {
+                    void handlePendingSubmit();
+                  } else {
+                    setStep("school");
+                  }
+                }}
+                disabled={!form.firstName || !form.lastName || isSubmitting}
                 className="btn-primary w-full justify-center py-3.5 text-base"
               >
-                Next <ChevronRight className="h-5 w-5" />
+                {isSubmitting ? "Submitting…" : form.accountType === "parent" || form.accountType === "manager" ? "Request Access" : "Next"}
+                {!isSubmitting && <ChevronRight className="h-5 w-5" />}
               </button>
             </div>
           )}

@@ -200,12 +200,26 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
 
   const role = shouldBeAdmin ? "admin" : "player";
 
+  // Extract requestedRole before spreading into DB insert
+  const { requestedRole: reqRole, ...profileData } = parsed.data as typeof parsed.data & { requestedRole?: string | null };
+  const isPending = !shouldBeAdmin && (reqRole === "parent" || reqRole === "manager");
+
   const [profile] = await db
     .insert(userProfilesTable)
-    .values({ ...parsed.data, clerkUserId: userId, isAdmin: shouldBeAdmin, role })
+    .values({
+      ...profileData,
+      clerkUserId: userId,
+      isAdmin: shouldBeAdmin,
+      role,
+      isPending,
+      requestedRole: isPending ? (reqRole ?? null) : null,
+    })
     .returning();
 
-  await syncPlayerForTeamChange(null, null, null, profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
+  // Skip roster entry for pending accounts — they're not active players yet
+  if (!isPending) {
+    await syncPlayerForTeamChange(null, null, null, profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
+  }
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
 });
