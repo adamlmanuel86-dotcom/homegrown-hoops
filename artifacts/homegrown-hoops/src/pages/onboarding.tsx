@@ -11,6 +11,7 @@ import { ArrowRight, ChevronRight, Camera, Compass, X, Upload, Gamepad2, Users, 
 import { HomegrownHoopsLogo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { Walkthrough } from "@/components/walkthrough";
+import { AvatarCreator } from "@/components/AvatarCreator";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const GRAD_YEARS = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + i - 1);
@@ -25,6 +26,7 @@ type Step =
   | "year"
   | "photo"
   | "submitting"
+  | "avatar"
   | "reveal"
   | "pendingReveal"
   | "walkthrough";
@@ -199,8 +201,7 @@ export function OnboardingPage() {
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      setStep("reveal");
-      triggerReveal();
+      setStep("avatar");
     } catch (err) {
       console.log("[HH] advanceFromPhoto error:", err);
       setSubmitError("Something went wrong. Please try again.");
@@ -1031,6 +1032,92 @@ export function OnboardingPage() {
             to   { opacity: 1; transform: translateY(0); }
           }
         `}</style>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
+  // AVATAR STEP — profile already created, avatar is optional
+  // ──────────────────────────────────────────────────
+  if (step === "avatar") {
+    function goToReveal() {
+      triggerReveal();
+      setStep("reveal");
+    }
+
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(22 78% 12% / 0.3), hsl(222 42% 5%) 60%)" }}
+      >
+        {/* Header row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            padding: "28px 24px 16px",
+            gap: 12,
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "hsl(22, 78%, 52%)",
+                marginBottom: 6,
+              }}
+            >
+              Bonus Step · Optional
+            </p>
+            <h2
+              style={{
+                fontFamily: "'Anton', 'Barlow Condensed', Impact, sans-serif",
+                fontSize: "clamp(28px, 8vw, 36px)",
+                fontWeight: 900,
+                color: "#ffffff",
+                lineHeight: 1.05,
+                margin: 0,
+                textTransform: "uppercase",
+                letterSpacing: "0.02em",
+              }}
+            >
+              Design Your<br />Baller
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 6, fontWeight: 500 }}>
+              Your Arcade avatar. You can always change this later.
+            </p>
+          </div>
+          <button
+            onClick={goToReveal}
+            style={{
+              flexShrink: 0,
+              padding: "8px 16px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.15)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.5)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginTop: 4,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Skip →
+          </button>
+        </div>
+
+        {/* Avatar creator — scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 pb-8">
+          <AvatarCreator
+            initialConfig={null}
+            onSaved={goToReveal}
+          />
+        </div>
       </div>
     );
   }
