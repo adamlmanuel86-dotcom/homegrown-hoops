@@ -36,7 +36,7 @@ export function FastBreakPage() {
       if (e.data?.type === "GAME_OVER" && isSignedIn) {
         try {
           const token = await getToken();
-          await fetch(`${apiBase}/arcade/sessions`, {
+          await fetch(`${apiBase}/api/arcade/sessions`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
