@@ -1,9 +1,24 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const USER_ROLES = ["admin", "coach", "player"] as const;
 export type UserRole = typeof USER_ROLES[number];
+
+export type AvatarConfig = {
+  skin: number;
+  build: "standard" | "stocky" | "lanky";
+  hairStyle: "fade" | "curls" | "bald" | "long" | "afro" | "mohawk" | "flattop";
+  hairColor: number;
+  jersey: number;
+  jerseyStyle: "solid" | "pinstripe";
+  secondaryColor: number;
+  shorts: number;
+  accessories: { headband: boolean; wristbands: boolean; kneepads: boolean };
+  accessoryColor: number;
+  eyebrows: "none" | "angry" | "raised";
+  mouth: "neutral" | "smile" | "smirk" | "frown";
+};
 
 export type TideEntry = { id: string; earnedAt: string; season?: string };
 export type CareerStats = {
@@ -29,6 +44,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   teamId: integer("team_id"),
   verified: boolean("verified").notNull().default(false),
   avatarUrl: text("avatar_url"),
+  avatarConfig: jsonb("avatar_config").$type<AvatarConfig | null>().default(null),
   number: text("number"),
   isAdmin: boolean("is_admin").notNull().default(false),
   role: text("role").notNull().default("player"),

@@ -3,7 +3,7 @@ import { useUser, useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { useGetMyProfile, useCreateMyProfile, useUpdateMyProfile, useListTeams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X } from "lucide-react";
+import { User, Save, Pencil, CheckCircle, Mail, ShieldCheck, Camera, X, Gamepad2 } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { apiBase } from "@/lib/api";
 
@@ -333,9 +333,14 @@ export function MyProfilePage() {
                 <p className="text-muted-foreground text-sm leading-relaxed">{profile.bio}</p>
               </div>
             )}
-            <button onClick={startEditing} className="btn-primary mt-2">
-              <Pencil className="h-4 w-4" /> Edit Profile
-            </button>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <button onClick={startEditing} className="btn-primary">
+                <Pencil className="h-4 w-4" /> Edit Profile
+              </button>
+              <a href="/my-avatar" className="btn-secondary flex items-center gap-1.5">
+                <Gamepad2 className="h-4 w-4" /> Customize Avatar
+              </a>
+            </div>
           </div>
         </div>
       ) : (

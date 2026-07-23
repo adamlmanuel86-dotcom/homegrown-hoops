@@ -484,4 +484,26 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   res.status(204).send();
 });
 
+// PATCH /profiles/me/avatar-config — save the current user's avatar config
+router.patch("/profiles/me/avatar-config", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  const { avatarConfig } = req.body as { avatarConfig: unknown };
+  if (!avatarConfig || typeof avatarConfig !== "object") {
+    return res.status(400).json({ error: "avatarConfig is required" });
+  }
+
+  const [updated] = await db
+    .update(userProfilesTable)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .set({ avatarConfig: avatarConfig as any })
+    .where(eq(userProfilesTable.clerkUserId, userId))
+    .returning();
+
+  if (!updated) return res.status(404).json({ error: "Profile not found" });
+
+  return res.json(serializeRow(updated));
+});
+
 export default router;

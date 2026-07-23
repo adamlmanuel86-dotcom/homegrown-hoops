@@ -631,6 +631,34 @@ export const ListProfilesResponseItem = zod.object({
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    })
+    .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
@@ -704,6 +732,34 @@ export const GetMyProfileResponse = zod.object({
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    })
+    .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
@@ -799,6 +855,34 @@ export const UpdateMyProfileResponse = zod.object({
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    })
+    .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
@@ -875,6 +959,34 @@ export const GetProfileResponse = zod.object({
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    })
+    .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
@@ -956,6 +1068,34 @@ export const UpdateProfileResponse = zod.object({
   isAdmin: zod.boolean(),
   role: zod.enum(["admin", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    })
+    .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
   stamps: zod.array(
     zod.object({
@@ -1076,4 +1216,170 @@ export const AddGameVideoBody = zod.object({
 export const DeleteGameVideoParams = zod.object({
   id: zod.coerce.number(),
   videoId: zod.coerce.number(),
+});
+
+/**
+ * @summary Save avatar config for current user
+ */
+export const SaveAvatarConfigBody = zod.object({
+  avatarConfig: zod.object({
+    skin: zod.number(),
+    build: zod.enum(["standard", "stocky", "lanky"]),
+    hairStyle: zod.enum([
+      "fade",
+      "curls",
+      "bald",
+      "long",
+      "afro",
+      "mohawk",
+      "flattop",
+    ]),
+    hairColor: zod.number(),
+    jersey: zod.number(),
+    jerseyStyle: zod.enum(["solid", "pinstripe"]),
+    secondaryColor: zod.number(),
+    shorts: zod.number(),
+    accessories: zod.object({
+      headband: zod.boolean(),
+      wristbands: zod.boolean(),
+      kneepads: zod.boolean(),
+    }),
+    accessoryColor: zod.number(),
+    eyebrows: zod.enum(["none", "angry", "raised"]),
+    mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+  }),
+});
+
+export const SaveAvatarConfigResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
+  isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    })
+    .nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
+    }),
+  ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
+  archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Submit an arcade game session
+ */
+export const PostArcadeSessionBody = zod.object({
+  game: zod.enum(["fast-break", "who-ya-got", "shot-clock"]),
+  score: zod.number(),
+  bestStreak: zod.number(),
+  roundsPlayed: zod.number(),
+});
+
+/**
+ * @summary Get current user best arcade stats per game
+ */
+export const GetMyArcadeStatsResponse = zod.object({
+  fastBreak: zod
+    .object({
+      bestScore: zod.number().optional(),
+      bestStreak: zod.number().optional(),
+      gamesPlayed: zod.number().optional(),
+    })
+    .nullable(),
+  whoYaGot: zod
+    .object({
+      bestScore: zod.number().optional(),
+      bestStreak: zod.number().optional(),
+      gamesPlayed: zod.number().optional(),
+    })
+    .nullable(),
+  shotClock: zod
+    .object({
+      bestScore: zod.number().optional(),
+      bestStreak: zod.number().optional(),
+      gamesPlayed: zod.number().optional(),
+    })
+    .nullable(),
 });

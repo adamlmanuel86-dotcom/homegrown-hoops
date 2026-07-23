@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ArchetypeHistoryEntry } from "./archetypeHistoryEntry";
+import type { AvatarConfig } from "./avatarConfig";
 import type { RecognitionEntry } from "./recognitionEntry";
 import type { UserRole } from "./userRole";
 
@@ -29,6 +30,7 @@ export interface UserProfile {
   role: UserRole;
   /** @nullable */
   avatarUrl?: string | null;
+  avatarConfig?: AvatarConfig | null;
   /**
    * Player jersey number
    * @nullable

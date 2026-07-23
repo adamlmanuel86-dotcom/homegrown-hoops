@@ -26,6 +26,8 @@ tags:
     description: Object storage upload and serving endpoints
   - name: videos
     description: Game video attachment operations
+  - name: arcade
+    description: Arcade mini-game operations
 paths:
   /healthz:
     get:
@@ -700,6 +702,65 @@ paths:
         "404":
           description: Not found
 
+  /profiles/me/avatar-config:
+    patch:
+      operationId: saveAvatarConfig
+      tags: [profiles]
+      summary: Save avatar config for current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveAvatarConfigBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Profile not found
+
+  /arcade/sessions:
+    post:
+      operationId: postArcadeSession
+      tags: [arcade]
+      summary: Submit an arcade game session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostArcadeSessionBody"
+      responses:
+        "201":
+          description: Session saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArcadeSession"
+        "401":
+          description: Unauthorized
+
+  /arcade/my-stats:
+    get:
+      operationId: getMyArcadeStats
+      tags: [arcade]
+      summary: Get current user best arcade stats per game
+      responses:
+        "200":
+          description: Best stats per game
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyArcadeStats"
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
     HealthStatus:
@@ -1325,6 +1386,10 @@ components:
           $ref: "#/components/schemas/UserRole"
         avatarUrl:
           type: ["string", "null"]
+        avatarConfig:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/AvatarConfig"
         number:
           type: ["string", "null"]
           description: "Player jersey number"
@@ -1501,3 +1566,127 @@ components:
         objectPath:
           type: string
           minLength: 1
+
+    AvatarConfig:
+      type: object
+      properties:
+        skin:
+          type: integer
+        build:
+          type: string
+          enum: [standard, stocky, lanky]
+        hairStyle:
+          type: string
+          enum: [fade, curls, bald, long, afro, mohawk, flattop]
+        hairColor:
+          type: integer
+        jersey:
+          type: integer
+        jerseyStyle:
+          type: string
+          enum: [solid, pinstripe]
+        secondaryColor:
+          type: integer
+        shorts:
+          type: integer
+        accessories:
+          type: object
+          properties:
+            headband:
+              type: boolean
+            wristbands:
+              type: boolean
+            kneepads:
+              type: boolean
+          required: [headband, wristbands, kneepads]
+        accessoryColor:
+          type: integer
+        eyebrows:
+          type: string
+          enum: [none, angry, raised]
+        mouth:
+          type: string
+          enum: [neutral, smile, smirk, frown]
+      required:
+        - skin
+        - build
+        - hairStyle
+        - hairColor
+        - jersey
+        - jerseyStyle
+        - secondaryColor
+        - shorts
+        - accessories
+        - accessoryColor
+        - eyebrows
+        - mouth
+
+    SaveAvatarConfigBody:
+      type: object
+      required: [avatarConfig]
+      properties:
+        avatarConfig:
+          $ref: "#/components/schemas/AvatarConfig"
+
+    ArcadeSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        game:
+          type: string
+          enum: [fast-break, who-ya-got, shot-clock]
+        score:
+          type: integer
+        bestStreak:
+          type: integer
+        roundsPlayed:
+          type: integer
+        playedAt:
+          type: string
+      required:
+        - id
+        - clerkUserId
+        - game
+        - score
+        - bestStreak
+        - roundsPlayed
+        - playedAt
+
+    PostArcadeSessionBody:
+      type: object
+      required: [game, score, bestStreak, roundsPlayed]
+      properties:
+        game:
+          type: string
+          enum: [fast-break, who-ya-got, shot-clock]
+        score:
+          type: integer
+        bestStreak:
+          type: integer
+        roundsPlayed:
+          type: integer
+
+    ArcadeGameStats:
+      type: object
+      nullable: true
+      properties:
+        bestScore:
+          type: integer
+        bestStreak:
+          type: integer
+        gamesPlayed:
+          type: integer
+
+    MyArcadeStats:
+      type: object
+      properties:
+        fastBreak:
+          $ref: "#/components/schemas/ArcadeGameStats"
+        whoYaGot:
+          $ref: "#/components/schemas/ArcadeGameStats"
+        shotClock:
+          $ref: "#/components/schemas/ArcadeGameStats"
+      required: [fastBreak, whoYaGot, shotClock]

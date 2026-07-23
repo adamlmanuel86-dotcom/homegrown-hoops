@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Homegrown Hoops — Avatar Creator</title>
+<style>
+  html,body{margin:0;padding:0;background:radial-gradient(circle at 50% 0%,#16283f,#0a1220 65%);color:#fff;font-family:Arial,sans-serif;min-height:100%;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+  #wrap{max-width:480px;margin:0 auto;padding:20px 16px 44px;}
+  h1{font-size:19px;letter-spacing:1.5px;color:#ff7a1a;margin:0 0 2px;font-weight:900;text-shadow:0 2px 8px rgba(255,122,26,0.25);}
+  .sub{font-size:12px;color:#8a97ad;margin:0 0 20px;line-height:1.4;}
+  #card{position:sticky;top:8px;z-index:20;background:linear-gradient(160deg,#1a2e48,#0a1420);border:3px solid var(--jerseyColor,#ff7a1a);border-radius:18px;padding:14px 18px;display:flex;flex-direction:column;align-items:center;box-shadow:0 10px 28px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.08);overflow:hidden;}
+  #cardBrand{position:absolute;top:10px;left:14px;font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,0.35);font-weight:900;}
+  #cardBadge{position:absolute;top:8px;right:12px;font-size:22px;opacity:0.18;}
+  #previewHost{width:180px;height:220px;}
+  #cardName{font-size:16px;font-weight:900;letter-spacing:1.5px;margin-top:6px;color:#fff;text-transform:uppercase;}
+  #cardMeta{font-size:11px;color:#8a97ad;letter-spacing:1.5px;margin-top:2px;}
+  .animToggle{margin-top:12px;background:#22314f;border:none;color:#fff;font-size:11px;font-weight:700;padding:7px 16px;border-radius:14px;letter-spacing:0.5px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 2px 0 rgba(0,0,0,0.3);cursor:pointer;}
+  .animToggle.on{background:#ff7a1a;}
+  .panel{margin-top:16px;background:rgba(22,40,63,0.55);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px;}
+  h2{font-size:11px;letter-spacing:1.5px;color:#c9d3e0;text-transform:uppercase;margin:0 0 12px;font-weight:900;display:flex;align-items:center;gap:8px;}
+  h2::before{content:'';display:block;width:4px;height:12px;background:#ff7a1a;border-radius:2px;}
+  .row{display:flex;flex-wrap:wrap;gap:11px;}
+  .swatch{position:relative;width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,0.15);cursor:pointer;padding:0;box-shadow:inset 0 2px 3px rgba(255,255,255,0.3),inset 0 -3px 4px rgba(0,0,0,0.25),0 2px 4px rgba(0,0,0,0.3);}
+  .swatch.sel{border-color:#ff7a1a;box-shadow:inset 0 2px 3px rgba(255,255,255,0.3),inset 0 -3px 4px rgba(0,0,0,0.25),0 0 0 3px rgba(255,122,26,0.3);}
+  .swatch.sel::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,0.8);}
+  .opt{background:#16283f;border:2px solid rgba(255,255,255,0.08);color:#c9d3e0;font-size:12px;font-weight:700;letter-spacing:0.5px;padding:9px 15px;border-radius:10px;cursor:pointer;}
+  .opt.sel{background:#ff7a1a;border-color:#ff7a1a;color:#fff;box-shadow:0 2px 8px rgba(255,122,26,0.4);}
+  input[type=color]{width:46px;height:36px;border:2px solid rgba(255,255,255,0.08);border-radius:9px;background:none;padding:0;cursor:pointer;}
+  input[type=text],input[type=number]{background:#0d1826;border:2px solid rgba(255,255,255,0.08);color:#fff;font-size:13px;padding:9px 11px;border-radius:8px;width:140px;}
+  input[type=text]:focus,input[type=number]:focus{outline:none;border-color:#ff7a1a;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:10px;letter-spacing:1px;color:#8a97ad;text-transform:uppercase;font-weight:700;}
+  .fieldsRow{display:flex;gap:14px;flex-wrap:wrap;}
+  #actions{display:flex;gap:10px;margin-top:24px;}
+  #actions button{flex:1;padding:13px;border:none;border-radius:12px;font-weight:900;font-size:13px;letter-spacing:0.5px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,0.3);}
+  #actions button:active{transform:translateY(3px);box-shadow:none;}
+  #randomBtn{background:#22314f;color:#fff;}
+  #exportBtn{background:#ff7a1a;color:#fff;}
+  #exportBox{display:none;margin-top:14px;}
+  #exportBox textarea{width:100%;box-sizing:border-box;background:#0d1826;border:2px solid rgba(255,255,255,0.08);color:#9fe6b0;font-family:'Courier New',monospace;font-size:11px;border-radius:10px;padding:12px;height:150px;resize:none;}
+  #copyBtn{margin-top:8px;width:100%;background:#35d07f;border:none;color:#0d1826;font-weight:900;padding:11px;border-radius:10px;font-size:12px;letter-spacing:0.5px;cursor:pointer;}
+  #copiedNote{font-size:11px;color:#35d07f;margin-top:6px;opacity:0;transition:opacity 0.2s;text-align:center;}
+  #note{margin-top:24px;font-size:11px;color:#6b7a90;line-height:1.6;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>AVATAR CREATOR</h1>
+  <p class="sub">Prototype — design here, send the exported config to Replit when it's ready.</p>
+
+  <div id="card">
+    <div id="cardBrand">HOMEGROWN HOOPS</div>
+    <div id="cardBadge">🏀</div>
+    <div id="previewHost"></div>
+    <div id="cardName">PLAYER</div>
+    <div id="cardMeta">#00</div>
+    <button class="animToggle" id="animToggle">▶ Preview run/dribble</button>
+  </div>
+
+  <section class="panel">
+    <h2>Skin Tone</h2>
+    <div class="row" id="skinRow"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Build</h2>
+    <div class="row" id="buildRow"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Hair Style</h2>
+    <div class="row" id="hairStyleRow"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Hair Color</h2>
+    <div class="row" id="hairColorRow"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Jersey Color</h2>
+    <div class="row" id="jerseyRow"></div>
+    <div class="row" style="margin-top:12px;">
+      <input type="color" id="jerseyCustom" value="#14213d">
+    </div>
+    <div class="sub" style="margin:16px 0 8px;">Jersey Style</div>
+    <div class="row" id="jerseyStyleRow"></div>
+    <div class="sub" style="margin:16px 0 8px;">Secondary Color (pinstripes &amp; number)</div>
+    <div class="row" id="secondaryColorRow"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Shorts Color</h2>
+    <div class="row" id="shortsRow"></div>
+    <div class="row" style="margin-top:12px;">
+      <input type="color" id="shortsCustom" value="#0a0f1e">
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Accessories</h2>
+    <div class="row" id="accessoryRow"></div>
+    <div class="row" id="accessoryColorRow" style="margin-top:12px;"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Expression</h2>
+    <div class="sub" style="margin:0 0 8px;">Eyebrows</div>
+    <div class="row" id="eyebrowRow"></div>
+    <div class="sub" style="margin:14px 0 8px;">Mouth</div>
+    <div class="row" id="mouthRow"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Player Card Info</h2>
+    <div class="fieldsRow">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="nameInput" maxlength="16" placeholder="PLAYER NAME">
+      </div>
+      <div class="field">
+        <label>Number</label>
+        <input type="number" id="numberInput" min="0" max="99" value="0">
+      </div>
+    </div>
+  </section>
+
+  <div id="actions">
+    <button id="randomBtn">🎲 Randomize</button>
+    <button id="exportBtn">Export config</button>
+  </div>
+
+  <div id="exportBox">
+    <textarea id="exportText" readonly></textarea>
+    <button id="copyBtn">Copy to clipboard</button>
+    <div id="copiedNote">Copied!</div>
+  </div>
+
+  <div id="note">
+    This is a design sandbox, not the real Homegrown Hoops avatar system — nothing here saves automatically.
+    When you're happy with a look, hit "Export config," copy the JSON, and hand it to Replit as the starting
+    point for the real feature. The character rendering code here is ported directly from the platformer
+    mini-game, so anything you design will look identical once it's wired in as the in-game sprite.
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
+<script>
+// ---------- ported directly from the platformer prototype for guaranteed visual parity ----------
+const BUILDS = { lanky:{w:0.85,h:1.12}, standard:{w:1,h:1}, stocky:{w:1.18,h:0.92} };
+
+function drawBaller(g, palette, runFrame, armPose, poseColor, showFace){
+  const { skin, jersey, shorts, hair, build } = palette;
+  const b = BUILDS[build];
+  const cx = 22*b.w, legW = 7*b.w, torsoW = 20*b.w, torsoH = 22*b.h;
+  const headR = 8.8*b.w;
+  const headY = 12*b.h;
+  const torsoY = headY + headR + 2;
+  const legY = torsoY + torsoH;
+  const stride = runFrame===undefined ? 0 : 3;
+  const leftLift = runFrame===1 ? stride : 0;
+  const rightLift = runFrame===0 ? stride : 0;
+  const leftLegH = 14*b.h - leftLift;
+  const rightLegH = 14*b.h - rightLift;
+  const leanSpread = armPose==='lean' ? 4 : 0;
+
+  g.fillStyle(skin,1);
+  g.fillRoundedRect(cx-legW-2-leftLift*0.4-leanSpread, legY+leftLift, legW, leftLegH, 2);
+  g.fillRoundedRect(cx+2+rightLift*0.4+leanSpread, legY+rightLift, legW, rightLegH, 2);
+  g.fillStyle(0x1c1c1c,1);
+  g.fillRoundedRect(cx-legW-3-leftLift*0.4-leanSpread, legY+leftLift+leftLegH-1, legW+2, 5, 2);
+  g.fillRoundedRect(cx+1+rightLift*0.4+leanSpread, legY+rightLift+rightLegH-1, legW+2, 5, 2);
+  g.fillStyle(shorts,1);
+  g.fillRoundedRect(cx-torsoW/2, torsoY+torsoH-8, torsoW/2-1, 17, 2);
+  g.fillRoundedRect(cx+1, torsoY+torsoH-8, torsoW/2-1, 17, 2);
+
+  let lWrist, rWrist;
+  if (armPose === 'both'){
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-15, torsoY+3, 13, 5, 2);
+    g.fillRoundedRect(cx+torsoW/2+2, torsoY+3, 13, 5, 2);
+    g.fillStyle(poseColor,1);
+    g.fillCircle(cx-torsoW/2-15, torsoY+5.5, 4);
+    g.fillCircle(cx+torsoW/2+15, torsoY+5.5, 4);
+    lWrist = {x:cx-torsoW/2-9, y:torsoY+5, ang:0}; rWrist = {x:cx+torsoW/2+9, y:torsoY+5, ang:0};
+  } else if (armPose === 'one'){
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-15, torsoY+1, 13, 5, 2);
+    g.fillStyle(poseColor,1);
+    g.fillCircle(cx-torsoW/2-15, torsoY+3.5, 4);
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx+torsoW/2, torsoY+2, 5, 16*b.h, 2);
+    lWrist = {x:cx-torsoW/2-9, y:torsoY+3, ang:0}; rWrist = {x:cx+torsoW/2+2.5, y:torsoY+2+16*b.h*0.68, ang:1};
+  } else {
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-5, torsoY+2+rightLift*0.3, 5, 16*b.h, 2);
+    g.fillRoundedRect(cx+torsoW/2, torsoY+2+leftLift*0.3, 5, 16*b.h, 2);
+    lWrist = {x:cx-torsoW/2-2.5, y:torsoY+2+rightLift*0.3+16*b.h*0.66, ang:1};
+    rWrist = {x:cx+torsoW/2+2.5, y:torsoY+2+leftLift*0.3+16*b.h*0.66, ang:1};
+  }
+
+  g.fillStyle(jersey,1);
+  g.fillRoundedRect(cx-torsoW/2, torsoY, torsoW, torsoH, 5);
+  if (palette.jerseyStyle === 'pinstripe'){
+    const stripeColor = palette.secondaryColor || 0xffffff;
+    g.fillStyle(stripeColor, 0.55);
+    const stripeCount = 4;
+    for (let i=0;i<stripeCount;i++){
+      const sx = cx-torsoW/2 + (torsoW/(stripeCount+1))*(i+1);
+      g.fillRect(sx-0.6, torsoY+2, 1.2, torsoH-4);
+    }
+  }
+  g.fillStyle(0xffffff,0.85);
+  g.fillRect(cx-torsoW/2+3, torsoY+3, torsoW-6, 3);
+
+  const capCenterY = headY - headR*0.65;
+  const capHalfW = headR*0.85;
+  g.fillStyle(hair.color,1);
+  if (hair.style==='afro'){ g.fillEllipse(cx, headY-headR*0.24, headR*2.7, headR*2.05); }
+  else if (hair.style==='long'){
+    g.fillRoundedRect(cx-headR*0.88, headY-headR*1.25, headR*1.76, headR*1.75, headR*0.5);
+    g.fillRoundedRect(cx-headR*1.25, headY-headR*0.05, headR*2.5, headR*1.35, headR*0.6);
+  }
+
+  g.fillStyle(skin,1);
+  g.fillCircle(cx, headY, headR);
+  g.fillStyle(hair.color,1);
+  if (hair.style==='fade'){
+    g.fillEllipse(cx, capCenterY, capHalfW*2, headR*0.95);
+    const hairlineY = headY - headR*0.25;
+    g.fillRect(cx-capHalfW, capCenterY, capHalfW*2, hairlineY-capCenterY);
+  }
+  else if (hair.style==='curls'){
+    g.fillEllipse(cx, capCenterY, capHalfW*1.85, headR*0.9);
+    for(let i=0;i<9;i++){
+      const t = i/8;
+      const ang = Math.PI + t*Math.PI;
+      const bx = cx + Math.cos(ang)*capHalfW*0.95;
+      const by = capCenterY + Math.sin(ang)*headR*0.32;
+      g.fillCircle(bx, by, headR*0.19);
+    }
+  }
+  else if (hair.style==='mohawk'){ g.fillTriangle(cx-headR*0.36, headY-headR*0.75, cx+headR*0.36, headY-headR*0.75, cx, headY-headR*1.25); }
+  else if (hair.style==='flattop'){ g.fillRect(cx-headR*0.95, headY-headR*1.05, headR*1.9, headR*0.75); }
+
+  if (showFace === false && (hair.style === 'long' || hair.style === 'afro')){
+    g.fillStyle(hair.color, 1);
+    g.fillCircle(cx, headY, headR);
+  }
+
+  const expr = palette.expression || {};
+  if (showFace !== false){
+    if (expr.eyebrows === 'angry'){
+      g.fillStyle(hair.color, 0.95);
+      g.fillTriangle(cx-headR*0.58, headY-headR*0.2, cx-headR*0.15, headY-headR*0.03, cx-headR*0.58, headY-headR*0.05);
+      g.fillTriangle(cx+headR*0.58, headY-headR*0.2, cx+headR*0.15, headY-headR*0.03, cx+headR*0.58, headY-headR*0.05);
+    } else if (expr.eyebrows === 'raised'){
+      g.fillStyle(hair.color, 0.9);
+      g.fillRoundedRect(cx-headR*0.52, headY-headR*0.24, headR*0.34, headR*0.09, headR*0.04);
+      g.fillRoundedRect(cx+headR*0.18, headY-headR*0.24, headR*0.34, headR*0.09, headR*0.04);
+    }
+
+    g.fillStyle(0xffffff,1);
+    g.fillEllipse(cx-headR*0.37, headY+headR*0.04, headR*0.42, headR*0.36);
+    g.fillEllipse(cx+headR*0.37, headY+headR*0.04, headR*0.42, headR*0.36);
+    g.fillStyle(0x1a1a1a,1);
+    g.fillCircle(cx-headR*0.33, headY+headR*0.07, headR*0.19);
+    g.fillCircle(cx+headR*0.41, headY+headR*0.07, headR*0.19);
+    g.fillStyle(0xffffff,0.95);
+    g.fillCircle(cx-headR*0.27, headY+headR*0.01, headR*0.07);
+    g.fillCircle(cx+headR*0.47, headY+headR*0.01, headR*0.07);
+
+    // blush + nose — small touches so the face reads as a face, not a mask
+    g.fillStyle(0xe8836b, 0.28);
+    g.fillCircle(cx-headR*0.5, headY+headR*0.22, headR*0.14);
+    g.fillCircle(cx+headR*0.5, headY+headR*0.22, headR*0.14);
+    g.fillStyle(0x000000, 0.18);
+    g.fillCircle(cx-headR*0.03, headY+headR*0.22, headR*0.05);
+    g.fillCircle(cx+headR*0.1, headY+headR*0.22, headR*0.05);
+
+    const my = headY+headR*0.42;
+    g.fillStyle(0x8a4a3a,0.85);
+    if (expr.mouth === 'smile'){
+      g.fillRoundedRect(cx-headR*0.26, my-headR*0.02, headR*0.52, headR*0.14, headR*0.07);
+      g.fillCircle(cx-headR*0.29, my+headR*0.03, headR*0.06);
+      g.fillCircle(cx+headR*0.29, my+headR*0.03, headR*0.06);
+    } else if (expr.mouth === 'smirk'){
+      g.fillRoundedRect(cx-headR*0.2, my, headR*0.4, headR*0.11, headR*0.05);
+      g.fillCircle(cx+headR*0.24, my-headR*0.03, headR*0.06);
+    } else if (expr.mouth === 'frown'){
+      g.fillRoundedRect(cx-headR*0.22, my+headR*0.06, headR*0.44, headR*0.12, headR*0.06);
+      g.fillCircle(cx-headR*0.25, my+headR*0.14, headR*0.055);
+      g.fillCircle(cx+headR*0.25, my+headR*0.14, headR*0.055);
+    } else {
+      g.fillRoundedRect(cx-headR*0.24, my, headR*0.48, headR*0.13, headR*0.06);
+    }
+  }
+
+  if (palette.accessories){
+    const ac = palette.accessoryColor || 0xffffff;
+    g.fillStyle(ac,1);
+    if (palette.accessories.headband){ g.fillRect(cx-headR, headY-headR*0.42, headR*2, headR*0.3); }
+    if (palette.accessories.wristbands && lWrist && rWrist){
+      [lWrist, rWrist].forEach(w => {
+        if (w.ang === 1){ g.fillRoundedRect(w.x-4.5, w.y-2.5, 9, 5, 2); }
+        else { g.fillRoundedRect(w.x-2.5, w.y-4, 5, 8, 2); }
+      });
+    }
+    if (palette.accessories.kneepads){
+      g.fillRoundedRect(cx-legW-4-leanSpread, legY+4, legW+4, 6, 2);
+      g.fillRoundedRect(cx+leanSpread, legY+4, legW+4, 6, 2);
+    }
+  }
+}
+
+// ---------- avatar state ----------
+const SKIN_TONES = [0xf0c9a0, 0xd8a878, 0xc98a5b, 0x8a5a34, 0x6b4226];
+const JERSEY_PRESETS = [0x14213d, 0xff7a1a, 0xe63946, 0x2f6fed, 0x2ecc71, 0x9b59b6, 0xffd23f, 0x1a1a1a];
+const SHORTS_PRESETS = [0x0a0f1e, 0x1a1a1a, 0x2a1f05, 0x1a1230, 0x102a1c, 0x6b1f2a, 0x14213d, 0xffffff];
+// shared by both hair and accessories, so neither picker is more limited than the other
+const HAIR_ACCESSORY_COLORS = [0x0a0a0a, 0x3a2418, 0x6b4226, 0xd4a843, 0xb33d1f, 0x9a9a9a, 0xffffff, 0xff7a1a, 0xe63946, 0x2f6fed, 0xffd23f, 0x2ecc71, 0x9b59b6];
+const HAIR_COLORS = HAIR_ACCESSORY_COLORS;
+const ACCESSORY_COLORS = HAIR_ACCESSORY_COLORS;
+const HAIR_STYLES = ['fade','curls','bald','long','afro','mohawk','flattop'];
+const BUILD_KEYS = ['standard','stocky','lanky'];
+const ACCESSORY_KEYS = ['headband','wristbands','kneepads'];
+const EYEBROW_STYLES = ['none','angry','raised'];
+const MOUTH_STYLES = ['neutral','smile','smirk','frown'];
+const JERSEY_STYLES = ['solid','pinstripe'];
+
+let state = {
+  skin: SKIN_TONES[0],
+  build: 'standard',
+  hairStyle: 'fade',
+  hairColor: HAIR_COLORS[0],
+  jersey: 0x14213d,
+  jerseyStyle: 'solid',
+  secondaryColor: HAIR_ACCESSORY_COLORS[6],
+  shorts: 0x0a0f1e,
+  accessories: { headband: false, wristbands: false, kneepads: false },
+  accessoryColor: ACCESSORY_COLORS[0],
+  eyebrows: 'none',
+  mouth: 'neutral',
+  name: '',
+  number: 0,
+};
+
+function hex(n){ return '#'+n.toString(16).padStart(6,'0'); }
+
+// wraps a Graphics object so every draw call is scaled up before it happens —
+// lets drawBaller render at higher internal resolution with zero changes to
+// its own code, so curves stay smooth instead of scaling up a tiny texture
+function scaledGraphicsProxy(g, s){
+  return {
+    fillStyle: (c,a) => g.fillStyle(c,a),
+    fillRect: (x,y,w,h) => g.fillRect(x*s,y*s,w*s,h*s),
+    fillRoundedRect: (x,y,w,h,r) => g.fillRoundedRect(x*s,y*s,w*s,h*s, typeof r==='number' ? r*s : r),
+    fillCircle: (x,y,r) => g.fillCircle(x*s,y*s,r*s),
+    fillEllipse: (x,y,w,h,sm) => g.fillEllipse(x*s,y*s,w*s,h*s,sm),
+    fillTriangle: (x0,y0,x1,y1,x2,y2) => g.fillTriangle(x0*s,y0*s,x1*s,y1*s,x2*s,y2*s),
+  };
+}
+const PREVIEW_RES = 3;
+
+// ---------- Phaser preview ----------
+let sceneRef = null;
+class PreviewScene extends Phaser.Scene {
+  create(){
+    sceneRef = this;
+    this.g = this.add.graphics().setVisible(false);
+    this.frame = 0;
+    this.animating = false;
+    this.sprite = this.add.sprite(90, 110, null).setScale(3.15/PREVIEW_RES);
+    this.numberText = this.add.text(90, 115, '0', {fontSize:'13px', fontStyle:'900', color:'#ffffff', stroke:'#000000', strokeThickness:2}).setOrigin(0.5).setDepth(10);
+    this.redraw();
+    this.time.addEvent({ delay: 260, loop: true, callback: () => {
+      if (!this.animating) return;
+      this.frame = this.frame === 0 ? 1 : 0;
+      this.redraw();
+    }});
+  }
+  redraw(){
+    this.g.clear();
+    const palette = { skin: state.skin, jersey: state.jersey, jerseyStyle: state.jerseyStyle,
+      secondaryColor: state.secondaryColor, shorts: state.shorts,
+      hair: { style: state.hairStyle, color: state.hairColor }, build: state.build,
+      accessories: state.accessories, accessoryColor: state.accessoryColor,
+      expression: { eyebrows: state.eyebrows, mouth: state.mouth } };
+    drawBaller(scaledGraphicsProxy(this.g, PREVIEW_RES), palette, this.animating ? this.frame : undefined);
+    if (this.textures.exists('avatar')) this.textures.remove('avatar');
+    this.g.generateTexture('avatar', 44*PREVIEW_RES, 64*PREVIEW_RES);
+    this.sprite.setTexture('avatar');
+    this.numberText.setText(String(state.number)).setColor(hex(state.secondaryColor));
+  }
+}
+new Phaser.Game({
+  type: Phaser.CANVAS,
+  parent: 'previewHost',
+  width: 180, height: 220,
+  transparent: true,
+  scene: [PreviewScene],
+});
+
+function refreshPreview(){
+  if (sceneRef) sceneRef.redraw();
+  document.getElementById('cardName').textContent = state.name.trim() ? state.name.trim().toUpperCase() : 'PLAYER';
+  document.getElementById('cardMeta').textContent = '#' + String(state.number).padStart(2,'0');
+  document.getElementById('card').style.setProperty('--jerseyColor', hex(state.jersey));
+}
+
+// ---------- UI builders ----------
+function buildSwatches(containerId, values, stateKey, isColorList){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  values.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'swatch' + (state[stateKey] === v ? ' sel' : '');
+    btn.style.background = hex(v);
+    btn.addEventListener('click', () => {
+      state[stateKey] = v;
+      buildSwatches(containerId, values, stateKey);
+      refreshPreview();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function buildOptions(containerId, values, stateKey, labelFn){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  values.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'opt' + (state[stateKey] === v ? ' sel' : '');
+    btn.textContent = labelFn ? labelFn(v) : v;
+    btn.addEventListener('click', () => {
+      state[stateKey] = v;
+      buildOptions(containerId, values, stateKey, labelFn);
+      refreshPreview();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function buildToggles(containerId, keys, stateObjKey, labelFn){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'opt' + (state[stateObjKey][k] ? ' sel' : '');
+    btn.textContent = labelFn ? labelFn(k) : k;
+    btn.addEventListener('click', () => {
+      state[stateObjKey][k] = !state[stateObjKey][k];
+      buildToggles(containerId, keys, stateObjKey, labelFn);
+      refreshPreview();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function initUI(){
+  buildSwatches('skinRow', SKIN_TONES, 'skin');
+  buildOptions('buildRow', BUILD_KEYS, 'build', v => v.toUpperCase());
+  buildOptions('hairStyleRow', HAIR_STYLES, 'hairStyle', v => v.toUpperCase());
+  buildSwatches('hairColorRow', HAIR_COLORS, 'hairColor');
+  buildSwatches('jerseyRow', JERSEY_PRESETS, 'jersey');
+  buildSwatches('shortsRow', SHORTS_PRESETS, 'shorts');
+  buildOptions('jerseyStyleRow', JERSEY_STYLES, 'jerseyStyle', v => v.toUpperCase());
+  buildSwatches('secondaryColorRow', HAIR_ACCESSORY_COLORS, 'secondaryColor');
+  buildToggles('accessoryRow', ACCESSORY_KEYS, 'accessories', v => v.toUpperCase());
+  buildSwatches('accessoryColorRow', ACCESSORY_COLORS, 'accessoryColor');
+  buildOptions('eyebrowRow', EYEBROW_STYLES, 'eyebrows', v => v.toUpperCase());
+  buildOptions('mouthRow', MOUTH_STYLES, 'mouth', v => v.toUpperCase());
+
+  document.getElementById('jerseyCustom').addEventListener('input', (e) => {
+    state.jersey = parseInt(e.target.value.slice(1), 16);
+    buildSwatches('jerseyRow', JERSEY_PRESETS, 'jersey');
+    refreshPreview();
+  });
+  document.getElementById('shortsCustom').addEventListener('input', (e) => {
+    state.shorts = parseInt(e.target.value.slice(1), 16);
+    buildSwatches('shortsRow', SHORTS_PRESETS, 'shorts');
+    refreshPreview();
+  });
+  document.getElementById('nameInput').addEventListener('input', (e) => {
+    state.name = e.target.value;
+    refreshPreview();
+  });
+  document.getElementById('numberInput').addEventListener('input', (e) => {
+    state.number = Math.max(0, Math.min(99, parseInt(e.target.value || '0', 10)));
+    refreshPreview();
+  });
+
+  document.getElementById('animToggle').addEventListener('click', function(){
+    if (!sceneRef) return;
+    sceneRef.animating = !sceneRef.animating;
+    this.classList.toggle('on', sceneRef.animating);
+    this.textContent = sceneRef.animating ? '⏸ Stop preview' : '▶ Preview run/dribble';
+    sceneRef.redraw();
+  });
+
+  document.getElementById('randomBtn').addEventListener('click', () => {
+    state.skin = SKIN_TONES[Math.floor(Math.random()*SKIN_TONES.length)];
+    state.build = BUILD_KEYS[Math.floor(Math.random()*BUILD_KEYS.length)];
+    state.hairStyle = HAIR_STYLES[Math.floor(Math.random()*HAIR_STYLES.length)];
+    state.hairColor = HAIR_COLORS[Math.floor(Math.random()*HAIR_COLORS.length)];
+    state.jersey = JERSEY_PRESETS[Math.floor(Math.random()*JERSEY_PRESETS.length)];
+    state.jerseyStyle = JERSEY_STYLES[Math.floor(Math.random()*JERSEY_STYLES.length)];
+    state.secondaryColor = HAIR_ACCESSORY_COLORS[Math.floor(Math.random()*HAIR_ACCESSORY_COLORS.length)];
+    state.shorts = SHORTS_PRESETS[Math.floor(Math.random()*SHORTS_PRESETS.length)];
+    ACCESSORY_KEYS.forEach(k => { state.accessories[k] = Math.random() < 0.35; });
+    state.accessoryColor = ACCESSORY_COLORS[Math.floor(Math.random()*ACCESSORY_COLORS.length)];
+    state.eyebrows = EYEBROW_STYLES[Math.floor(Math.random()*EYEBROW_STYLES.length)];
+    state.mouth = MOUTH_STYLES[Math.floor(Math.random()*MOUTH_STYLES.length)];
+    initUI();
+    refreshPreview();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const config = {
+      name: state.name.trim() || 'Player Name',
+      number: state.number,
+      skin: hex(state.skin),
+      build: state.build,
+      hair: { style: state.hairStyle, color: hex(state.hairColor) },
+      jersey: hex(state.jersey),
+      jerseyStyle: state.jerseyStyle,
+      secondaryColor: hex(state.secondaryColor),
+      shorts: hex(state.shorts),
+      accessories: { ...state.accessories },
+      accessoryColor: hex(state.accessoryColor),
+      expression: { eyebrows: state.eyebrows, mouth: state.mouth },
+    };
+    document.getElementById('exportText').value = JSON.stringify(config, null, 2);
+    document.getElementById('exportBox').style.display = 'block';
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const ta = document.getElementById('exportText');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const note = document.getElementById('copiedNote');
+      note.style.opacity = 1;
+      setTimeout(() => note.style.opacity = 0, 1400);
+    });
+  });
+}
+
+initUI();
+setTimeout(refreshPreview, 60); // let Phaser finish booting first
+</script>
+</body>
+</html>

@@ -1,0 +1,2136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Drive The Lane</title>
+<style>
+  html,body{margin:0;padding:0;background:#0f1b2d;overflow:hidden;height:100%;font-family:'Arial Black',Arial,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+  #game{width:100%;height:100%;}
+  #hud{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 8px;pointer-events:none;z-index:5;}
+  .pill{background:rgba(15,27,45,0.75);border:2px solid #ff7a1a;border-radius:20px;padding:6px 12px;color:#fff;font-size:12px;letter-spacing:1px;white-space:nowrap;transition:border-color 0.2s;}
+  #lives{display:flex;gap:6px;}
+  .life{width:14px;height:14px;border-radius:50%;background:#ff7a1a;box-shadow:0 0 6px #ff7a1a;}
+  .life.dead{background:#3a4a63;box-shadow:none;}
+  #scorePill{background:rgba(15,27,45,0.75);border:2px solid #ffd23f;border-radius:20px;padding:6px 14px;color:#ffd23f;font-size:14px;font-weight:900;letter-spacing:1px;white-space:nowrap;}
+  #controls{position:fixed;bottom:0;left:0;right:0;display:flex;gap:8px;padding:10px;z-index:5;}
+  .lr{display:flex;flex:1;gap:8px;align-items:center;justify-content:center;align-self:center;}
+  .btn{flex:1;padding:14px 4px;border-radius:14px;border:none;color:#fff;font-weight:900;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,0.35);touch-action:manipulation;}
+  .btn:active{transform:translateY(3px);box-shadow:none;}
+  #left,#right{background:#22314f;width:50px;height:50px;flex:none;padding:0;box-sizing:border-box;border-radius:12px;}
+  #moveGroup{position:relative;width:196px;height:196px;flex:0 0 196px;}
+  .moveBtn{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,0.9);color:#fff;font-weight:900;font-size:10px;letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;text-shadow:0 1px 3px rgba(0,0,0,0.5);box-shadow:inset 0 3px 5px rgba(255,255,255,0.35),inset 0 -4px 6px rgba(0,0,0,0.3),0 5px 0 rgba(0,0,0,0.4),0 6px 10px rgba(0,0,0,0.3);}
+  .moveBtn:active{transform:translateY(4px) scale(0.96);box-shadow:inset 0 3px 5px rgba(255,255,255,0.25),inset 0 -2px 4px rgba(0,0,0,0.25),0 1px 0 rgba(0,0,0,0.4);}
+  #spin{width:46px;height:46px;left:75px;top:0;background:#2f6fed;display:none;}
+  #hesi{width:46px;height:46px;right:0;top:75px;background:#ff3b3b;display:none;}
+  #behindback{width:46px;height:46px;left:75px;bottom:0;background:#2ecc71;display:none;}
+  #inandout{width:46px;height:46px;left:0;top:75px;background:#9b59b6;display:none;}
+  #crossover{width:68px;height:68px;left:64px;top:64px;background:#ff7a1a;font-size:12px;}
+  #shoot{flex:1.3;width:76px;height:76px;border-radius:50%;background:#35d07f;display:none;align-self:center;margin:0 auto;border:3px solid rgba(255,255,255,0.85);color:#fff;font-weight:900;font-size:13px;box-shadow:0 0 16px rgba(53,208,127,0.8),0 4px 0 rgba(0,0,0,0.35);align-items:center;justify-content:center;touch-action:manipulation;padding:0;animation:shootPulse 0.9s infinite;}
+  @keyframes shootPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+  #comboBtn{position:fixed;right:14px;top:92px;z-index:6;display:none;background:linear-gradient(135deg,#ffd23f,#ff7a1a);border:3px solid #fff;color:#1a1a1a;font-weight:900;font-size:12px;padding:0;border-radius:50%;width:64px;height:64px;box-shadow:0 0 18px #ffd23f,0 4px 0 rgba(0,0,0,0.35);touch-action:manipulation;animation:comboPulse 1s infinite;}
+  @keyframes comboPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+  #overlay{position:fixed;inset:0;background:rgba(10,16,28,0.92);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:10;text-align:center;padding:20px;}
+  #overlay h1{font-size:26px;margin:0 0 6px;color:#ff7a1a;}
+  #overlay p{margin:2px 0;font-size:14px;color:#c9d3e0;}
+  #overlay button{margin-top:18px;background:#ff7a1a;border:none;color:#fff;padding:12px 28px;border-radius:24px;font-weight:900;font-size:15px;letter-spacing:1px;}
+  #boxScore{margin-top:14px;width:220px;background:rgba(0,0,0,0.35);border:2px solid #ff7a1a;border-radius:10px;padding:10px 14px;font-family:'Courier New',monospace;}
+  .bsRow{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:#e8edf5;letter-spacing:0.5px;}
+  .bsRow span:first-child{color:#8a97ad;font-weight:700;}
+  .bsRow span:last-child{font-weight:900;color:#ffd23f;}
+  #banner{position:fixed;top:38%;left:0;right:0;text-align:center;color:#fff;font-size:24px;font-weight:900;letter-spacing:2px;pointer-events:none;z-index:6;text-shadow:0 2px 8px rgba(0,0,0,0.6);opacity:0;}
+  #prompt{position:fixed;top:50%;left:0;right:0;text-align:center;color:#35d07f;font-size:15px;font-weight:900;letter-spacing:1px;pointer-events:none;z-index:6;opacity:0;transition:opacity 0.15s;text-shadow:0 2px 6px rgba(0,0,0,0.7);}
+  #shotMeter{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:240px;height:18px;background:rgba(15,27,45,0.85);border:2px solid #35d07f;border-radius:9px;display:none;z-index:6;overflow:hidden;}
+  #shotMeterZone{position:absolute;top:0;bottom:0;background:rgba(53,208,127,0.45);}
+  #shotMeterMark{position:absolute;top:-3px;bottom:-3px;width:4px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff;}
+  #titleCard{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:rgba(10,16,28,0.5);z-index:4;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+  #titleCard h2{font-size:24px;margin:0;letter-spacing:2px;color:#ff7a1a;text-shadow:0 2px 8px rgba(0,0,0,0.6);}
+  #titleCard span{font-size:13px;color:#c9d3e0;margin-top:4px;letter-spacing:1px;}
+  #hooperSelectUI{position:fixed;inset:0;z-index:7;pointer-events:none;}
+  #hooperButtonBar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(0deg,#0f1b2d 55%,rgba(15,27,45,0));padding:22px 16px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:auto;}
+  .hooperPickRow{display:flex;gap:10px;width:100%;max-width:420px;}
+  .hooperPickBtn{flex:1;background:#ff7a1a;border:none;color:#fff;font-weight:900;font-size:12px;letter-spacing:0.3px;padding:13px 4px;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,0.35);touch-action:manipulation;-webkit-touch-callout:none;user-select:none;}
+  .hooperPickBtn:active{transform:translateY(2px);box-shadow:none;}
+  #hooperLocked{text-align:center;color:#5a6a80;font-weight:900;font-size:11px;letter-spacing:0.5px;background:rgba(22,40,63,0.7);padding:10px 16px;border-radius:12px;pointer-events:none;}
+  #hooperLocked span{display:block;font-weight:400;font-size:9px;margin-top:3px;letter-spacing:0.3px;}
+  #hooperShuffle{background:#22314f;border:none;color:#fff;font-weight:900;font-size:14px;letter-spacing:0.5px;padding:13px 26px;border-radius:24px;box-shadow:0 4px 0 rgba(0,0,0,0.35);pointer-events:auto;touch-action:manipulation;-webkit-touch-callout:none;user-select:none;}
+  #hooperShuffle:active{transform:translateY(3px);box-shadow:none;}
+  #hypeBar{position:fixed;top:78px;left:14px;right:14px;height:7px;background:rgba(15,27,45,0.6);border-radius:4px;overflow:hidden;z-index:5;border:1px solid rgba(255,255,255,0.15);transition:box-shadow 0.2s;}
+  #hypeFill{height:100%;width:0%;background:linear-gradient(90deg,#ff7a1a,#ffd23f);transition:width 0.2s;}
+  #hypeBar.clutch{box-shadow:0 0 10px #ffd23f, 0 0 18px #ffd23f;}
+  #hypeBar.clutch #hypeFill{background:#ffd23f;}
+  #bossHP{position:fixed;top:90px;left:14px;right:14px;z-index:5;display:none;}
+  #bossHPLabel{color:#fff;font-size:11px;font-weight:900;letter-spacing:1px;text-shadow:0 1px 4px rgba(0,0,0,0.8);margin-bottom:3px;text-align:center;}
+  #bossHPBar{height:12px;background:rgba(15,27,45,0.7);border-radius:6px;overflow:hidden;border:2px solid rgba(255,255,255,0.25);}
+  #bossHPFill{height:100%;width:100%;transition:width 0.35s cubic-bezier(.2,.9,.4,1);}
+  #bossPrompt{position:fixed;z-index:8;display:none;width:84px;height:84px;touch-action:manipulation;animation:bossPromptPop 0.2s ease-out;}
+  @keyframes bossPromptPop{0%{transform:scale(0.4);}100%{transform:scale(1);}}
+  #bossPromptRing{width:100%;height:100%;border-radius:50%;padding:6px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
+  #bossPromptInner{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px;letter-spacing:0.5px;border:3px solid rgba(255,255,255,0.85);}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="pill">LEVEL <span id="lvl">1</span></div>
+  <div id="scorePill">SCORE <span id="scoreVal">0</span></div>
+  <div class="pill" id="themePill" style="display:none;">THEME <span id="theme">STREETBALL</span></div>
+  <div class="pill" id="streakPill" style="display:none;">STREAK <span id="streakVal">0</span></div>
+  <div class="pill" id="dodgePill" style="display:none;border-color:#35d0e8;">BLOW BY <span id="dodgeVal">0</span></div>
+  <div id="lives"></div>
+</div>
+<div id="hypeBar"><div id="hypeFill"></div></div>
+<div id="bossHP"><div id="bossHPLabel"></div><div id="bossHPBar"><div id="bossHPFill"></div></div></div>
+<div id="bossPrompt"><div id="bossPromptRing"><div id="bossPromptInner"></div></div></div>
+<div id="banner"></div>
+<div id="prompt">PAINT PACKED — PULL UP FOR 3?</div>
+<div id="shotMeter"><div id="shotMeterZone"></div><div id="shotMeterMark"></div></div>
+<div id="titleCard"></div>
+<div id="hooperSelectUI" style="display:none;">
+  <div id="hooperButtonBar">
+    <div class="hooperPickRow">
+      <button class="hooperPickBtn" id="hooperPick0">PICK</button>
+      <button class="hooperPickBtn" id="hooperPick1">PICK</button>
+      <button class="hooperPickBtn" id="hooperPick2">PICK</button>
+    </div>
+    <button id="hooperShuffle">🎲 SHUFFLE HOOPERS</button>
+    <div id="hooperLocked">🔒 USE MY OWN AVATAR<br><span>(coming once the avatar creator is wired in)</span></div>
+  </div>
+</div>
+<div id="game"></div>
+<button id="comboBtn">COMBO!</button>
+<div id="controls">
+  <div class="lr">
+    <button class="btn" id="left">◀</button>
+    <button class="btn" id="right">▶</button>
+  </div>
+  <div id="moveGroup">
+    <button class="moveBtn" id="spin">SPIN</button>
+    <button class="moveBtn" id="hesi">HESI</button>
+    <button class="moveBtn" id="behindback">BACK</button>
+    <button class="moveBtn" id="inandout">I/O</button>
+    <button class="moveBtn" id="crossover">CROSS</button>
+  </div>
+  <button id="shoot">3PT</button>
+</div>
+<div id="overlay">
+  <h1 id="ovTitle">SCORE!</h1>
+  <p id="ovSub">Level complete</p>
+  <div id="boxScore">
+    <div class="bsRow"><span>SCORE</span><span id="bsScore">0</span></div>
+    <div class="bsRow"><span>PTS</span><span id="bsPts">0</span></div>
+    <div class="bsRow"><span>FG</span><span id="bsFG">0-0</span></div>
+    <div class="bsRow"><span>FG%</span><span id="bsFGPct">.000</span></div>
+    <div class="bsRow"><span>3PT</span><span id="bs3PT">0-0</span></div>
+    <div class="bsRow"><span>3PT%</span><span id="bs3PTPct">.000</span></div>
+    <div class="bsRow"><span>BEST STREAK</span><span id="bsStreak">0</span></div>
+  </div>
+  <button id="ovBtn">Next Level</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
+<script>
+// ---------- Config ----------
+const W = 420, H = 720;
+const PLAYER_Y = H - 170;
+const LANES = [W*0.26, W*0.5, W*0.74];
+const INPUT_BUFFER_MS = 220;
+const ARC_BOW = 42; // how far the 3PT line bows toward the player at center court
+
+let level = 1;
+let selectedHooperPalette = null; // chosen on the "Choose Your Hooper" screen — persists for the session
+let selectedHooperName = '';
+let sessionBestStreak = 0;
+let stats = { fgm: 0, fga: 0, tpm: 0, tpa: 0, dunks: 0, points: 0 }; // session box score — resets on reload; career persistence needs the real backend
+let lives = 3;
+let queuedMove = null; // { move, ts } — buffered like before
+let superReady = false; // banked "Combo!" super move — persists across levels until used
+let nextSuperThreshold = 8; // streak needed to earn the next super
+let streak = 0; // persists across level transitions — only resets on an actual strip
+let dodgeStreak = 0; // separate streak for clean dodges (lane play), rewards points only — kept distinct from the move streak
+let cachedCfg = null; // reused across retries of the same level so a checkpoint retry isn't re-randomized
+let cachedCfgLevel = null;
+let checkpointReached = false; // resets when actually advancing to a new level, not on retry
+let score = 0; // arcade running score, boosted by perfect moves and streak multiplier — resets on a full "benched" game over
+let totalTurnovers = 0; // session-wide turnover count — hitting the bench threshold ends the run
+const BENCH_THRESHOLD = 5;
+
+const MOVES = { CROSSOVER: 'CROSSOVER', SPIN: 'SPIN', HESI: 'HESI', BEHINDBACK: 'BEHINDBACK', INANDOUT: 'INANDOUT' };
+// visual tell lives on the defender's pose (one hand = cross, both hands = spin,
+// neutral/flat-footed = hesi, low reach = behind-the-back, wide stagger = in-and-out)
+// plus a color-coded glow behind them.
+const MOVE_COLOR = { CROSSOVER: 0xff7a1a, SPIN: 0x2f6fed, HESI: 0xff3b3b, BEHINDBACK: 0x2ecc71, INANDOUT: 0x9b59b6 };
+
+// progressive unlock: Crossover to start, then one new move per boss —
+// Spin (boss@5), Hesi (boss@10), Behind-the-Back (boss@15), In-and-Out (boss@20/Championship)
+function unlockedMoves(n){
+  const m = [MOVES.CROSSOVER];
+  if (n > 5) m.push(MOVES.SPIN);
+  if (n > 10) m.push(MOVES.HESI);
+  if (n > 15) m.push(MOVES.BEHINDBACK);
+  if (n > 20) m.push(MOVES.INANDOUT);
+  return m;
+}
+function moveSuffix(move){
+  if (move === MOVES.CROSSOVER) return '_cross';
+  if (move === MOVES.SPIN) return '_spin';
+  if (move === MOVES.HESI) return '_hesi';
+  if (move === MOVES.BEHINDBACK) return '_bhb';
+  return '_inout';
+}
+
+// each move unlocks the level right after its boss; used to trigger the "new move" announcement
+const NEW_MOVE_AT_LEVEL = { 6: MOVES.SPIN, 11: MOVES.HESI, 16: MOVES.BEHINDBACK, 21: MOVES.INANDOUT };
+const MOVE_FULLNAME = { CROSSOVER: 'Crossover', SPIN: 'Spin', HESI: 'Hesitation', BEHINDBACK: 'Behind-the-Back', INANDOUT: 'In-and-Out' };
+const MOVE_ABBR = { CROSSOVER: 'CROSS', SPIN: 'SPIN', HESI: 'HESI', BEHINDBACK: 'BACK', INANDOUT: 'I/O' };
+
+// tournament framing — bosses land at 5/10/15/20, which map to playoff rounds;
+// the cycle repeats as a new "season" once you win the championship
+function roundInfo(n){
+  const season = Math.floor((n-1)/20) + 1;
+  const pos = ((n-1) % 20) + 1; // 1..20
+  let name;
+  if (pos <= 4) name = 'FIRST ROUND';
+  else if (pos === 5) name = 'FIRST ROUND — BOSS';
+  else if (pos <= 9) name = 'QUARTERFINALS';
+  else if (pos === 10) name = 'QUARTERFINALS — BOSS';
+  else if (pos <= 14) name = 'SEMIFINALS';
+  else if (pos === 15) name = 'SEMIFINALS — BOSS';
+  else if (pos <= 19) name = 'CHAMPIONSHIP';
+  else name = 'CHAMPIONSHIP — FINAL BOSS';
+  return { season, name, isFinalBoss: pos === 20 };
+}
+
+// running arcade score — boosted by streak (every 5 in a row adds +50% multiplier)
+function addScore(base){
+  const mult = 1 + Math.floor(streak/5)*0.5;
+  score += Math.round(base*mult);
+  const el = document.getElementById('scoreVal');
+  if (el) el.textContent = score;
+}
+
+// ---------- Audio: synthesized tones, no asset files needed ----------
+let audioCtx = null;
+function ensureAudio(){
+  try{
+    if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  } catch(e){ return null; }
+}
+function playTone(freq, duration, type, gainPeak, sweepTo){
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  if (sweepTo) osc.frequency.exponentialRampToValueAtTime(sweepTo, ctx.currentTime + duration);
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(gainPeak||0.2, ctx.currentTime+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime+duration+0.02);
+}
+// filtered white noise — reads as real crowd roar/murmur, not a synthesized tone
+function playCrowdNoise(duration, peakGain, filterFreq, type){
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  const bufferSize = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = type || 'bandpass';
+  filter.frequency.value = filterFreq;
+  filter.Q.value = 0.7;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(peakGain, ctx.currentTime + duration*0.18);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  noise.start();
+}
+function sfxCrowdCheer(big){ playCrowdNoise(big?1.3:0.7, big?0.4:0.25, big?1500:1100, 'bandpass'); }
+function sfxCrowdGroan(){ playCrowdNoise(0.55, 0.18, 260, 'lowpass'); }
+function sfxCrossover(){ playTone(520, 0.12, 'triangle', 0.18, 300); }
+function sfxSpin(){ playTone(300, 0.22, 'sawtooth', 0.14, 700); }
+function sfxStrip(){ playTone(120, 0.25, 'square', 0.2, 60); }
+function sfxClank(){ playTone(200, 0.15, 'square', 0.14, 140); }
+function sfxScore(){ playTone(660, 0.12, 'sine', 0.2, 880); setTimeout(()=>playTone(880, 0.18, 'sine', 0.22, 1180), 90); }
+function sfxShift(){ playTone(700, 0.05, 'sine', 0.07); }
+function sfxAnkles(){ playTone(150, 0.09, 'square', 0.22, 55); setTimeout(()=>playTone(900, 0.16, 'sine', 0.22, 1300), 70); }
+function sfxBossRoar(){ playTone(90, 0.35, 'sawtooth', 0.26, 45); setTimeout(()=>playTone(65, 0.22, 'square', 0.18, 40), 120); }
+function sfxBossHit(){ playTone(110, 0.1, 'square', 0.24, 70); }
+function sfxHesi(){ playTone(440, 0.06, 'triangle', 0.16); setTimeout(()=>playTone(520, 0.08, 'triangle', 0.16), 70); }
+function sfxFreeze(){ playTone(1200, 0.1, 'sine', 0.2, 1600); setTimeout(()=>playTone(700, 0.18, 'sine', 0.2, 300), 90); }
+function sfxBehindBack(){ playTone(380, 0.07, 'triangle', 0.16, 620); setTimeout(()=>playTone(300, 0.09, 'triangle', 0.14, 500), 60); }
+function sfxInAndOut(){ playTone(500, 0.06, 'sawtooth', 0.14, 260); setTimeout(()=>playTone(500, 0.06, 'sawtooth', 0.14, 700), 80); }
+
+// ---------- Procedural 2D baller (stand-in for the real avatar-creator output) ----------
+const BUILDS = { lanky:{w:0.85,h:1.12}, standard:{w:1,h:1}, stocky:{w:1.18,h:0.92} };
+
+// ---------- Choose Your Hooper — random generic builds offered before a run ----------
+const HOOPER_NAMES = ['SWIFT','ICE','TANK','FLASH','ROOKIE','VIPER','ACE','GLIDE','JUKE','RIM-RATTLER','BOLT','CHAIN','NOVA','DASH','HAWK','JUKEBOX','THE BLUR','LEFTY'];
+const HOOPER_SKINS = [0xf0c9a0, 0xd8a878, 0xc98a5b, 0x8a5a34, 0x6b4226];
+const HOOPER_HAIR_STYLES = ['fade','curls','bald','long','afro','mohawk','flattop'];
+const HOOPER_HAIR_COLORS = [0x0a0a0a, 0x3a2418, 0x6b4226, 0xd4a843, 0xb33d1f, 0x9a9a9a];
+const HOOPER_JERSEYS = [0x14213d, 0xff7a1a, 0xe63946, 0x2f6fed, 0x2ecc71, 0x9b59b6, 0xffd23f, 0x1a1a1a];
+const HOOPER_SHORTS = [0x0a0f1e, 0x1a1a1a, 0x2a1f05, 0x1a1230, 0x102a1c];
+const HOOPER_BUILDS = ['standard','stocky','lanky'];
+const HOOPER_ACCESSORY_COLORS = [0xffffff, 0x1a1a1a, 0xff7a1a, 0xe63946, 0x2f6fed, 0xffd23f];
+
+function randomHooper(){
+  const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+  const accessories = { headband: Math.random()<0.3, wristbands: Math.random()<0.3, kneepads: Math.random()<0.3 };
+  return {
+    name: pick(HOOPER_NAMES),
+    palette: {
+      skin: pick(HOOPER_SKINS),
+      jersey: pick(HOOPER_JERSEYS),
+      shorts: pick(HOOPER_SHORTS),
+      hair: { style: pick(HOOPER_HAIR_STYLES), color: pick(HOOPER_HAIR_COLORS) },
+      build: pick(HOOPER_BUILDS),
+      accessories, accessoryColor: pick(HOOPER_ACCESSORY_COLORS),
+    },
+  };
+}
+
+
+// court floor detail — each setting gets a surface that actually looks like
+// what it is, not just a recolored flat rectangle
+function drawCourtFloor(court, theme, W, H){
+  const style = theme.floorStyle;
+  if (style === 'hardwood' || style === 'hardwood-glossy'){
+    // vertical planks running the length of the court, with alternating shade
+    const plankW = 15;
+    let i = 0;
+    for (let lx=18; lx<W-18; lx+=plankW){
+      if (i%2===0){ court.fillStyle(0x000000, 0.09); court.fillRect(lx, H*0.35, plankW, H*0.65); }
+      i++;
+    }
+    court.lineStyle(1, 0x000000, 0.28);
+    for (let lx=18; lx<W-18; lx+=plankW){ court.lineBetween(lx, H*0.35, lx, H); }
+    // short grain streaks within each plank
+    court.lineStyle(1, 0xffffff, 0.11);
+    for (let lx=18; lx<W-18; lx+=plankW){
+      for (let ly=H*0.4; ly<H; ly+=26){
+        court.lineBetween(lx+3, ly+Math.random()*10, lx+plankW-3, ly+Math.random()*10+6);
+      }
+    }
+    // accent-colored key/paint stripe down the lane, like real hardwood courts
+    court.fillStyle(theme.accent, 0.05);
+    court.fillRect(W/2-52, H*0.35, 104, H*0.65);
+    court.lineStyle(2, theme.accent, 0.3);
+    court.lineBetween(W/2-52, H*0.35, W/2-52, H);
+    court.lineBetween(W/2+52, H*0.35, W/2+52, H);
+    if (style === 'hardwood-glossy'){
+      // polished-floor light streak
+      court.fillStyle(0xffffff, 0.07);
+      court.fillTriangle(0, H*0.35, W*0.45, H*0.35, 0, H*0.68);
+    }
+  } else if (style === 'asphalt' || style === 'pavement'){
+    // cracked, patchy surface — pavement (park) gets more wear than asphalt (streetball)
+    const crackCount = style === 'pavement' ? 12 : 7;
+    const patchCount = style === 'pavement' ? 10 : 6;
+    court.fillStyle(0x000000, 0.12);
+    for (let i=0;i<patchCount;i++){
+      const x = Math.random()*W, y = H*0.4+Math.random()*H*0.55;
+      court.fillEllipse(x, y, 35+Math.random()*35, 16+Math.random()*18);
+    }
+    court.lineStyle(1.3, 0x000000, 0.4);
+    for (let i=0;i<crackCount;i++){
+      let x = Math.random()*W, y = H*0.38+Math.random()*H*0.55;
+      court.beginPath();
+      court.moveTo(x, y);
+      const segs = 3+Math.floor(Math.random()*3);
+      for (let s=0;s<segs;s++){ x += (Math.random()-0.5)*34; y += Math.random()*18; court.lineTo(x, y); }
+      court.strokePath();
+    }
+    // faded accent-colored paint, worn and half-scrubbed-off looking
+    court.lineStyle(3, theme.accent, 0.22);
+    court.lineBetween(W/2-52, H*0.35, W/2-52, H);
+    court.lineBetween(W/2+52, H*0.35, W/2+52, H);
+  } else { // concrete — plain driveway/street, subtle expansion-joint grid
+    court.lineStyle(1.3, 0x000000, 0.18);
+    for (let lx=6; lx<W; lx+=54){ court.lineBetween(lx, H*0.35, lx, H); }
+    for (let ly=H*0.4; ly<H; ly+=54){ court.lineBetween(0, ly, W, ly); }
+    court.lineStyle(2, theme.accent, 0.25);
+    court.lineBetween(W/2-52, H*0.35, W/2-52, H);
+    court.lineBetween(W/2+52, H*0.35, W/2+52, H);
+  }
+}
+
+function drawFan(g, x, y, skinTone, shirtColor, s){
+  g.fillStyle(shirtColor, 0.95);
+  g.fillRoundedRect(x-1.9*s, y+0.6*s, 3.8*s, 3.2*s, 1*s);
+  g.fillStyle(skinTone, 1);
+  g.fillCircle(x, y-0.6*s, 1.7*s);
+}
+const SKIN_TONES = [0xf0c9a0, 0xd8a878, 0xc98a5b, 0x8a5a34, 0x6b4226];
+
+function drawBaller(g, palette, runFrame, armPose, poseColor, showFace){
+  const { skin, jersey, shorts, hair, build } = palette;
+  const b = BUILDS[build];
+  const cx = 22*b.w, legW = 7*b.w, torsoW = 20*b.w, torsoH = 22*b.h;
+  const headR = 8.8*b.w;
+  const headY = 12*b.h;
+  const torsoY = headY + headR + 2;
+  const legY = torsoY + torsoH;
+  const stride = runFrame===undefined ? 0 : 3;
+  const leftLift = runFrame===1 ? stride : 0;
+  const rightLift = runFrame===0 ? stride : 0;
+  const leftLegH = 14*b.h - leftLift;
+  const rightLegH = 14*b.h - rightLift;
+  const leanSpread = armPose==='lean' ? 4 : 0; // wide staggered stance, tell for In-and-Out
+
+  g.fillStyle(skin,1);
+  g.fillRoundedRect(cx-legW-2-leftLift*0.4-leanSpread, legY+leftLift, legW, leftLegH, 2);
+  g.fillRoundedRect(cx+2+rightLift*0.4+leanSpread, legY+rightLift, legW, rightLegH, 2);
+  g.fillStyle(0x1c1c1c,1);
+  g.fillRoundedRect(cx-legW-3-leftLift*0.4-leanSpread, legY+leftLift+leftLegH-1, legW+2, 5, 2);
+  g.fillRoundedRect(cx+1+rightLift*0.4+leanSpread, legY+rightLift+rightLegH-1, legW+2, 5, 2);
+  g.fillStyle(shorts,1);
+  g.fillRoundedRect(cx-torsoW/2, torsoY+torsoH-8, torsoW/2-1, 17, 2);
+  g.fillRoundedRect(cx+1, torsoY+torsoH-8, torsoW/2-1, 17, 2);
+
+  // arms — defenders get a pose that IS the tell: one hand out (cross it), both
+  // hands spread high (spin), low reach (behind-the-back), wide stance (in-and-out).
+  // each branch records where the wrist actually ends up, so accessories can find it.
+  let lWrist, rWrist;
+  if (armPose === 'both'){
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-15, torsoY+3, 13, 5, 2);
+    g.fillRoundedRect(cx+torsoW/2+2, torsoY+3, 13, 5, 2);
+    g.fillStyle(poseColor,1);
+    g.fillCircle(cx-torsoW/2-15, torsoY+5.5, 4);
+    g.fillCircle(cx+torsoW/2+15, torsoY+5.5, 4);
+    lWrist = {x:cx-torsoW/2-9, y:torsoY+5, ang:0}; rWrist = {x:cx+torsoW/2+9, y:torsoY+5, ang:0};
+  } else if (armPose === 'one'){
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-15, torsoY+1, 13, 5, 2);
+    g.fillStyle(poseColor,1);
+    g.fillCircle(cx-torsoW/2-15, torsoY+3.5, 4);
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx+torsoW/2, torsoY+2, 5, 16*b.h, 2);
+    lWrist = {x:cx-torsoW/2-9, y:torsoY+3, ang:0}; rWrist = {x:cx+torsoW/2+2.5, y:torsoY+2+16*b.h*0.68, ang:1};
+  } else if (armPose === 'reach'){
+    // one arm reaching low and forward — a poke-check attempt
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-13, torsoY+torsoH-4, 15, 5, 2);
+    g.fillStyle(poseColor,1);
+    g.fillCircle(cx-torsoW/2-13, torsoY+torsoH-1.5, 4);
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx+torsoW/2, torsoY+2, 5, 16*b.h, 2);
+    lWrist = {x:cx-torsoW/2-8, y:torsoY+torsoH-3, ang:0}; rWrist = {x:cx+torsoW/2+2.5, y:torsoY+2+16*b.h*0.68, ang:1};
+  } else if (armPose === 'lean'){
+    // both arms low and wide, legs staggered — anticipating a hard cut
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-12, torsoY+8, 12, 5, 2);
+    g.fillRoundedRect(cx+torsoW/2, torsoY+8, 12, 5, 2);
+    g.fillStyle(poseColor,1);
+    g.fillCircle(cx-torsoW/2-12, torsoY+10.5, 3.5);
+    g.fillCircle(cx+torsoW/2+12, torsoY+10.5, 3.5);
+    lWrist = {x:cx-torsoW/2-7, y:torsoY+10, ang:0}; rWrist = {x:cx+torsoW/2+7, y:torsoY+10, ang:0};
+  } else {
+    g.fillStyle(skin,1);
+    g.fillRoundedRect(cx-torsoW/2-5, torsoY+2+rightLift*0.3, 5, 16*b.h, 2);
+    g.fillRoundedRect(cx+torsoW/2, torsoY+2+leftLift*0.3, 5, 16*b.h, 2);
+    lWrist = {x:cx-torsoW/2-2.5, y:torsoY+2+rightLift*0.3+16*b.h*0.66, ang:1};
+    rWrist = {x:cx+torsoW/2+2.5, y:torsoY+2+leftLift*0.3+16*b.h*0.66, ang:1};
+  }
+
+  g.fillStyle(jersey,1);
+  g.fillRoundedRect(cx-torsoW/2, torsoY, torsoW, torsoH, 5);
+  if (palette.jerseyStyle === 'pinstripe'){
+    const stripeColor = palette.secondaryColor || 0xffffff;
+    g.fillStyle(stripeColor, 0.55);
+    const stripeCount = 4;
+    for (let i=0;i<stripeCount;i++){
+      const sx = cx-torsoW/2 + (torsoW/(stripeCount+1))*(i+1);
+      g.fillRect(sx-0.6, torsoY+2, 1.2, torsoH-4);
+    }
+  }
+  g.fillStyle(0xffffff,0.85);
+  g.fillRect(cx-torsoW/2+3, torsoY+3, torsoW-6, 3);
+
+  // hair — every full-cap style shares the same top/width anchors so they line
+  // up consistently on the head instead of drifting style to style.
+  const capCenterY = headY - headR*0.65;
+  const capHalfW = headR*0.85;
+  g.fillStyle(hair.color,1);
+  if (hair.style==='afro'){ g.fillEllipse(cx, headY-headR*0.24, headR*2.7, headR*2.05); }
+  else if (hair.style==='long'){
+    g.fillRoundedRect(cx-headR*0.88, headY-headR*1.25, headR*1.76, headR*1.75, headR*0.5);
+    g.fillRoundedRect(cx-headR*1.25, headY-headR*0.05, headR*2.5, headR*1.35, headR*0.6);
+  }
+
+  g.fillStyle(skin,1);
+  g.fillCircle(cx, headY, headR);
+  g.fillStyle(hair.color,1);
+  if (hair.style==='fade'){
+    g.fillEllipse(cx, capCenterY, capHalfW*2, headR*0.95);
+    const hairlineY = headY - headR*0.25;
+    g.fillRect(cx-capHalfW, capCenterY, capHalfW*2, hairlineY-capCenterY);
+  }
+  else if (hair.style==='curls'){
+    g.fillEllipse(cx, capCenterY, capHalfW*1.85, headR*0.9);
+    for(let i=0;i<9;i++){
+      const t = i/8;
+      const ang = Math.PI + t*Math.PI;
+      const bx = cx + Math.cos(ang)*capHalfW*0.95;
+      const by = capCenterY + Math.sin(ang)*headR*0.32;
+      g.fillCircle(bx, by, headR*0.19);
+    }
+  }
+  else if (hair.style==='mohawk'){ g.fillTriangle(cx-headR*0.36, headY-headR*0.75, cx+headR*0.36, headY-headR*0.75, cx, headY-headR*1.25); }
+  else if (hair.style==='flattop'){ g.fillRect(cx-headR*0.95, headY-headR*1.05, headR*1.9, headR*0.75); }
+
+  if (showFace === false && (hair.style === 'long' || hair.style === 'afro')){
+    // viewed from behind — no face to frame, so cover the head fully instead
+    // of leaving the bare skin gap the underlay technique carves out for a face
+    g.fillStyle(hair.color, 1);
+    g.fillCircle(cx, headY, headR);
+  }
+
+  // face — bigger cartoonish eyes, optional eyebrows, and a choice of mouths;
+  // all drawn last so hair (or anything else) can never cover them
+  const expr = palette.expression || {};
+  if (showFace !== false){
+    if (expr.eyebrows === 'angry'){
+      g.fillStyle(hair.color, 0.95);
+      g.fillTriangle(cx-headR*0.58, headY-headR*0.2, cx-headR*0.15, headY-headR*0.03, cx-headR*0.58, headY-headR*0.05);
+      g.fillTriangle(cx+headR*0.58, headY-headR*0.2, cx+headR*0.15, headY-headR*0.03, cx+headR*0.58, headY-headR*0.05);
+    } else if (expr.eyebrows === 'raised'){
+      g.fillStyle(hair.color, 0.9);
+      g.fillRoundedRect(cx-headR*0.52, headY-headR*0.24, headR*0.34, headR*0.09, headR*0.04);
+      g.fillRoundedRect(cx+headR*0.18, headY-headR*0.24, headR*0.34, headR*0.09, headR*0.04);
+    }
+
+    g.fillStyle(0xffffff,1);
+    g.fillEllipse(cx-headR*0.37, headY+headR*0.04, headR*0.42, headR*0.36);
+    g.fillEllipse(cx+headR*0.37, headY+headR*0.04, headR*0.42, headR*0.36);
+    g.fillStyle(0x1a1a1a,1);
+    g.fillCircle(cx-headR*0.33, headY+headR*0.07, headR*0.19);
+    g.fillCircle(cx+headR*0.41, headY+headR*0.07, headR*0.19);
+    g.fillStyle(0xffffff,0.95);
+    g.fillCircle(cx-headR*0.27, headY+headR*0.01, headR*0.07);
+    g.fillCircle(cx+headR*0.47, headY+headR*0.01, headR*0.07);
+
+    // blush + nose — small touches so the face reads as a face, not a mask
+    g.fillStyle(0xe8836b, 0.28);
+    g.fillCircle(cx-headR*0.5, headY+headR*0.22, headR*0.14);
+    g.fillCircle(cx+headR*0.5, headY+headR*0.22, headR*0.14);
+    g.fillStyle(0x000000, 0.18);
+    g.fillCircle(cx-headR*0.03, headY+headR*0.22, headR*0.05);
+    g.fillCircle(cx+headR*0.1, headY+headR*0.22, headR*0.05);
+
+    const my = headY+headR*0.42;
+    g.fillStyle(0x8a4a3a,0.85);
+    if (expr.mouth === 'smile'){
+      g.fillRoundedRect(cx-headR*0.26, my-headR*0.02, headR*0.52, headR*0.14, headR*0.07);
+      g.fillCircle(cx-headR*0.29, my+headR*0.03, headR*0.06);
+      g.fillCircle(cx+headR*0.29, my+headR*0.03, headR*0.06);
+    } else if (expr.mouth === 'smirk'){
+      g.fillRoundedRect(cx-headR*0.2, my, headR*0.4, headR*0.11, headR*0.05);
+      g.fillCircle(cx+headR*0.24, my-headR*0.03, headR*0.06);
+    } else if (expr.mouth === 'frown'){
+      g.fillRoundedRect(cx-headR*0.22, my+headR*0.06, headR*0.44, headR*0.12, headR*0.06);
+      g.fillCircle(cx-headR*0.25, my+headR*0.14, headR*0.055);
+      g.fillCircle(cx+headR*0.25, my+headR*0.14, headR*0.055);
+    } else {
+      g.fillRoundedRect(cx-headR*0.24, my, headR*0.48, headR*0.13, headR*0.06);
+    }
+  }
+
+  // accessories — independent of hairstyle, drawn last so they sit on top of
+  // everything; wristbands use the actual tracked wrist position for this pose
+  if (palette.accessories){
+    const ac = palette.accessoryColor || 0xffffff;
+    g.fillStyle(ac,1);
+    if (palette.accessories.headband){ g.fillRect(cx-headR, headY-headR*0.42, headR*2, headR*0.3); }
+    if (palette.accessories.wristbands && lWrist && rWrist){
+      [lWrist, rWrist].forEach(w => {
+        if (w.ang === 1){ g.fillRoundedRect(w.x-4.5, w.y-2.5, 9, 5, 2); }
+        else { g.fillRoundedRect(w.x-2.5, w.y-4, 5, 8, 2); }
+      });
+    }
+    if (palette.accessories.kneepads){
+      g.fillRoundedRect(cx-legW-4-leanSpread, legY+4, legW+4, 6, 2);
+      g.fillRoundedRect(cx+leanSpread, legY+4, legW+4, 6, 2);
+    }
+  }
+}
+
+// ---------- Level themes: setting + defender look are matched ----------
+const THEMES = {
+  gym: {
+    label: 'THE GYM',
+    sky: [0x241d12, 0x4a3a22],
+    court: 0x8a5a2a, lane: 0xa87a3a,
+    accent: 0xc9a227,
+    crowdDensity: 'few',
+    sideInset: 8,
+    floorStyle: 'hardwood',
+    backboardStyle: 'classic',
+    variants: [
+      { skin:0xc98a5b, jersey:0x6b1f2a, shorts:0x1a1a1a, hair:{style:'fade',color:0x0a0a0a}, build:'standard' },
+      { skin:0x8a5a34, jersey:0xc9a227, shorts:0x1a1a1a, hair:{style:'bald',color:0x000000}, build:'stocky' },
+      { skin:0xf0c9a0, jersey:0x6b1f2a, shorts:0x1a1a1a, hair:{style:'curls',color:0x1a1a1a}, build:'lanky' },
+    ],
+  },
+  streetball: {
+    label: 'THE BLACKTOP',
+    sky: [0x3a2050, 0x8a4a1f],
+    court: 0x4a4a52, lane: 0x6b6b74,
+    accent: 0xff7a1a,
+    crowdDensity: 'full',
+    sideInset: 17,
+    floorStyle: 'asphalt',
+    backboardStyle: 'urban',
+    variants: [
+      { skin:0xe0b088, jersey:0xff5c1a, shorts:0x1a1a1a, hair:{style:'fade',color:0x111111}, build:'stocky', accessories:{headband:true}, accessoryColor:0xff5c1a },
+      { skin:0x8a5a34, jersey:0x2ec4b6, shorts:0x102a1c, hair:{style:'curls',color:0x111111}, build:'lanky' },
+      { skin:0xf0c9a0, jersey:0xe63946, shorts:0x1a1230, hair:{style:'bald',color:0x000000}, build:'standard' },
+      { skin:0x6b4226, jersey:0xffd23f, shorts:0x2a1f05, hair:{style:'flattop',color:0x0a0a0a}, build:'lanky', accessories:{wristbands:true}, accessoryColor:0xffd23f },
+    ],
+  },
+  park: {
+    label: 'THE PARK',
+    sky: [0x2a3025, 0x4a5a3a],
+    court: 0x6a6a5e, lane: 0x7f7f70,
+    accent: 0x8a9a5a,
+    crowdDensity: 'none',
+    sideInset: 4,
+    floorStyle: 'pavement',
+    backboardStyle: 'rusty',
+    variants: [
+      { skin:0x6b4226, jersey:0x4a5a3a, shorts:0x1a1a1a, hair:{style:'bald',color:0x000000}, build:'stocky' },
+      { skin:0xc98a5b, jersey:0x5a5a4a, shorts:0x1a1a1a, hair:{style:'fade',color:0x0a0a0a}, build:'lanky', accessories:{headband:true}, accessoryColor:0x5a5a4a },
+      { skin:0x8a5a34, jersey:0x4a5a3a, shorts:0x2a1f05, hair:{style:'curls',color:0x111111}, build:'standard' },
+    ],
+  },
+  arena: {
+    label: 'THE ARENA',
+    sky: [0x070d1c, 0x14213d],
+    court: 0x5a3a1f, lane: 0x7a5228,
+    accent: 0xffd23f,
+    crowdDensity: 'full',
+    sideInset: 10,
+    floorStyle: 'hardwood-glossy',
+    backboardStyle: 'classic',
+    variants: [
+      { skin:0xd8a878, jersey:0x14213d, shorts:0x0a0f1e, hair:{style:'fade',color:0x0a0a0a}, build:'standard' },
+      { skin:0x6b4226, jersey:0x14213d, shorts:0x0a0f1e, hair:{style:'bald',color:0x000000}, build:'stocky' },
+      { skin:0xf0c9a0, jersey:0x14213d, shorts:0x0a0f1e, hair:{style:'fade',color:0x1a1a1a}, build:'lanky' },
+    ],
+  },
+  neighborhood: {
+    label: 'THE BLOCK',
+    sky: [0x3a3020, 0x6a5a3a],
+    court: 0x4a4a48, lane: 0x5f5f58,
+    accent: 0xff9955,
+    crowdDensity: 'none',
+    sideInset: 3,
+    floorStyle: 'concrete',
+    backboardStyle: 'portable',
+    variants: [
+      { skin:0xf0c9a0, jersey:0x2f6fed, shorts:0x1a1a1a, hair:{style:'curls',color:0x1a1a1a}, build:'lanky' },
+      { skin:0x8a5a34, jersey:0x35d07f, shorts:0x1a1a1a, hair:{style:'bald',color:0x000000}, build:'standard' },
+      { skin:0xc98a5b, jersey:0xff9955, shorts:0x1a1a1a, hair:{style:'fade',color:0x0a0a0a}, build:'stocky', accessories:{headband:true}, accessoryColor:0xff9955 },
+    ],
+  },
+};
+const THEME_KEYS = Object.keys(THEMES);
+
+// ---------- Bosses, tied to their court's identity ----------
+// arena keeps the original mascot roster; other courts get a signature
+// character matching that setting instead of a generic mascot.
+const THEME_BOSSES = {
+  gym: [
+    { name: 'COACH K.O.', palette: { skin:0x8a5a34, jersey:0x6b1f2a, shorts:0x1a1a1a, hair:{style:'bald',color:0x000000}, build:'stocky' }, hits: 3, color: 0xc9a227 },
+  ],
+  streetball: [
+    { name: 'THE LEGEND', palette: { skin:0xe0b088, jersey:0xff5c1a, shorts:0x1a1a1a, hair:{style:'fade',color:0x111111}, build:'lanky', accessories:{headband:true,wristbands:true}, accessoryColor:0xff7a1a }, hits: 3, color: 0xff7a1a },
+  ],
+  park: [
+    { name: 'THE HUSTLER', palette: { skin:0x6b4226, jersey:0x4a5a3a, shorts:0x1a1a1a, hair:{style:'bald',color:0x000000}, build:'standard' }, hits: 3, color: 0x8a9a5a },
+  ],
+  arena: [
+    { name: 'TALON', palette: { skin:0xffcc33, jersey:0x1a1a2e, shorts:0x1a1a2e, hair:{style:'flattop',color:0xff3b3b}, build:'lanky', accessories:{headband:true}, accessoryColor:0xff3b3b }, hits: 3, color: 0xff3b3b },
+    { name: 'KRUNCH', palette: { skin:0x8a5a34, jersey:0x2f6fed, shorts:0x0a0f1e, hair:{style:'curls',color:0x1a1a1a}, build:'stocky' }, hits: 3, color: 0x2f6fed },
+    { name: 'ZAP', palette: { skin:0xf0c9a0, jersey:0xffd23f, shorts:0x1a1230, hair:{style:'fade',color:0x000000}, build:'standard' }, hits: 4, color: 0xffd23f },
+  ],
+};
+// which court hosts which boss slot each season — championship (slot 3) always lands in the arena
+const BOSS_SLOT_THEME = ['gym', 'streetball', 'park', 'arena'];
+
+function makeTextures(scene){
+  const g = scene.add.graphics().setVisible(false);
+
+  const playerPalette = selectedHooperPalette || { skin:0xc98a5b, jersey:0x0f2a52, shorts:0x0f2a52, hair:{style:'fade',color:0x2a1c12}, build:'standard' };
+  drawBaller(g, playerPalette, 0, undefined, undefined, false); g.generateTexture('player_run0',44,64); g.clear();
+  drawBaller(g, playerPalette, 1, undefined, undefined, false); g.generateTexture('player_run1',44,64); g.clear();
+
+  Object.keys(THEMES).forEach(key => {
+    const theme = THEMES[key];
+    theme.variants.forEach((v,i) => {
+      drawBaller(g, v, undefined, 'one', MOVE_COLOR.CROSSOVER); g.generateTexture(key+'_def'+i+'_cross', 44, 64); g.clear();
+      drawBaller(g, v, undefined, 'both', MOVE_COLOR.SPIN); g.generateTexture(key+'_def'+i+'_spin', 44, 64); g.clear();
+      drawBaller(g, v); g.generateTexture(key+'_def'+i+'_hesi', 44, 64); g.clear();
+      drawBaller(g, v, undefined, 'reach', MOVE_COLOR.BEHINDBACK); g.generateTexture(key+'_def'+i+'_bhb', 44, 64); g.clear();
+      drawBaller(g, v, undefined, 'lean', MOVE_COLOR.INANDOUT); g.generateTexture(key+'_def'+i+'_inout', 44, 64); g.clear();
+    });
+    if (theme.backboardStyle === 'rusty'){
+      // run-down park hoop — bent rim, chipped backboard, torn net
+      g.fillStyle(0x7a7a70, 0.7); g.fillRect(7,0,32,20);
+      g.lineStyle(2, 0x4a4a42, 0.8); g.strokeRect(7,0,32,20);
+      g.lineStyle(5, 0x8a5a3a, 1); g.strokeCircle(23,30,13);
+      g.lineStyle(1.2, 0xcfcfc0, 0.5);
+      for (let i=-10;i<=10;i+=7){ g.lineBetween(23+i*0.9, 37, 23+i*0.2, 50); }
+    } else if (theme.backboardStyle === 'portable'){
+      // portable driveway hoop — small plain backboard, visible weighted base pole
+      g.fillStyle(0xffffff, 0.75); g.fillRect(11,2,24,18);
+      g.lineStyle(4, theme.accent, 1); g.strokeCircle(23,28,11);
+      g.lineStyle(1.2, 0xffffff, 0.6);
+      for (let i=-8;i<=8;i+=6){ g.lineBetween(23+i*0.9, 34, 23+i*0.3, 46); }
+      g.fillStyle(0x2a2a2a, 0.8); g.fillRect(20,50,6,12);
+    } else if (theme.backboardStyle === 'urban'){
+      // streetball rim — chain-link-style net, tagged backboard corner
+      g.fillStyle(0xffffff, 0.8); g.fillRect(5,0,36,24);
+      g.lineStyle(2, theme.accent, 0.9); g.strokeRect(13,8,20,14);
+      g.fillStyle(theme.accent, 0.5); g.fillCircle(10,4,3);
+      g.lineStyle(6, theme.accent, 1); g.strokeCircle(23,30,14);
+      g.lineStyle(1.3, 0xdddddd, 0.6);
+      for (let i=-12;i<=12;i+=5){ g.lineBetween(23+i*0.9, 38, 23+i*0.3, 56); }
+    } else {
+      // classic glass backboard — gym and arena
+      g.fillStyle(0xffffff, 0.88); g.fillRect(5,0,36,24);
+      g.lineStyle(2, theme.accent, 0.9); g.strokeRect(13,8,20,14);
+      g.lineStyle(6, theme.accent, 1); g.strokeCircle(23,30,14);
+      g.lineStyle(1.5, 0xffffff, 0.65);
+      for (let i=-12;i<=12;i+=6){ g.lineBetween(23+i*0.9, 38, 23+i*0.35, 56); }
+    }
+    g.generateTexture(key+'_rim', 46, 62); g.clear();
+  });
+
+  // detailed scenery behind the rim — the "end of the drive" focal backdrop,
+  // sized much bigger than the old sky-band decorations so it actually pops
+  Object.keys(THEMES).forEach(key => {
+    const theme = THEMES[key];
+    const BW = 200, BH = 150;
+    if (key === 'gym'){
+      g.fillStyle(0x6b4a30, 0.4); g.fillRect(0,0,BW,BH);
+      g.fillStyle(0x000000, 0.13);
+      for (let ly=0; ly<BH; ly+=13){
+        const off = (Math.floor(ly/13)%2===0) ? 0 : 24;
+        for (let lx=off-48; lx<BW; lx+=48){ g.fillRect(lx, ly, 46, 11); }
+      }
+      // door
+      g.fillStyle(0x1a1410, 1); g.fillRoundedRect(BW*0.72, 20, 42, 110, 6);
+      g.lineStyle(2, 0x000000, 0.4); g.strokeRect(BW*0.72, 20, 42, 110);
+      g.fillStyle(theme.accent, 0.9); g.fillCircle(BW*0.72+34, 78, 2.6);
+      // pennant banner
+      g.fillStyle(theme.accent, 0.75);
+      g.fillTriangle(BW*0.18, 6, BW*0.18+26, 6, BW*0.18, 34);
+      g.lineStyle(2, 0x000000, 0.3); g.lineBetween(BW*0.18, 6, BW*0.18, 40);
+      // wall clock
+      g.fillStyle(0xf0ead8, 0.9); g.fillCircle(BW*0.42, 24, 11);
+      g.lineStyle(1.5, 0x1a1a1a, 0.8); g.strokeCircle(BW*0.42, 24, 11);
+      g.lineBetween(BW*0.42, 24, BW*0.42, 17); g.lineBetween(BW*0.42, 24, BW*0.42+6, 24);
+      // mop and bucket
+      const mx = BW*0.12;
+      g.lineStyle(3, 0xc9a878, 0.9); g.lineBetween(mx, 30, mx+10, 118);
+      g.fillStyle(0xe8e0c8, 0.9);
+      for (let i=0;i<7;i++){ g.fillRect(mx+3+i*2.6, 112, 2, 22); }
+      g.fillStyle(0x3a3a3a, 0.9); g.fillRect(mx-14, 128, 34, 18);
+      g.fillStyle(0x2a2a2a, 0.5); g.fillRect(mx-14, 128, 34, 5);
+    } else if (key === 'streetball'){
+      g.fillStyle(0x2a2a30, 0.55); g.fillRect(0,0,BW,BH);
+      // city skyline — a few deliberate silhouettes, not a dense repeating pattern
+      g.fillStyle(0x000000, 0.4);
+      g.fillRect(BW*0.05, BH*0.15, 26, BH*0.22);
+      g.fillRect(BW*0.32, BH*0.05, 30, BH*0.32);
+      g.fillRect(BW*0.65, BH*0.12, 24, BH*0.25);
+      g.fillRect(BW*0.85, BH*0.02, 22, BH*0.35);
+      // chain-link fence — wider spacing so it reads as a fence, not noise
+      g.lineStyle(1.2, 0xcfcfcf, 0.4);
+      for (let lx=-30; lx<BW+30; lx+=24){ g.lineBetween(lx, BH*0.4, lx+56, BH); }
+      for (let lx=-30; lx<BW+30; lx+=24){ g.lineBetween(lx, BH, lx+56, BH*0.4); }
+      g.lineStyle(3, 0x8a8a8a, 0.55);
+      g.lineBetween(0, BH*0.4, BW, BH*0.4);
+      g.lineBetween(0, BH, BW, BH);
+      // spray-tag accent mark
+      g.lineStyle(3, theme.accent, 0.7);
+      g.strokeCircle(BW*0.7, BH*0.65, 13);
+    } else if (key === 'park'){
+      g.fillStyle(0x3a4530, 0.5); g.fillRect(0,0,BW,BH);
+      // dominant broken wood fence with a big, obvious gap
+      const plankW = 16, gapStart = BW*0.4, gapEnd = BW*0.66;
+      g.fillStyle(0x5a4530, 0.9);
+      for (let lx=0; lx<BW; lx+=plankW){
+        if (lx > gapStart-plankW && lx < gapEnd) continue; // the gap
+        g.fillRect(lx, 14, plankW-2, 128);
+      }
+      g.lineStyle(1, 0x2a2015, 0.4);
+      for (let lx=0; lx<BW; lx+=plankW){
+        if (lx > gapStart-plankW && lx < gapEnd) continue;
+        g.lineBetween(lx+plankW/2, 14, lx+plankW/2, 142);
+      }
+      // bold horizontal support rails
+      g.lineStyle(4, 0x2a2015, 0.6);
+      g.lineBetween(0, 40, BW, 40); g.lineBetween(0, 108, BW, 108);
+      // splintered gap edges for a broken, rundown feel
+      g.fillStyle(0x2a2015, 0.5);
+      g.fillTriangle(gapStart-plankW, 14, gapStart-plankW+6, 14, gapStart-plankW, 50);
+      g.fillTriangle(gapEnd, 142, gapEnd-8, 142, gapEnd, 100);
+      // simple bushes at the base, pushed to the edges so the fence stays the focus
+      g.fillStyle(0x3a4a2a, 0.8);
+      g.fillEllipse(BW*0.08, 138, 40, 20);
+      g.fillEllipse(BW*0.92, 138, 40, 20);
+    } else if (key === 'arena'){
+      g.fillStyle(0x161d30, 0.55); g.fillRect(0,0,BW,BH);
+      // hanging banners
+      g.fillStyle(theme.accent, 0.55);
+      g.fillRect(BW*0.1, 0, 16, 60); g.fillTriangle(BW*0.1, 60, BW*0.1+16, 60, BW*0.1+8, 74);
+      g.fillRect(BW*0.22, 0, 16, 44); g.fillTriangle(BW*0.22, 44, BW*0.22+16, 44, BW*0.22+8, 58);
+      // stadium light rig
+      g.fillStyle(0x1a2030, 0.9); g.fillRect(BW*0.55, 4, BW*0.4, 6);
+      g.fillStyle(0xfff7d6, 0.6);
+      for (let lx=BW*0.58; lx<BW*0.92; lx+=14){ g.fillCircle(lx, 16, 4); }
+      // scoreboard
+      const sx = BW*0.5-58, sy=34, sw=116, sh=58;
+      g.fillStyle(theme.accent, 0.7); g.fillRoundedRect(sx-3, sy-3, sw+6, sh+6, 10);
+      g.fillStyle(0x0a0f1e, 0.95); g.fillRoundedRect(sx, sy, sw, sh, 8);
+      g.lineStyle(1.5, theme.accent, 0.4);
+      g.lineBetween(sx+10, sy+sh*0.42, sx+sw-10, sy+sh*0.42);
+      g.fillStyle(0x4a1010, 0.35);
+      for (let dx=0; dx<7; dx++){ g.fillRect(sx+8+dx*15, sy+sh*0.55, 11, 16); }
+    } else { // neighborhood
+      // garage wall siding fills the whole backdrop
+      g.fillStyle(0xb8a888, 0.55); g.fillRect(0,0,BW,BH);
+      g.lineStyle(1, 0x8a7a5a, 0.3);
+      for (let ly=8; ly<BH; ly+=10){ g.lineBetween(0, ly, BW, ly); }
+      // roofline along the very top for context
+      g.fillStyle(0x2a2418, 0.4);
+      g.fillTriangle(0, 16, BW, 16, BW*0.5, 0);
+      // white paneled garage door — sized to dominate the scene, siding visible around it
+      const gx = BW*0.16, gy=20, gw=BW*0.68, gh=BH*0.6;
+      g.fillStyle(0x000000, 0.25); g.fillRoundedRect(gx-4, gy-4, gw+8, gh+8, 8);
+      g.fillStyle(0xf2f0e8, 0.95); g.fillRoundedRect(gx, gy, gw, gh, 6);
+      // raised-panel grid, 2 columns x 4 rows, like a real panel door
+      const cols=2, rows=4, pad=9;
+      const panelW=(gw-pad*(cols+1))/cols, panelH=(gh-pad*(rows+1))/rows;
+      for (let r=0;r<rows;r++){
+        for (let c=0;c<cols;c++){
+          const px = gx+pad+c*(panelW+pad), py = gy+pad+r*(panelH+pad);
+          g.lineStyle(1.5, 0xb0a890, 0.8);
+          g.strokeRect(px, py, panelW, panelH);
+          g.fillStyle(0x000000, 0.08);
+          g.fillRect(px+2, py+panelH-5, panelW-4, 4);
+        }
+      }
+      // bike leaning against the garage, off to the side
+      g.lineStyle(2, 0xe63946, 0.7);
+      g.strokeCircle(BW*0.05, BH*0.86, 11); g.strokeCircle(BW*0.05+22, BH*0.86, 11);
+      g.lineBetween(BW*0.05, BH*0.86, BW*0.05+11, BH*0.62);
+      g.lineBetween(BW*0.05+11, BH*0.62, BW*0.05+22, BH*0.86);
+      g.lineBetween(BW*0.05+11, BH*0.62, BW*0.05+11, BH*0.5);
+    }
+    g.generateTexture(key+'_backdrop', BW, BH); g.clear();
+  });
+
+  // basketball — small orange circle with seam lines
+  g.fillStyle(0xd9701e,1); g.fillCircle(6,6,6);
+  g.lineStyle(1, 0x5a2e0a, 1);
+  g.lineBetween(0,6,12,6); g.lineBetween(6,0,6,12);
+  g.strokeCircle(6,6,6);
+  g.generateTexture('ball', 12, 12); g.clear();
+
+  // soft glow disc (white — tinted per-instance to the required move's color)
+  g.fillStyle(0xffffff, 0.12); g.fillCircle(28,28,28);
+  g.fillStyle(0xffffff, 0.22); g.fillCircle(28,28,20);
+  g.fillStyle(0xffffff, 0.35); g.fillCircle(28,28,12);
+  g.generateTexture('glow', 56, 56); g.clear();
+
+  // crowd — theme-matched density and palette, two depth layers each
+  Object.keys(THEMES).forEach(key => {
+    const theme = THEMES[key];
+    const isArena = key === 'arena';
+    const density = { full: {back:60, front:42}, few: {back:26, front:14}, none: {back:8, front:3} }[theme.crowdDensity];
+    for (let i=0;i<density.back;i++){
+      const x = Math.random()*100, y = Math.random()*10;
+      const shirt = isArena
+        ? Phaser.Display.Color.GetColor(Phaser.Math.Between(40,90), Phaser.Math.Between(50,90), Phaser.Math.Between(90,140))
+        : Phaser.Display.Color.GetColor(Phaser.Math.Between(120,255), Phaser.Math.Between(80,255), Phaser.Math.Between(80,255));
+      const skin = SKIN_TONES[Phaser.Math.Between(0, SKIN_TONES.length-1)];
+      drawFan(g, x, y, skin, shirt, 0.9);
+    }
+    g.generateTexture(key+'_crowd_back', 100, 12); g.clear();
+    for (let i=0;i<density.front;i++){
+      const x = Math.random()*100, y = Math.random()*12;
+      const shirt = isArena
+        ? (Math.random()<0.15 ? theme.accent : Phaser.Display.Color.GetColor(Phaser.Math.Between(70,120), Phaser.Math.Between(80,130), Phaser.Math.Between(140,200)))
+        : Phaser.Display.Color.GetColor(Phaser.Math.Between(140,255), Phaser.Math.Between(90,255), Phaser.Math.Between(90,255));
+      const skin = SKIN_TONES[Phaser.Math.Between(0, SKIN_TONES.length-1)];
+      drawFan(g, x, y, skin, shirt, 1.3);
+    }
+    g.generateTexture(key+'_crowd_front', 100, 14); g.clear();
+
+    // side strips — narrow vertical crowd running along the sidelines
+    const sideCount = { full: 9, few: 4, none: 1 }[theme.crowdDensity];
+    for (let i=0;i<sideCount;i++){
+      const x = Math.random()*18, y = Math.random()*44;
+      const shirt = isArena
+        ? (Math.random()<0.15 ? theme.accent : Phaser.Display.Color.GetColor(Phaser.Math.Between(60,110), Phaser.Math.Between(70,120), Phaser.Math.Between(130,190)))
+        : Phaser.Display.Color.GetColor(Phaser.Math.Between(130,255), Phaser.Math.Between(90,255), Phaser.Math.Between(90,255));
+      const skin = SKIN_TONES[Phaser.Math.Between(0, SKIN_TONES.length-1)];
+      drawFan(g, x, y, skin, shirt, 1.3);
+    }
+    g.generateTexture(key+'_crowd_side', 18, 44); g.clear();
+  });
+
+  // bosses — keyed by the court theme they belong to
+  Object.keys(THEME_BOSSES).forEach(themeKey => {
+    THEME_BOSSES[themeKey].forEach((boss, idx) => {
+      const prefix = 'boss_'+themeKey+'_'+idx;
+      drawBaller(g, boss.palette, undefined, 'one', MOVE_COLOR.CROSSOVER); g.generateTexture(prefix+'_cross', 44, 64); g.clear();
+      drawBaller(g, boss.palette, undefined, 'both', MOVE_COLOR.SPIN); g.generateTexture(prefix+'_spin', 44, 64); g.clear();
+      drawBaller(g, boss.palette); g.generateTexture(prefix+'_hesi', 44, 64); g.clear();
+      drawBaller(g, boss.palette, undefined, 'reach', MOVE_COLOR.BEHINDBACK); g.generateTexture(prefix+'_bhb', 44, 64); g.clear();
+      drawBaller(g, boss.palette, undefined, 'lean', MOVE_COLOR.INANDOUT); g.generateTexture(prefix+'_inout', 44, 64); g.clear();
+    });
+  });
+
+  // soft ground shadow for depth
+  g.fillStyle(0x000000, 0.32); g.fillEllipse(20,7,20,7);
+  g.generateTexture('shadow', 40, 14); g.clear();
+
+  g.destroy();
+}
+
+function burst(scene, x, y, color, count){
+  for (let i=0;i<count;i++){
+    const ang = Math.random()*Math.PI*2;
+    const dist = 22 + Math.random()*32;
+    const p = scene.add.circle(x, y, 2.5+Math.random()*2, color, 0.9).setDepth(7);
+    scene.tweens.add({ targets:p, x:x+Math.cos(ang)*dist, y:y+Math.sin(ang)*dist, alpha:0, scale:0.3, duration:400+Math.random()*180, ease:'Cubic.easeOut', onComplete:()=>p.destroy() });
+  }
+}
+
+function crowdPulse(scene, hyped){
+  if (!scene.crowd) return;
+  scene.tweens.add({ targets: scene.crowd, alpha: hyped ? 1 : 0.25, scaleY: hyped ? 1.3 : 0.9, duration: 140, yoyo:true, ease:'Quad.easeOut' });
+  if (scene.crowdBack){
+    scene.tweens.add({ targets: scene.crowdBack, alpha: hyped ? 0.75 : 0.2, duration: 140, yoyo:true, ease:'Quad.easeOut' });
+  }
+  if (scene.crowdSideL && scene.crowdSideR){
+    scene.tweens.add({ targets: [scene.crowdSideL, scene.crowdSideR], alpha: hyped ? 0.9 : 0.25, scaleX: hyped ? 1.25 : 0.9, duration: 140, yoyo:true, ease:'Quad.easeOut' });
+  }
+}
+
+// ---------- Level generation ----------
+// Each blocked lane gets the move that beats it baked directly onto the blocker —
+// the defender's drawn pose (one hand out vs both hands out) is the only tell.
+function buildLevel(n){
+  const isBoss = n % 5 === 0;
+  const seasonNum = Math.floor((n-1)/20);
+  const bossSlot = Math.floor(((n-1)%20)/5);
+  const regularLevelsSoFar = n - Math.floor(n/5);
+  const themeKey = isBoss ? BOSS_SLOT_THEME[bossSlot] : THEME_KEYS[(regularLevelsSoFar-1) % THEME_KEYS.length];
+  const bossIdx = isBoss ? seasonNum % THEME_BOSSES[themeKey].length : 0;
+  const packedPaint = !isBoss && (n % 3 === 0);
+  const speed = 150 + n*9;
+  const window = Math.max(90, 150 - n*5); // vertical beat-zone size, shrinks with level
+
+  const avail = unlockedMoves(n);
+  const makeBlockers = (lanesArr, allowMove) => lanesArr.map(lane => ({
+    lane,
+    move: avail[Phaser.Math.Between(0, avail.length-1)],
+    willMove: !!allowMove && n>=4 && Phaser.Math.Between(0,99) < Math.min(50, 15+n*3),
+    hasMoved: false,
+  }));
+
+  const rows = [];
+  let y = PLAYER_Y - 240;
+  const normalCount = isBoss ? Math.min(4 + Math.floor(n/3), 7) : Math.min(6 + Math.floor(n/2), 13);
+  let checkpointY = null;
+  const checkpointAfter = Math.floor(normalCount/2); // halfway through the normal rows
+  for (let i=0;i<normalCount;i++){
+    const openLane = Phaser.Math.Between(0,2);
+    let lanes = [0,1,2].filter(l=>l!==openLane);
+    if (Phaser.Math.Between(0,2)===0) lanes = [lanes[Phaser.Math.Between(0,1)]]; // sometimes just 1 defender, easier gap
+    rows.push({ y, blockers: makeBlockers(lanes, !isBoss), resolved:false });
+    y -= Phaser.Math.Between(250,340) - n*4;
+    if (i === checkpointAfter-1) checkpointY = y + 70; // mark the line just past this row
+  }
+  if (checkpointY === null) checkpointY = y + 70;
+
+  const arcY = y - 90;
+  let bossY = null;
+  if (isBoss){
+    bossY = arcY - 170;
+    y = bossY - 40;
+  } else if (packedPaint){
+    rows.push({ y: arcY - 90, blockers: makeBlockers([0,1,2], false), resolved:false, packed:true });
+    const openLane2 = Phaser.Math.Between(0,2);
+    const secondRowLanes = [0,1,2].filter(l=>l!==openLane2);
+    rows.push({ y: arcY - 190, blockers: makeBlockers(secondRowLanes, false), resolved:false, packed:true });
+    y = arcY - 190;
+  }
+  const rimY = y - 160;
+
+  const shotWindow = Math.max(0.14, 0.34 - n*0.015); // fraction of bar width that counts as a make, narrows with level
+  const shotPeriod = Math.max(400, 1300 - n*70); // ms — lower = faster-moving marker; starts slow, ramps up
+
+  const usScore = 61 + Math.floor(Math.random()*38);
+  return { rows, arcY, rimY, checkpointY, speed, window, packedPaint, isBoss, bossIdx, bossY, themeKey, theme: THEMES[themeKey], shotWindow, shotPeriod, arenaScore: { us: usScore, them: usScore+1 } };
+}
+
+// ---------- Scene ----------
+class Main extends Phaser.Scene {
+  create(){
+    sceneRef = this;
+
+    if (!selectedHooperPalette){
+      this.showHooperSelect();
+      return;
+    }
+
+    document.getElementById('hud').style.display = 'flex';
+    document.getElementById('controls').style.display = 'flex';
+
+    // set control visibility FIRST, before anything else in create() that could
+    // throw and leave buttons in their default (visible) HTML state
+    document.getElementById('comboBtn').style.display = superReady ? 'flex' : 'none';
+    const avail = unlockedMoves(level);
+    document.getElementById('spin').style.display = avail.includes(MOVES.SPIN) ? 'flex' : 'none';
+    document.getElementById('hesi').style.display = avail.includes(MOVES.HESI) ? 'flex' : 'none';
+    document.getElementById('behindback').style.display = avail.includes(MOVES.BEHINDBACK) ? 'flex' : 'none';
+    document.getElementById('inandout').style.display = avail.includes(MOVES.INANDOUT) ? 'flex' : 'none';
+
+    makeTextures(this);
+
+    if (cachedCfgLevel !== level){
+      cachedCfg = buildLevel(level);
+      cachedCfgLevel = level;
+      checkpointReached = false;
+    }
+
+    if (checkpointReached){
+      // resume from the checkpoint: shift everything past it so it becomes the new start
+      const shift = (PLAYER_Y - 200) - cachedCfg.checkpointY;
+      const rows = cachedCfg.rows
+        .filter(r => r.y <= cachedCfg.checkpointY)
+        .map(r => ({ ...r, y: r.y + shift, blockers: r.blockers.map(b => ({...b})) }));
+      this.cfg = {
+        ...cachedCfg,
+        rows,
+        arcY: cachedCfg.arcY + shift,
+        rimY: cachedCfg.rimY + shift,
+        bossY: cachedCfg.bossY===null ? null : cachedCfg.bossY + shift,
+      };
+    } else {
+      this.cfg = { ...cachedCfg };
+    }
+    const theme = this.cfg.theme;
+
+    const sky = this.add.graphics();
+    sky.fillGradientStyle(theme.sky[0], theme.sky[0], theme.sky[1], theme.sky[1], 1);
+    sky.fillRect(0,0,W,H*0.4);
+    this.crowdBack = this.add.tileSprite(W/2, 12, W, 12, this.cfg.themeKey+'_crowd_back').setAlpha(0.5).setDepth(0.2);
+    this.crowd = this.add.tileSprite(W/2, 24, W, 16, this.cfg.themeKey+'_crowd_front').setAlpha(0.68).setDepth(0.3);
+    const sideH = H*0.62;
+    const sideY = H*0.35 + sideH/2;
+    this.crowdSideL = this.add.tileSprite(theme.sideInset, sideY, 18, sideH, this.cfg.themeKey+'_crowd_side').setAlpha(0.68).setDepth(0.3);
+    this.crowdSideR = this.add.tileSprite(W-theme.sideInset, sideY, 18, sideH, this.cfg.themeKey+'_crowd_side').setAlpha(0.68).setDepth(0.3).setFlipX(true);
+    const courtDark = Phaser.Display.Color.IntegerToColor(theme.court).darken(34).color;
+    const court = this.add.graphics();
+    court.fillGradientStyle(courtDark, courtDark, theme.court, theme.court, 1);
+    court.fillRect(0,H*0.35,W,H*0.65);
+    drawCourtFloor(court, theme, W, H);
+    // sidelines
+    court.lineStyle(2, 0xffffff, 0.12);
+    court.lineBetween(18, H*0.35, 18, H);
+    court.lineBetween(W-18, H*0.35, W-18, H);
+
+    this.currentLane = 1;
+    this.playerShadow = this.add.sprite(LANES[1], PLAYER_Y+6, 'shadow').setDepth(3);
+    this.player = this.add.sprite(LANES[1], PLAYER_Y, 'player_run0').setOrigin(0.5,0.85).setDepth(4);
+    this.runFrame = 0; this.runTimer = 0; this.baseY = PLAYER_Y;
+    this.ball = this.add.sprite(LANES[1]+12, PLAYER_Y-14, 'ball').setDepth(5);
+    this.playerNumber = this.add.text(LANES[1], PLAYER_Y-32, '1', {fontSize:'10px', fontStyle:'bold', color:'#ffffff'}).setOrigin(0.5).setDepth(5);
+    this.clutchUntil = 0;
+    updateStreakUI(streak);
+    updateHypeUI(streak);
+    updateDodgeUI(dodgeStreak);
+    setClutchVisual(false);
+    document.getElementById('scoreVal').textContent = score;
+
+    this.rowObjs = this.cfg.rows.map(r => {
+      const sprites = r.blockers.map(b => {
+        const variant = Phaser.Math.Between(0, theme.variants.length-1);
+        const jitterX = LANES[b.lane] + Phaser.Math.Between(-12,12);
+        const suffix = moveSuffix(b.move);
+        const shadow = this.add.sprite(jitterX, r.y+6, 'shadow').setDepth(0);
+        const glow = this.add.sprite(jitterX, r.y-30, 'glow').setTint(MOVE_COLOR[b.move]).setAlpha(0.8).setDepth(1);
+        const glowTween = this.tweens.add({ targets: glow, scale:{from:0.8,to:1.25}, alpha:{from:0.5,to:0.9}, duration:420, yoyo:true, repeat:-1 });
+        const spr = this.add.sprite(jitterX, r.y, this.cfg.themeKey+'_def'+variant+suffix).setOrigin(0.5,0.85).setDepth(2);
+        return { spr, glow, glowTween, shadow, lane: b.lane };
+      });
+      return { ...r, sprites };
+    });
+
+    this.arcY = this.cfg.arcY;
+    this.arcLine = this.add.graphics();
+    this.drawArc();
+    this.arcText = this.add.text(W/2, this.arcY+ARC_BOW-16, '3PT LINE', {fontSize:'11px', color:'#35d07f', fontStyle:'bold'}).setOrigin(0.5);
+
+    this.checkpointY = this.cfg.checkpointY;
+    this.checkpointCleared = checkpointReached; // if we resumed, it's already behind us
+    this.checkpointLine = this.add.graphics();
+    this.checkpointText = this.add.text(W/2, this.checkpointY-14, 'CHECKPOINT', {fontSize:'11px', fontStyle:'bold', color:'#ffffff', stroke:'#000000', strokeThickness:3}).setOrigin(0.5);
+    if (this.checkpointCleared){
+      this.checkpointLine.setVisible(false);
+      this.checkpointText.setVisible(false);
+    } else {
+      this.drawCheckpoint();
+    }
+
+    this.rimY = this.cfg.rimY;
+    this.backdropDetail = this.add.sprite(LANES[1], this.rimY-95, this.cfg.themeKey+'_backdrop').setScale(1.4);
+    this.scoreboardText = null;
+    if (this.cfg.themeKey === 'arena'){
+      const sc = this.cfg.arenaScore;
+      this.scoreboardText = this.add.text(LANES[1], this.backdropDetail.y-16.8, `${sc.us}-${sc.them}`, {
+        fontFamily: "'Courier New', monospace",
+        fontSize: '19px',
+        fontStyle: '900',
+        color: '#ff2b2b',
+        shadow: { offsetX: 0, offsetY: 0, color: '#ff0000', blur: 8, fill: true }
+      }).setOrigin(0.5);
+    }
+    this.rim = this.add.sprite(LANES[1], this.rimY, this.cfg.themeKey+'_rim');
+    this.rimText = this.add.text(LANES[1], this.rimY-48, 'RIM', {fontSize:'12px', color:'#'+theme.accent.toString(16).padStart(6,'0'), fontStyle:'bold'}).setOrigin(0.5);
+
+    this.keyGfx = this.add.graphics();
+    this.drawKey();
+
+    this.boss = null;
+    this.bossActive = false;
+    if (this.cfg.isBoss){
+      const bossDef = THEME_BOSSES[this.cfg.themeKey][this.cfg.bossIdx];
+      const bossAvail = unlockedMoves(level);
+      const combo = [];
+      for (let i=0;i<bossDef.hits;i++) combo.push(bossAvail[Phaser.Math.Between(0, bossAvail.length-1)]);
+      const comboStr = combo.map(m => MOVE_ABBR[m]).join('  →  ');
+      const firstMove = combo[0];
+      const suffix = moveSuffix(firstMove);
+      const bossPrefix = 'boss_'+this.cfg.themeKey+'_'+this.cfg.bossIdx;
+      const bx = LANES[1], by = this.cfg.bossY;
+      const shadow = this.add.sprite(bx, by+10, 'shadow').setDepth(0).setScale(1.9);
+      const glow = this.add.sprite(bx, by-42, 'glow').setTint(MOVE_COLOR[firstMove]).setAlpha(0.85).setDepth(1).setScale(1.4);
+      const glowTween = this.tweens.add({ targets: glow, scale:{from:1.2,to:1.7}, alpha:{from:0.55,to:0.95}, duration:480, yoyo:true, repeat:-1 });
+      const spr = this.add.sprite(bx, by, bossPrefix+suffix).setOrigin(0.5,0.85).setDepth(2).setScale(1.7);
+      const nameText = this.add.text(bx, by-118, bossDef.name, {fontSize:'34px', fontStyle:'900', color:'#ffffff', stroke:'#000000', strokeThickness:6}).setOrigin(0.5).setDepth(3).setAlpha(0).setScale(0.4);
+      const comboText = this.add.text(bx, by-84, comboStr, {fontSize:'15px', fontStyle:'bold', color:'#ffffff', stroke:'#000000', strokeThickness:4}).setOrigin(0.5).setDepth(3).setAlpha(0);
+      const moveLabel = this.add.text(bx, by-58, firstMove, {fontSize:'21px', fontStyle:'bold', color:'#'+MOVE_COLOR[firstMove].toString(16).padStart(6,'0'), stroke:'#000000', strokeThickness:4}).setOrigin(0.5).setDepth(3).setAlpha(0);
+      const perStep = Math.max(850, 1550 - level*35);
+      this.boss = { name: bossDef.name, color: bossDef.color, texPrefix: bossPrefix, combo, comboIndex: 0, y: by, spr, glow, glowTween, shadow, nameText, comboText, moveLabel, resolved:false, stageDuration: perStep, stageStart: 0, timedOut: false, introPause: false, entered: false, hitOffset: 0, promptShown: false };
+    }
+
+    this.finished = false;
+    this.invuln = false;
+    this.shotTaken = false;
+    this.arcActive = false;
+    this.shotMeterActive = false;
+    this.perfectPause = false;
+    queuedMove = null;
+
+    const zoneWidthPct = this.cfg.shotWindow * 100;
+    document.getElementById('shotMeterZone').style.left = (50 - zoneWidthPct/2) + '%';
+    document.getElementById('shotMeterZone').style.width = zoneWidthPct + '%';
+    document.getElementById('shotMeter').style.display = 'none';
+    document.getElementById('bossPrompt').style.display = 'none';
+    document.getElementById('bossHP').style.display = 'none';
+    this.cameras.main.setZoom(1.12);
+
+    // brief title card beat — world holds still for a moment before the drive starts
+    this.introActive = true;
+    const titleCard = document.getElementById('titleCard');
+    const rInfo = roundInfo(level);
+    const seasonPrefix = rInfo.season > 1 ? `SEASON ${rInfo.season} — ` : '';
+    let introDuration = 850;
+    let unlockHTML = '';
+    const newMove = NEW_MOVE_AT_LEVEL[level];
+    if (newMove){
+      const hex = '#'+MOVE_COLOR[newMove].toString(16).padStart(6,'0');
+      unlockHTML = `<div style="margin-top:12px;padding:8px 16px;border:2px solid ${hex};border-radius:10px;background:rgba(0,0,0,0.3);">
+        <div style="color:${hex};font-weight:900;font-size:16px;letter-spacing:1px;">NEW MOVE: ${MOVE_FULLNAME[newMove].toUpperCase()}</div>
+        <div style="color:#fff;font-size:12px;margin-top:3px;">Button: "${MOVE_ABBR[newMove]}"</div>
+      </div>`;
+      introDuration = 2000;
+    }
+    const bossFlavor = {
+      gym: 'rules the old gym!',
+      streetball: 'owns the blacktop!',
+      park: 'guards the cracked court!',
+      arena: 'guards the paint!',
+    };
+    const hooperHTML = (level === 1 && selectedHooperName)
+      ? `<div style="margin-top:10px;color:#ffd23f;font-size:13px;letter-spacing:1px;font-weight:900;">RUNNING WITH: ${selectedHooperName}</div>`
+      : '';
+    titleCard.innerHTML = this.cfg.isBoss
+      ? `<h2>${seasonPrefix}${rInfo.name}</h2><span>${THEME_BOSSES[this.cfg.themeKey][this.cfg.bossIdx].name} ${bossFlavor[this.cfg.themeKey]}</span>${unlockHTML}${hooperHTML}`
+      : `<h2>${seasonPrefix}${rInfo.name}</h2><span>Level ${level} · ${theme.label}</span>${unlockHTML}${hooperHTML}`;
+    titleCard.style.opacity = 1;
+    this.time.delayedCall(introDuration, () => { titleCard.style.opacity = 0; this.introActive = false; });
+
+    renderLives();
+    document.getElementById('lvl').textContent = level;
+    document.getElementById('theme').textContent = theme.label;
+    setControlMode(false);
+    document.getElementById('prompt').style.opacity = 0;
+  }
+
+  drawArc(){
+    this.arcLine.clear();
+    this.arcLine.lineStyle(3, 0x35d07f, 0.85);
+    const cx = W/2, halfW = W/2 - 24;
+    const segs = 28;
+    const pts = [];
+    for (let i=0;i<=segs;i++){
+      const t = i/segs;
+      const x = cx - halfW + t*halfW*2;
+      const nx = (x-cx)/halfW;
+      pts.push({ x, y: this.arcY + ARC_BOW*(1 - nx*nx) });
+    }
+    for (let i=0;i<pts.length-1;i+=2){
+      this.arcLine.lineBetween(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y);
+    }
+  }
+
+  drawKey(){
+    this.keyGfx.clear();
+    this.keyGfx.lineStyle(2, 0xffffff, 0.22);
+    const top = this.rimY + 14, bottom = this.rimY + 150;
+    const left = LANES[0]-18, right = LANES[2]+18;
+    this.keyGfx.strokeRect(left, top, right-left, bottom-top);
+  }
+
+  drawCheckpoint(){
+    this.checkpointLine.clear();
+    this.checkpointLine.lineStyle(3, 0xffffff, 0.55);
+    this.checkpointLine.lineBetween(14, this.checkpointY, W-14, this.checkpointY);
+    this.checkpointLine.lineStyle(1, 0xffffff, 0.3);
+    this.checkpointLine.strokeCircle(W/2, this.checkpointY, 26);
+  }
+
+  showHooperSelect(){
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('controls').style.display = 'none';
+    document.getElementById('hooperSelectUI').style.display = 'block';
+    this.cameras.main.setBackgroundColor('#0f1b2d');
+    this.add.text(W/2, 56, 'CHOOSE YOUR HOOPER', {fontSize:'22px', fontStyle:'900', color:'#ff7a1a'}).setOrigin(0.5);
+    this.add.text(W/2, 86, 'Pick a baller to run with', {fontSize:'12px', color:'#c9d3e0'}).setOrigin(0.5);
+    this.hooperOptions = [randomHooper(), randomHooper(), randomHooper()];
+    this.hooperSprites = [];
+    this.renderHooperOptions();
+  }
+
+  renderHooperOptions(){
+    if (this.hooperSprites.length) this.hooperSprites.forEach(o => o.destroy());
+    this.hooperSprites = [];
+    const g = this.add.graphics().setVisible(false);
+    const colW = W/3;
+    this.hooperOptions.forEach((h, i) => {
+      const x = colW*i + colW/2;
+      const y = 250;
+      const key = 'hoopersel_'+i;
+      g.clear();
+      drawBaller(g, h.palette, undefined, undefined, undefined, true);
+      if (this.textures.exists(key)) this.textures.remove(key);
+      g.generateTexture(key, 44, 64);
+      const spr = this.add.sprite(x, y, key).setScale(2.6);
+      const nameText = this.add.text(x, y+96, h.name, {fontSize:'15px', fontStyle:'900', color:'#ffffff', stroke:'#000000', strokeThickness:4, align:'center', wordWrap:{width:colW-16}}).setOrigin(0.5);
+      this.hooperSprites.push(spr, nameText);
+    });
+    g.destroy();
+  }
+
+  pickHooper(i){
+    selectedHooperPalette = this.hooperOptions[i].palette;
+    selectedHooperName = this.hooperOptions[i].name;
+    document.getElementById('hooperSelectUI').style.display = 'none';
+    this.scene.restart();
+  }
+
+  update(time, delta){
+    if (!selectedHooperPalette) return;
+    if (this.finished) return;
+
+    if (this.shotMeterActive){
+      // frozen gather pose while the shot power meter runs — world holds still
+      this.player.y = this.baseY - 10;
+      const elapsed = time - this.shotMeterStart;
+      const value = (Math.sin(elapsed / this.cfg.shotPeriod * Math.PI*2 - Math.PI/2) + 1) / 2;
+      this.shotMeterValue = value;
+      document.getElementById('shotMeterMark').style.left = (value*100) + '%';
+      return;
+    }
+
+    const dy = (this.introActive || this.perfectPause || this.bossActive) ? 0 : (this.cfg.speed * delta)/1000;
+
+    // run-cycle: alternate leg frame + bob so the avatar visibly moves
+    this.runTimer += delta;
+    if (this.runTimer > 110){
+      this.runTimer = 0;
+      this.runFrame = this.runFrame===0 ? 1 : 0;
+      this.player.setTexture('player_run'+this.runFrame);
+    }
+    this.player.y = this.baseY - Math.abs(Math.sin(time/110))*4;
+    this.playerShadow.x = this.player.x;
+    this.playerNumber.x = this.player.x;
+    this.playerNumber.y = this.player.y - 32;
+    const bob = this.baseY - this.player.y;
+    this.playerShadow.setScale(1 - Math.min(bob/32, 0.35));
+    this.playerShadow.setAlpha(0.32 - Math.min(bob/90, 0.14));
+
+    // dribble: ball bounces near whichever hand is trailing, opposite phase to the leg bob
+    const dribble = Math.abs(Math.sin(time/95));
+    const handSide = this.runFrame === 0 ? 1 : -1;
+    this.ball.x = this.player.x + handSide*13;
+    this.ball.y = this.baseY - 6 - dribble*16;
+
+    this.rowObjs.forEach(r => {
+      r.y += dy;
+      r.sprites.forEach((s,i) => {
+        s.spr.y += dy; s.glow.y += dy; s.shadow.y += dy;
+        const b = r.blockers[i];
+        if (b.willMove && !b.hasMoved){
+          const dist = r.y - PLAYER_Y;
+          if (dist > -260){
+            b.hasMoved = true;
+            const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+            let newLane = Phaser.Math.Clamp(b.lane + dir, 0, 2);
+            if (newLane === b.lane) newLane = Phaser.Math.Clamp(b.lane - dir, 0, 2);
+            const occupied = r.blockers.some((ob,oi) => oi!==i && ob.lane === newLane);
+            if (!occupied && newLane !== b.lane){
+              b.lane = newLane;
+              const newX = LANES[newLane] + Phaser.Math.Between(-12,12);
+              this.tweens.add({ targets:[s.spr, s.glow, s.shadow], x: newX, duration: 420, ease:'Sine.easeInOut' });
+            }
+          }
+        }
+      });
+    });
+    this.arcY += dy; this.drawArc(); this.arcText.y += dy;
+    if (!this.checkpointCleared){
+      this.checkpointY += dy;
+      this.drawCheckpoint();
+      this.checkpointText.y += dy;
+      if ((this.checkpointY - PLAYER_Y) > -20){
+        this.checkpointCleared = true;
+        checkpointReached = true;
+        this.checkpointLine.setVisible(false);
+        this.checkpointText.setVisible(false);
+        showBanner('CHECKPOINT!', '#ffffff');
+        this.cameras.main.flash(180, 255, 255, 255, false);
+      }
+    }
+    this.rimY += dy; this.rim.y += dy; this.rimText.y += dy; this.backdropDetail.y += dy;
+    if (this.scoreboardText) this.scoreboardText.y += dy;
+    this.drawKey();
+
+    if (this.boss && !this.boss.resolved){
+      this.boss.y += dy;
+      this.boss.spr.y += dy; this.boss.glow.y += dy; this.boss.shadow.y += dy;
+      this.boss.nameText.y += dy; this.boss.comboText.y += dy; this.boss.moveLabel.y += dy;
+      if (!this.bossActive && (this.boss.y - PLAYER_Y) > -170){
+        this.bossActive = true;
+        // entrance flourish — this should feel like a different kind of encounter, not a bigger defender
+        this.boss.spr.setScale(0.15);
+        this.tweens.add({ targets: this.boss.spr, scale: 1.7, duration: 320, ease: 'Bounce.easeOut' });
+        this.time.delayedCall(280, () => burst(this, this.boss.spr.x, this.boss.spr.y+8, this.boss.color, 22));
+        this.cameras.main.shake(220, 0.014);
+        this.cameras.main.zoomTo(1.48, 400, 'Sine.easeOut');
+        this.time.delayedCall(420, () => this.cameras.main.zoomTo(1.25, 300, 'Sine.easeIn'));
+        sfxBossRoar();
+        showBanner(`${this.boss.name} APPEARS!`, '#ffffff');
+        // dramatic name reveal — its own beat, staggered after the entrance bounce
+        this.time.delayedCall(300, () => {
+          this.tweens.add({ targets: this.boss.nameText, alpha:1, scale:1, duration: 450, ease: 'Back.easeOut' });
+          this.cameras.main.flash(200, 255, 255, 255, false);
+        });
+        this.time.delayedCall(850, () => {
+          this.tweens.add({ targets: [this.boss.comboText, this.boss.moveLabel], alpha:1, duration: 350, ease: 'Sine.easeOut' });
+        });
+        document.getElementById('bossHP').style.display = 'block';
+        document.getElementById('bossHPLabel').textContent = this.boss.name;
+        document.getElementById('bossHPFill').style.background = '#'+this.boss.color.toString(16).padStart(6,'0');
+        document.getElementById('bossHPFill').style.width = '100%';
+        startBossStage(this, 1500);
+      }
+      if (this.bossActive){
+        // idle menace — a heavier, slower bob than a normal defender ever gets
+        this.boss.spr.y = this.boss.y + Math.sin(time/240)*5 + (this.boss.hitOffset||0);
+      }
+    }
+
+    // expire stale buffered input
+    if (queuedMove && Date.now() - queuedMove.ts > INPUT_BUFFER_MS) queuedMove = null;
+
+    // 3PT window — biased earlier (opens well before the line) so it's not a last-second surprise
+    const arcDist = this.arcY - PLAYER_Y;
+    this.arcActive = !this.shotTaken && !this.bossActive && arcDist > -190 && arcDist < 40;
+    document.getElementById('prompt').textContent = this.cfg.packedPaint ? 'PAINT PACKED — PULL UP FOR 3?' : 'PULL UP FOR 3?';
+    document.getElementById('prompt').style.opacity = this.arcActive ? 1 : 0;
+    const laneNx = (this.player.x - W/2) / (W/2 - 24);
+    const arcAtLaneDist = (this.arcY + ARC_BOW*(1-laneNx*laneNx)) - PLAYER_Y;
+    setControlMode(this.arcActive, arcAtLaneDist > 0);
+    document.getElementById('moveGroup').style.visibility = this.bossActive ? 'hidden' : 'visible';
+
+    // clutch mode: a temporary forgiveness window earned by a hot streak
+    const inClutch = time < (this.clutchUntil||0);
+    setClutchVisual(inClutch);
+    const effWindow = this.cfg.window * (inClutch ? 1.35 : 1);
+
+    // boss fight: world is frozen (bossActive). Input comes from tapping the
+    // randomly-placed prompt circle directly, not the corner move buttons —
+    // introPause is a brief reveal beat before the first prompt appears.
+    if (this.bossActive && this.boss && !this.boss.resolved && !this.boss.introPause && this.boss.promptShown){
+      const elapsed = time - this.boss.stageStart;
+      const remaining = Math.max(0, 1 - elapsed/this.boss.stageDuration);
+      updateBossPromptRing(remaining, MOVE_COLOR[this.boss.combo[this.boss.comboIndex]]);
+      if (remaining <= 0 && !this.boss.timedOut){
+        this.boss.timedOut = true;
+        bossTimeout(this);
+      }
+    }
+
+    // resolve defender rows
+    let consumed = false;
+    this.rowObjs.forEach(r => {
+      if (r.resolved) return;
+      const dist = r.y - PLAYER_Y;
+      const blocker = r.blockers.find(b => b.lane === this.currentLane);
+      const inZone = Math.abs(dist) < effWindow/2;
+      const perfect = Math.abs(dist) < effWindow*0.18;
+
+      if (blocker && queuedMove && inZone && !consumed){
+        const usedMove = queuedMove.move;
+        if (usedMove === blocker.move){
+          beatRow(this, r, usedMove, perfect);
+        } else {
+          getStripped(this, r); // wrong counter — still gets you stripped
+        }
+        queuedMove = null;
+        consumed = true;
+      } else if (dist > effWindow/2 + 10){
+        // row has passed the player
+        if (blocker) getStripped(this, r); else passRow(this, r);
+      }
+    });
+
+    if (!this.finished && this.rimY - PLAYER_Y > -30){
+      finishDunk(this);
+    }
+  }
+
+  startShot(){
+    if (!this.arcActive || this.shotTaken || this.shotMeterActive || this.finished) return;
+    this.shotMeterActive = true;
+    this.shotMeterStart = this.time.now;
+    document.getElementById('prompt').style.opacity = 0;
+    document.getElementById('shotMeter').style.display = 'block';
+  }
+
+  releaseShot(){
+    if (!this.shotMeterActive) return;
+    this.shotMeterActive = false;
+    this.shotTaken = true;
+    document.getElementById('shotMeter').style.display = 'none';
+    const value = this.shotMeterValue === undefined ? 0 : this.shotMeterValue;
+    const made = Math.abs(value - 0.5) <= this.cfg.shotWindow/2;
+
+    // use the curved arc's actual height under the player's current lane —
+    // the line bows toward the player at center court, so the flat arcY
+    // reference alone under-counted how far past the line center-lane players were
+    const cx = W/2, halfW = W/2 - 24;
+    const nx = (this.player.x - cx) / halfW;
+    const arcYAtLane = this.arcY + ARC_BOW*(1 - nx*nx);
+    const pastLine = (arcYAtLane - PLAYER_Y) > 0;
+
+    stats.fga++;
+    if (!pastLine) stats.tpa++;
+
+    if (made){
+      stats.fgm++;
+      if (pastLine){ stats.points += 2; finishMidrange(this); }
+      else { stats.tpm++; stats.points += 3; finishThree(this); }
+    } else {
+      flashPlayer(this, 0xff9955);
+      this.cameras.main.shake(90, 0.005);
+      sfxClank();
+      sfxCrowdGroan();
+      crowdPulse(this, false);
+      showBanner('CLANK!', '#ff9955');
+    }
+  }
+
+  shiftLane(dir){
+    const next = Phaser.Math.Clamp(this.currentLane + dir, 0, 2);
+    if (next === this.currentLane) return;
+    this.currentLane = next;
+    sfxShift();
+    this.tweens.add({ targets: this.player, x: LANES[next], duration: 130, ease:'Quad.easeOut' });
+  }
+}
+
+function passRow(scene, r){
+  r.resolved = true;
+  dodgeStreak += 1;
+  updateDodgeUI(dodgeStreak);
+  addScore(3);
+  if (dodgeStreak > 0 && dodgeStreak % 10 === 0){
+    addScore(20);
+    const label = dodgeStreak >= 30 ? 'UNGUARDABLE!' : dodgeStreak >= 20 ? 'BLOWING BY!' : 'BLOW BY!';
+    showBanner(label, '#35d0e8');
+    sfxCrowdCheer(false);
+    crowdPulse(scene, true);
+  }
+}
+
+function updateDodgeUI(n){
+  const pill = document.getElementById('dodgePill');
+  if (n >= 3){
+    pill.style.display = 'inline-block';
+    document.getElementById('dodgeVal').textContent = n;
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
+function registerStreak(scene){
+  streak += 1;
+  if (streak > sessionBestStreak) sessionBestStreak = streak;
+  updateStreakUI(streak);
+  updateHypeUI(streak);
+  if (streak % 5 === 0) triggerClutch(scene);
+  if (streak >= nextSuperThreshold && !superReady){
+    superReady = true;
+    nextSuperThreshold += 8;
+    document.getElementById('comboBtn').style.display = 'flex';
+    showBanner('COMBO READY!', '#ffd23f');
+  }
+}
+
+function useSuperMove(scene){
+  if (!superReady || !scene || scene.finished) return;
+  superReady = false;
+  document.getElementById('comboBtn').style.display = 'none';
+  showBanner('COMBO!!', '#ffd23f');
+  scene.cameras.main.flash(200, 255, 210, 60, false);
+  scene.cameras.main.shake(140, 0.008);
+  sfxAnkles();
+
+  if (scene.bossActive && scene.boss && !scene.boss.resolved){
+    const remaining = scene.boss.combo.length - scene.boss.comboIndex;
+    const toLand = Math.min(3, remaining);
+    for (let i=0;i<toLand;i++){
+      scene.time.delayedCall(i*200, () => { if (scene.boss && !scene.boss.resolved) bossHit(scene); });
+    }
+  } else {
+    const targets = scene.rowObjs.filter(r => !r.resolved).sort((a,b) => b.y - a.y).slice(0,3);
+    targets.forEach((r,i) => {
+      scene.time.delayedCall(i*150, () => {
+        if (r.resolved) return;
+        r.resolved = true;
+        r.sprites.forEach(s => { if (s.glowTween) s.glowTween.stop(); });
+        const tw = r.sprites.flatMap(s => [s.spr, s.glow, s.shadow]);
+        scene.tweens.add({ targets: tw, alpha:0, angle:120, duration:260, ease:'Cubic.easeIn' });
+        spawnGhost(scene, scene.player, 0xffd23f);
+        scene.cameras.main.shake(60, 0.006);
+        addScore(20);
+        const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+        scene.tweens.add({ targets: scene.player, x: scene.player.x + dir*16, duration: 80, yoyo:true });
+      });
+    });
+  }
+}
+
+function beatRow(scene, r, move, perfect){
+  r.resolved = true;
+  r.sprites.forEach(s => s.glowTween.stop());
+  const spriteTargets = r.sprites.map(s => s.spr);
+  const glowShadowTargets = r.sprites.flatMap(s => [s.glow, s.shadow]);
+  flashPlayer(scene, 0x35d07f);
+  registerStreak(scene);
+  addScore(perfect ? 25 : 10);
+
+  if (perfect && move === MOVES.CROSSOVER){
+    // ANKLES BROKEN — defender goes down. World pauses briefly so this actually reads.
+    scene.perfectPause = true;
+    scene.time.delayedCall(650, () => { scene.perfectPause = false; });
+    scene.tweens.add({ targets: spriteTargets, angle: 85, y: '+=16', alpha: 0, duration: 560, ease: 'Back.easeIn' });
+    scene.tweens.add({ targets: glowShadowTargets, alpha: 0, duration: 400 });
+    sfxAnkles();
+    scene.cameras.main.zoomTo(1.23, 140, 'Sine.easeOut');
+    scene.time.delayedCall(600, () => scene.cameras.main.zoomTo(1.12, 200, 'Sine.easeIn'));
+    scene.cameras.main.shake(90, 0.005);
+    spawnGhost(scene, scene.player, 0xff7a1a);
+    const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+    scene.tweens.add({ targets: scene.player, x: scene.player.x + dir*22, scaleX: 0.8, duration: 90, yoyo:true, ease:'Quad.easeOut' });
+    showBanner('ANKLES BROKEN!', '#ff3b3b');
+    sfxCrowdCheer(false);
+    crowdPulse(scene, true);
+    return;
+  }
+  if (perfect && move === MOVES.SPIN){
+    // SPIN CYCLE — defender spins out of the way. World pauses briefly so this actually reads.
+    scene.perfectPause = true;
+    scene.time.delayedCall(650, () => { scene.perfectPause = false; });
+    const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+    spriteTargets.forEach(spr => {
+      scene.tweens.add({ targets: spr, x: spr.x + dir*44, angle: 360*dir, alpha: 0, duration: 560, ease:'Cubic.easeIn' });
+    });
+    scene.tweens.add({ targets: glowShadowTargets, alpha: 0, duration: 400 });
+    sfxAnkles();
+    scene.cameras.main.zoomTo(1.23, 140, 'Sine.easeOut');
+    scene.time.delayedCall(600, () => scene.cameras.main.zoomTo(1.12, 200, 'Sine.easeIn'));
+    spawnGhost(scene, scene.player, 0x2f6fed);
+    scene.time.delayedCall(60, () => spawnGhost(scene, scene.player, 0x2f6fed));
+    scene.player.angle = 0;
+    scene.tweens.add({ targets: scene.player, angle: 360, duration: 300, ease:'Cubic.easeInOut', onComplete: () => { scene.player.angle = 0; } });
+    showBanner('SPIN CYCLE!', '#2f6fed');
+    sfxCrowdCheer(false);
+    crowdPulse(scene, true);
+    return;
+  }
+
+  if (perfect && move === MOVES.HESI){
+    // FROZE 'EM! — defender freezes rigid, then topples straight backward.
+    scene.perfectPause = true;
+    scene.time.delayedCall(650, () => { scene.perfectPause = false; });
+    spriteTargets.forEach(spr => spr.setTint(0x9be8ff));
+    scene.tweens.add({ targets: spriteTargets, angle: -100, y: '+=20', alpha: 0, duration: 560, ease: 'Back.easeIn' });
+    scene.tweens.add({ targets: glowShadowTargets, alpha: 0, duration: 400 });
+    sfxFreeze();
+    scene.cameras.main.zoomTo(1.23, 140, 'Sine.easeOut');
+    scene.time.delayedCall(600, () => scene.cameras.main.zoomTo(1.12, 200, 'Sine.easeIn'));
+    spawnGhost(scene, scene.player, MOVE_COLOR.HESI);
+    scene.tweens.add({ targets: scene.player, scaleY: 0.8, scaleX: 1.15, duration: 110, yoyo:true, ease:'Quad.easeOut' });
+    showBanner("FROZE 'EM!", '#9be8ff');
+    sfxCrowdCheer(false);
+    crowdPulse(scene, true);
+    return;
+  }
+
+  if (perfect && move === MOVES.BEHINDBACK){
+    // NASTY! — swirling colors sweep around the player instead of a full spin,
+    // keeping this visually distinct from Spin Cycle's rotation
+    scene.perfectPause = true;
+    scene.time.delayedCall(650, () => { scene.perfectPause = false; });
+    scene.tweens.add({ targets: spriteTargets, x: '+=18', alpha: 0, duration: 560, ease: 'Cubic.easeIn' });
+    scene.tweens.add({ targets: glowShadowTargets, alpha: 0, duration: 420 });
+    sfxBehindBack();
+    scene.cameras.main.zoomTo(1.23, 140, 'Sine.easeOut');
+    scene.time.delayedCall(600, () => scene.cameras.main.zoomTo(1.12, 200, 'Sine.easeIn'));
+    const swirlColors = [MOVE_COLOR.BEHINDBACK, 0xffffff, MOVE_COLOR.BEHINDBACK, 0xffd23f];
+    for (let i=0;i<9;i++){
+      scene.time.delayedCall(i*32, () => {
+        const ang = (i/9)*Math.PI*2;
+        const px = scene.player.x + Math.cos(ang)*18;
+        const py = scene.player.y - 14 + Math.sin(ang)*12;
+        const dot = scene.add.circle(px, py, 3, swirlColors[i%swirlColors.length], 0.9).setDepth(6);
+        scene.tweens.add({
+          targets: dot,
+          x: scene.player.x + Math.cos(ang+Math.PI*1.4)*26,
+          y: scene.player.y - 14 + Math.sin(ang+Math.PI*1.4)*16,
+          alpha: 0, scale: 0.3, duration: 480, ease: 'Sine.easeOut',
+          onComplete: () => dot.destroy()
+        });
+      });
+    }
+    spawnGhost(scene, scene.player, MOVE_COLOR.BEHINDBACK);
+    scene.tweens.add({ targets: scene.player, scaleX: 1.12, scaleY: 0.85, duration: 130, yoyo:true, ease:'Quad.easeOut' });
+    showBanner('NASTY!', '#2ecc71');
+    sfxCrowdCheer(false);
+    crowdPulse(scene, true);
+    return;
+  }
+
+  if (perfect && move === MOVES.INANDOUT){
+    // GOT HIM LEANING! — defender commits hard to the fake and skates off balance.
+    scene.perfectPause = true;
+    scene.time.delayedCall(650, () => { scene.perfectPause = false; });
+    const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+    spriteTargets.forEach(spr => {
+      scene.tweens.add({ targets: spr, x: spr.x + dir*60, angle: dir*40, alpha: 0, duration: 600, ease:'Sine.easeIn' });
+    });
+    scene.tweens.add({ targets: glowShadowTargets, alpha: 0, duration: 420 });
+    sfxInAndOut();
+    scene.cameras.main.zoomTo(1.23, 140, 'Sine.easeOut');
+    scene.time.delayedCall(600, () => scene.cameras.main.zoomTo(1.12, 200, 'Sine.easeIn'));
+    spawnGhost(scene, scene.player, MOVE_COLOR.INANDOUT);
+    scene.tweens.add({ targets: scene.player, scaleX: 1.15, scaleY: 0.85, duration: 100, yoyo:true, ease:'Quad.easeOut' });
+    showBanner('GOT HIM LEANING!', '#9b59b6');
+    sfxCrowdCheer(false);
+    crowdPulse(scene, true);
+    return;
+  }
+
+  const targets = spriteTargets.concat(glowShadowTargets);
+  scene.tweens.add({ targets, alpha:0.15, duration:200 });
+  if (move === MOVES.SPIN){
+    sfxSpin();
+    spawnGhost(scene, scene.player, 0x2f6fed);
+    scene.time.delayedCall(60, () => spawnGhost(scene, scene.player, 0x2f6fed));
+    scene.player.angle = 0;
+    scene.tweens.add({ targets: scene.player, angle: 360, duration: 300, ease:'Cubic.easeInOut', onComplete: () => { scene.player.angle = 0; } });
+  } else if (move === MOVES.HESI){
+    sfxHesi();
+    spawnGhost(scene, scene.player, MOVE_COLOR.HESI);
+    scene.tweens.add({ targets: scene.player, scaleY: 0.82, scaleX: 1.12, duration: 90, yoyo:true, ease:'Quad.easeOut' });
+  } else if (move === MOVES.BEHINDBACK){
+    sfxBehindBack();
+    spawnGhost(scene, scene.player, MOVE_COLOR.BEHINDBACK);
+    scene.tweens.add({ targets: scene.player, angle: -180, duration: 200, ease:'Sine.easeInOut', onComplete: () => { scene.player.angle = 0; } });
+  } else if (move === MOVES.INANDOUT){
+    sfxInAndOut();
+    spawnGhost(scene, scene.player, MOVE_COLOR.INANDOUT);
+    const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+    scene.tweens.add({ targets: scene.player, x: scene.player.x + dir*12, duration: 70, yoyo:true, repeat:1, ease:'Quad.easeInOut' });
+  } else {
+    sfxCrossover();
+    spawnGhost(scene, scene.player, 0xff7a1a);
+    const dir = Phaser.Math.Between(0,1) ? 1 : -1;
+    scene.tweens.add({ targets: scene.player, x: scene.player.x + dir*22, scaleX: 0.8, duration: 90, yoyo:true, ease:'Quad.easeOut' });
+  }
+  const moveLabels = { CROSSOVER:'CROSSOVER!', SPIN:'SPIN MOVE!', HESI:'HESI MOVE!', BEHINDBACK:'BEHIND THE BACK!', INANDOUT:'IN AND OUT!' };
+  const label = streak>=5 ? 'UNSTOPPABLE!' : streak>=3 ? 'ON FIRE!' : moveLabels[move];
+  const color = streak>=5 ? '#ff3b3b' : streak>=3 ? '#ffd23f' : '#35d07f';
+  showBanner(label, color);
+}
+
+function bossHit(scene){
+  const boss = scene.boss;
+  boss.comboIndex++;
+  flashPlayer(scene, 0x35d07f);
+  spawnGhost(scene, scene.player, boss.color);
+  registerStreak(scene);
+  addScore(30);
+  boss.spr.setTint(0xffffff);
+  scene.time.delayedCall(90, () => boss.spr.clearTint());
+  scene.tweens.add({ targets: boss.spr, scaleX: 1.85, scaleY: 1.45, duration: 90, yoyo:true, ease:'Quad.easeOut' });
+  boss.hitOffset = -10;
+  scene.tweens.add({ targets: boss, hitOffset: 0, duration: 140, ease:'Quad.easeOut' });
+  sfxBossHit();
+  scene.cameras.main.shake(90 + boss.comboIndex*25, 0.006 + boss.comboIndex*0.002);
+
+  const hpPct = Math.max(0, 100 - (boss.comboIndex/boss.combo.length)*100);
+  document.getElementById('bossHPFill').style.width = hpPct + '%';
+
+  if (boss.comboIndex >= boss.combo.length){
+    defeatBoss(scene);
+  } else {
+    const nextMove = boss.combo[boss.comboIndex];
+    const suffix = moveSuffix(nextMove);
+    boss.spr.setTexture(boss.texPrefix+suffix);
+    boss.glow.setTint(MOVE_COLOR[nextMove]);
+    boss.moveLabel.setText(nextMove).setColor('#'+MOVE_COLOR[nextMove].toString(16).padStart(6,'0'));
+    showBanner(`${boss.name} STAGGERED!`, '#ffffff');
+    spawnBossPrompt(scene);
+  }
+}
+
+// ---------- Boss prompt: a randomly-placed circle you tap directly, distinct from the corner move buttons ----------
+function randomPromptSpot(){
+  const el = document.getElementById('bossPrompt');
+  const size = 84;
+  const top = 130 + Math.random() * (window.innerHeight - 260);
+  const left = 16 + Math.random() * (window.innerWidth - size - 32);
+  el.style.top = top + 'px';
+  el.style.left = left + 'px';
+}
+
+function spawnBossPrompt(scene){
+  const boss = scene.boss;
+  const move = boss.combo[boss.comboIndex];
+  const el = document.getElementById('bossPrompt');
+  document.getElementById('bossPromptInner').textContent = move;
+  document.getElementById('bossPromptInner').style.background = '#'+MOVE_COLOR[move].toString(16).padStart(6,'0');
+  randomPromptSpot();
+  el.style.display = 'block';
+  boss.promptShown = true;
+  boss.stageStart = scene.time.now;
+  boss.timedOut = false;
+  updateBossPromptRing(1, MOVE_COLOR[move]);
+}
+
+function hideBossPrompt(scene){
+  document.getElementById('bossPrompt').style.display = 'none';
+  if (scene.boss) scene.boss.promptShown = false;
+}
+
+function updateBossPromptRing(remaining, color){
+  const ring = document.getElementById('bossPromptRing');
+  const hex = '#'+color.toString(16).padStart(6,'0');
+  ring.style.background = `conic-gradient(${hex} ${remaining*100}%, rgba(255,255,255,0.18) 0)`;
+}
+
+function hitBossPrompt(){
+  if (!sceneRef || !sceneRef.bossActive || !sceneRef.boss || sceneRef.boss.resolved || sceneRef.boss.introPause || !sceneRef.boss.promptShown) return;
+  hideBossPrompt(sceneRef);
+  bossHit(sceneRef);
+}
+
+function startBossStage(scene, pauseMs){
+  const boss = scene.boss;
+  boss.introPause = true;
+  hideBossPrompt(scene);
+  scene.time.delayedCall(pauseMs || 750, () => {
+    if (boss.resolved) return;
+    boss.introPause = false;
+    spawnBossPrompt(scene);
+  });
+}
+
+function resetBossCombo(scene){
+  const boss = scene.boss;
+  boss.comboIndex = 0;
+  const move = boss.combo[0];
+  const suffix = moveSuffix(move);
+  boss.spr.setTexture(boss.texPrefix+suffix);
+  boss.glow.setTint(MOVE_COLOR[move]);
+  boss.moveLabel.setText(move).setColor('#'+MOVE_COLOR[move].toString(16).padStart(6,'0'));
+  document.getElementById('bossHPFill').style.width = '100%';
+  startBossStage(scene);
+}
+
+function bossTimeout(scene){
+  flashPlayer(scene, 0xff3b3b);
+  scene.cameras.main.shake(120, 0.01);
+  sfxStrip();
+  sfxCrowdGroan();
+  crowdPulse(scene, false);
+  streak = 0;
+  dodgeStreak = 0;
+  updateDodgeUI(0);
+  scene.clutchUntil = 0;
+  updateStreakUI(0);
+  updateHypeUI(0);
+  showBanner('TOO SLOW!', '#ff3b3b');
+  hideBossPrompt(scene);
+  if (scene.boss) resetBossCombo(scene);
+  loseLife(scene);
+}
+
+function defeatBoss(scene){
+  const b = scene.boss;
+  b.resolved = true;
+  hideBossPrompt(scene);
+  document.getElementById('bossHP').style.display = 'none';
+  showBanner('FINISHING MOVE!', '#ffffff');
+  scene.cameras.main.zoomTo(1.43, 200, 'Sine.easeOut');
+  scene.time.delayedCall(220, () => {
+    scene.tweens.add({ targets:[b.spr,b.glow,b.shadow,b.nameText,b.comboText,b.moveLabel], scale:0, alpha:0, angle:180, duration:450, ease:'Back.easeIn' });
+    burst(scene, b.spr.x, b.spr.y, b.color, 36);
+    scene.cameras.main.shake(240, 0.014);
+    sfxScore();
+    sfxCrowdCheer(true);
+    crowdPulse(scene, true);
+    addScore(150);
+    showBanner(`${b.name} DEFEATED!`, '#ffd23f');
+    scene.time.delayedCall(550, () => {
+      scene.cameras.main.zoomTo(1.12, 300, 'Sine.easeIn');
+      scene.bossActive = false; // resume the drive to the rim
+    });
+  });
+}
+
+function getStripped(scene, r){
+  if (r.resolved || scene.invuln) return;
+  r.resolved = true;
+  r.sprites.forEach(s => s.glowTween.stop());
+  const targets = r.sprites.flatMap(s => [s.spr, s.glow, s.shadow]);
+  scene.tweens.add({ targets, alpha:0, duration:150 });
+  flashPlayer(scene, 0xff3b3b);
+  scene.cameras.main.shake(120, 0.01);
+  sfxStrip();
+  sfxCrowdGroan();
+  crowdPulse(scene, false);
+  streak = 0;
+  dodgeStreak = 0;
+  updateDodgeUI(0);
+  scene.clutchUntil = 0;
+  updateStreakUI(0);
+  updateHypeUI(0);
+  showBanner('LOCKED UP!', '#ff3b3b');
+  loseLife(scene);
+}
+
+function updateStreakUI(n){
+  const pill = document.getElementById('streakPill');
+  if (n >= 2){
+    pill.style.display = 'inline-block';
+    document.getElementById('streakVal').textContent = n;
+    pill.style.borderColor = n>=5 ? '#ff3b3b' : n>=3 ? '#ffd23f' : '#35d07f';
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
+function updateHypeUI(n){
+  const lap = n % 5;
+  const pct = (lap === 0 && n > 0) ? 100 : lap*20;
+  document.getElementById('hypeFill').style.width = pct + '%';
+}
+
+function triggerClutch(scene){
+  scene.clutchUntil = scene.time.now + 4000;
+  showBanner('CLUTCH MODE!', '#ffd23f');
+  scene.cameras.main.flash(150, 255, 210, 60, false);
+  sfxCrowdCheer(false);
+  crowdPulse(scene, true);
+}
+
+function setClutchVisual(active){
+  document.getElementById('hypeBar').classList.toggle('clutch', active);
+}
+
+function spawnGhost(scene, sprite, tint){
+  const ghost = scene.add.sprite(sprite.x, sprite.y, sprite.texture.key).setOrigin(sprite.originX, sprite.originY).setAlpha(0.5).setTint(tint);
+  scene.tweens.add({ targets: ghost, alpha:0, duration:250, onComplete:()=>ghost.destroy() });
+}
+
+function flashPlayer(scene, color){
+  scene.player.setTint(color);
+  scene.invuln = true;
+  scene.time.delayedCall(260, () => { scene.player.clearTint(); scene.invuln=false; });
+}
+
+function showBanner(text,color){
+  const el = document.getElementById('banner');
+  el.textContent = text; el.style.color = color; el.style.opacity=1;
+  clearTimeout(window.__bt);
+  window.__bt = setTimeout(()=>{ el.style.opacity=0; }, 500);
+}
+
+function loseLife(scene){
+  lives -= 1;
+  renderLives();
+  if (lives <= 0){
+    scene.finished = true;
+    totalTurnovers += 1;
+    if (totalTurnovers >= BENCH_THRESHOLD){
+      openOverlay('BENCHED!', `${totalTurnovers} turnovers and the coach has seen enough. Final score: ${score}`, 'New Game', () => {
+        fullReset();
+        restartLevel(scene);
+      });
+    } else {
+      openOverlay('TURNOVER', `You got locked up too many times. (${totalTurnovers}/${BENCH_THRESHOLD} turnovers before you're benched)`, 'Retry Level', () => { lives = 3; restartLevel(scene); });
+    }
+  }
+}
+
+function fullReset(){
+  level = 1; lives = 3; streak = 0; score = 0; dodgeStreak = 0;
+  sessionBestStreak = 0; totalTurnovers = 0;
+  stats = { fgm:0, fga:0, tpm:0, tpa:0, dunks:0, points:0 };
+  superReady = false; nextSuperThreshold = 8;
+  cachedCfg = null; cachedCfgLevel = null; checkpointReached = false;
+  document.getElementById('comboBtn').style.display = 'none';
+  document.getElementById('scoreVal').textContent = '0';
+}
+
+function shootBallToRim(scene, opts){
+  scene.finished = true;
+  scene.tweens.add({ targets: scene.player, y: scene.baseY-30, duration:180, yoyo:true, ease:'Quad.easeOut' });
+  scene.cameras.main.zoomTo(1.25, 220, 'Sine.easeOut');
+
+  const startX = scene.ball.x, startY = scene.ball.y;
+  const endX = scene.rim.x, endY = scene.rim.y - 6;
+  const dist = Phaser.Math.Distance.Between(startX, startY, endX, endY);
+  const arcHeight = Phaser.Math.Clamp(dist*0.35, 60, 170);
+  const flightDuration = Phaser.Math.Clamp(dist*1.05, 380, 750);
+
+  const shot = { t: 0 };
+  scene.tweens.add({
+    targets: shot,
+    t: 1,
+    duration: flightDuration,
+    ease: 'Sine.easeIn',
+    onUpdate: () => {
+      const t = shot.t;
+      scene.ball.x = startX + (endX-startX)*t;
+      scene.ball.y = startY + (endY-startY)*t - Math.sin(t*Math.PI)*arcHeight;
+      scene.ball.angle += 16;
+    },
+    onComplete: () => {
+      burst(scene, endX, endY, opts.particleColor, 12);
+      sfxScore();
+      sfxCrowdCheer(true);
+      crowdPulse(scene, true);
+      showBanner(opts.banner, opts.bannerColor);
+      scene.time.delayedCall(450, () => {
+        scene.cameras.main.zoomTo(1.12, 300, 'Sine.easeIn');
+        openOverlay(opts.overlayTitle, opts.overlaySub, 'Next Level', () => {
+          level += 1; lives = 3; restartLevel(scene);
+        });
+      });
+    }
+  });
+}
+
+function finishThree(scene){
+  addScore(50);
+  shootBallToRim(scene, {
+    particleColor: 0x35d07f,
+    banner: 'SPLASH! +3',
+    bannerColor: '#35d07f',
+    overlayTitle: 'SPLASH!',
+    overlaySub: `Pulled up from three — level ${level} complete.`,
+  });
+}
+
+function finishMidrange(scene){
+  addScore(30);
+  shootBallToRim(scene, {
+    particleColor: 0xff7a1a,
+    banner: 'MIDDY MAGIC! +2',
+    bannerColor: '#ff7a1a',
+    overlayTitle: 'MIDDY MAGIC!',
+    overlaySub: `Pulled up from mid-range after crossing the line — level ${level} complete.`,
+  });
+}
+
+function finishDunk(scene){
+  scene.finished = true;
+  stats.fgm++; stats.fga++; stats.dunks++; stats.points += 2;
+  addScore(40);
+  const centerX = scene.rim.x;
+  scene.tweens.add({ targets: [scene.player, scene.playerNumber, scene.ball, scene.playerShadow], x: centerX, duration: 150, ease:'Quad.easeOut' });
+  scene.tweens.add({ targets: scene.player, y: scene.baseY-46, duration:220, delay:60, yoyo:true, ease:'Quad.easeOut' });
+  scene.tweens.add({ targets: scene.rim, scaleX:1.18, scaleY:0.75, duration:110, delay:150, yoyo:true, ease:'Quad.easeOut' });
+  scene.cameras.main.shake(150, 0.006);
+  scene.cameras.main.zoomTo(1.37, 260, 'Sine.easeOut');
+  scene.time.delayedCall(150, () => burst(scene, scene.rim.x, scene.rim.y, scene.cfg.theme.accent, 18));
+  sfxScore();
+  sfxCrowdCheer(true);
+  crowdPulse(scene, true);
+  const isChampionship = scene.cfg.isBoss && roundInfo(level).isFinalBoss;
+  showBanner(isChampionship ? 'CHAMPIONS!' : 'DUNK! +2', '#ff7a1a');
+  scene.time.delayedCall(550, () => {
+    scene.cameras.main.zoomTo(1.12, 320, 'Sine.easeIn');
+    if (isChampionship){
+      addScore(300);
+      openOverlay('CHAMPION!', `You won it all! Final score this run: ${score}. A new season begins next.`, 'New Season', () => {
+        level += 1; lives = 3; restartLevel(scene);
+      });
+    } else {
+      openOverlay('SCORE!', `Drove it all the way — level ${level} complete.`, 'Next Level', () => {
+        level += 1; lives = 3; restartLevel(scene);
+      });
+    }
+  });
+}
+
+function restartLevel(scene){
+  document.getElementById('overlay').style.display = 'none';
+  scene.scene.restart();
+}
+
+function renderLives(){
+  const box = document.getElementById('lives');
+  box.innerHTML = '';
+  for (let i=0;i<3;i++){
+    const d = document.createElement('div');
+    d.className = 'life' + (i < lives ? '' : ' dead');
+    box.appendChild(d);
+  }
+}
+
+function fmtPct(m, a){
+  if (a === 0) return '.000';
+  return (m/a).toFixed(3).replace(/^0\./, '.');
+}
+
+function openOverlay(title, sub, btnLabel, onClick){
+  document.getElementById('ovTitle').textContent = title;
+  document.getElementById('ovSub').textContent = sub;
+  document.getElementById('bsScore').textContent = score;
+  document.getElementById('bsPts').textContent = stats.points;
+  document.getElementById('bsFG').textContent = `${stats.fgm}-${stats.fga}`;
+  document.getElementById('bsFGPct').textContent = fmtPct(stats.fgm, stats.fga);
+  document.getElementById('bs3PT').textContent = `${stats.tpm}-${stats.tpa}`;
+  document.getElementById('bs3PTPct').textContent = fmtPct(stats.tpm, stats.tpa);
+  document.getElementById('bsStreak').textContent = sessionBestStreak;
+  const btn = document.getElementById('ovBtn');
+  btn.textContent = btnLabel;
+  btn.onclick = onClick;
+  document.getElementById('overlay').style.display = 'flex';
+  try { window.parent.postMessage({ type: 'GAME_OVER', score: score, bestStreak: sessionBestStreak, roundsPlayed: level }, '*'); } catch(e) {}
+}
+
+function setControlMode(shootActive, pastLine){
+  document.getElementById('moveGroup').style.display = shootActive ? 'none' : 'block';
+  const shootBtn = document.getElementById('shoot');
+  shootBtn.style.display = shootActive ? 'flex' : 'none';
+  if (shootActive) shootBtn.textContent = pastLine ? 'MID' : '3PT';
+}
+
+// ---------- input ----------
+let sceneRef = null;
+document.getElementById('hooperPick0').addEventListener('pointerdown', () => { if (sceneRef) sceneRef.pickHooper(0); });
+document.getElementById('hooperPick1').addEventListener('pointerdown', () => { if (sceneRef) sceneRef.pickHooper(1); });
+document.getElementById('hooperPick2').addEventListener('pointerdown', () => { if (sceneRef) sceneRef.pickHooper(2); });
+document.getElementById('hooperShuffle').addEventListener('pointerdown', () => {
+  if (!sceneRef || !sceneRef.hooperOptions) return;
+  sceneRef.hooperOptions = [randomHooper(), randomHooper(), randomHooper()];
+  sceneRef.renderHooperOptions();
+});
+function queueMove(move){ queuedMove = { move, ts: Date.now() }; }
+document.getElementById('crossover').addEventListener('pointerdown', ()=>queueMove(MOVES.CROSSOVER));
+document.getElementById('spin').addEventListener('pointerdown', ()=>queueMove(MOVES.SPIN));
+document.getElementById('hesi').addEventListener('pointerdown', ()=>queueMove(MOVES.HESI));
+document.getElementById('behindback').addEventListener('pointerdown', ()=>queueMove(MOVES.BEHINDBACK));
+document.getElementById('inandout').addEventListener('pointerdown', ()=>queueMove(MOVES.INANDOUT));
+document.getElementById('comboBtn').addEventListener('pointerdown', () => { if (sceneRef) useSuperMove(sceneRef); });
+document.getElementById('bossPrompt').addEventListener('pointerdown', hitBossPrompt);
+const shootBtn = document.getElementById('shoot');
+shootBtn.addEventListener('pointerdown', () => { if (sceneRef) sceneRef.startShot(); });
+shootBtn.addEventListener('pointerup', () => { if (sceneRef) sceneRef.releaseShot(); });
+shootBtn.addEventListener('pointerleave', () => { if (sceneRef) sceneRef.releaseShot(); });
+shootBtn.addEventListener('pointercancel', () => { if (sceneRef) sceneRef.releaseShot(); });
+document.getElementById('left').addEventListener('pointerdown', () => { if (sceneRef) sceneRef.shiftLane(-1); });
+document.getElementById('right').addEventListener('pointerdown', () => { if (sceneRef) sceneRef.shiftLane(1); });
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'a' || e.key === 'ArrowLeft') { if (sceneRef) sceneRef.shiftLane(-1); }
+  if (e.key === 'd' || e.key === 'ArrowRight') { if (sceneRef) sceneRef.shiftLane(1); }
+  if (e.key === 'j') queueMove(MOVES.SPIN);
+  if (e.key === 'k') queueMove(MOVES.CROSSOVER);
+  if (e.key === 'h') queueMove(MOVES.HESI);
+  if (e.key === 'b') queueMove(MOVES.BEHINDBACK);
+  if (e.key === 'i') queueMove(MOVES.INANDOUT);
+  if (e.key === 'c') { if (sceneRef) useSuperMove(sceneRef); }
+  if ((e.key === ' ' || e.key === 'w' || e.key === 'ArrowUp') && !e.repeat) { if (sceneRef) sceneRef.startShot(); }
+});
+window.addEventListener('keyup', (e) => {
+  if (e.key === ' ' || e.key === 'w' || e.key === 'ArrowUp') { if (sceneRef) sceneRef.releaseShot(); }
+});
+
+const config = {
+  type: Phaser.AUTO,
+  parent: 'game',
+  width: W, height: H,
+  backgroundColor: '#12233f',
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  scene: [Main]
+};
+new Phaser.Game(config);
+</script>
+</body>
+</html>

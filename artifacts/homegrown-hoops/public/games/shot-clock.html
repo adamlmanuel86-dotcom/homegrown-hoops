@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Shot Clock</title>
+<style>
+  html,body{margin:0;padding:0;background:#0f1b2d;overflow:hidden;height:100%;font-family:'Arial Black',Arial,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  #wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;color:#fff;}
+  #hud{width:100%;box-sizing:border-box;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;}
+  .pill{background:rgba(15,27,45,0.75);border:2px solid #ff7a1a;border-radius:20px;padding:6px 12px;font-size:12px;letter-spacing:1px;white-space:nowrap;}
+  #livesRow{display:flex;gap:5px;}
+  .life{width:14px;height:14px;border-radius:50%;background:#ff7a1a;box-shadow:0 0 6px rgba(255,122,26,0.6);}
+  .life.dead{background:#3a4a63;box-shadow:none;}
+  h1{font-size:22px;letter-spacing:3px;color:#ff7a1a;margin:10px 0 2px;text-shadow:0 2px 8px rgba(255,122,26,0.3);}
+  .sub{font-size:11px;color:#8a97ad;margin:0 0 20px;letter-spacing:0.5px;}
+  #meterWrap{width:88%;max-width:380px;margin-top:18px;}
+  #meterTrack{position:relative;width:100%;height:26px;background:#16283f;border:2px solid #22314f;border-radius:14px;overflow:hidden;}
+  #sweetZone{position:absolute;top:0;bottom:0;background:rgba(53,208,127,0.28);border-left:2px solid #35d07f;border-right:2px solid #35d07f;}
+  #perfectZone{position:absolute;top:0;bottom:0;background:rgba(255,210,63,0.5);border-left:2px solid #ffd23f;border-right:2px solid #ffd23f;}
+  #marker{position:absolute;top:-4px;bottom:-4px;width:4px;background:#fff;box-shadow:0 0 10px rgba(255,255,255,0.9);border-radius:2px;}
+  #roundLabel{margin-top:14px;font-size:13px;color:#c9d3e0;letter-spacing:1px;}
+  #banner{margin-top:26px;font-size:26px;font-weight:900;letter-spacing:1px;min-height:34px;text-shadow:0 2px 8px rgba(0,0,0,0.5);opacity:0;transition:opacity 0.15s;}
+  #banner.show{opacity:1;}
+  #shootBtn{margin-top:34px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9040,#ff7a1a 70%);border:5px solid rgba(255,255,255,0.85);color:#fff;font-weight:900;font-size:22px;letter-spacing:1px;box-shadow:0 8px 0 rgba(0,0,0,0.35),0 10px 20px rgba(0,0,0,0.3);touch-action:manipulation;}
+  #shootBtn:active{transform:translateY(6px);box-shadow:0 2px 0 rgba(0,0,0,0.35);}
+  #overlay{position:fixed;inset:0;background:rgba(10,16,28,0.92);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:10;padding:20px;box-sizing:border-box;text-align:center;}
+  #overlay h2{font-size:30px;color:#ff7a1a;letter-spacing:2px;margin:0 0 14px;}
+  #overlay .stat{font-size:15px;color:#c9d3e0;margin:4px 0;}
+  #overlay .stat b{color:#ffd23f;}
+  #playAgainBtn{margin-top:24px;background:#ff7a1a;border:none;color:#fff;font-weight:900;font-size:16px;letter-spacing:1px;padding:14px 32px;border-radius:26px;box-shadow:0 4px 0 rgba(0,0,0,0.35);touch-action:manipulation;}
+  #playAgainBtn:active{transform:translateY(3px);box-shadow:none;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div class="pill">STREAK <span id="streakVal">0</span></div>
+    <div class="pill">HIGH SCORE <span id="highScoreVal">0</span></div>
+    <div id="livesRow"></div>
+  </div>
+  <h1>SHOT CLOCK</h1>
+  <p class="sub">Tap SHOOT when the marker's in the zone</p>
+  <div id="roundLabel">ROUND 1</div>
+  <div id="meterWrap">
+    <div id="meterTrack">
+      <div id="sweetZone"></div>
+      <div id="perfectZone"></div>
+      <div id="marker"></div>
+    </div>
+  </div>
+  <div id="banner"></div>
+  <button id="shootBtn">SHOOT</button>
+</div>
+
+<div id="overlay">
+  <h2 id="overlayTitle">GAME OVER</h2>
+  <div class="stat">Final streak: <b id="finalStreak">0</b></div>
+  <div class="stat">Best streak: <b id="bestStreakVal">0</b></div>
+  <div class="stat">Score: <b id="finalScore">0</b></div>
+  <button id="playAgainBtn">Play Again</button>
+</div>
+
+<script>
+let streak = 0;
+let bestStreak = 0;
+let score = 0;
+let highScore = 0;
+let lives = 3;
+let round = 1;
+let running = false;
+let position = 0;
+let direction = 1;
+let speed = 0.9;
+let sweetWidth = 34;
+let sweetCenter = 50;
+let animId = null;
+
+const SPEED_CAP = 2.6;
+const SWEET_FLOOR = 10;
+
+const els = {
+  streakVal: document.getElementById('streakVal'),
+  highScoreVal: document.getElementById('highScoreVal'),
+  livesRow: document.getElementById('livesRow'),
+  roundLabel: document.getElementById('roundLabel'),
+  sweetZone: document.getElementById('sweetZone'),
+  perfectZone: document.getElementById('perfectZone'),
+  marker: document.getElementById('marker'),
+  banner: document.getElementById('banner'),
+  shootBtn: document.getElementById('shootBtn'),
+  overlay: document.getElementById('overlay'),
+  overlayTitle: document.getElementById('overlayTitle'),
+  finalStreak: document.getElementById('finalStreak'),
+  bestStreakVal: document.getElementById('bestStreakVal'),
+  finalScore: document.getElementById('finalScore'),
+  playAgainBtn: document.getElementById('playAgainBtn'),
+};
+
+function renderLives(){
+  els.livesRow.innerHTML = '';
+  for(let i=0;i<3;i++){
+    const d=document.createElement('div');
+    d.className='life'+(i<lives?'':' dead');
+    els.livesRow.appendChild(d);
+  }
+}
+
+function positionZones(){
+  const half=sweetWidth/2;
+  sweetCenter=half+Math.random()*(100-sweetWidth);
+  els.sweetZone.style.left=(sweetCenter-half)+'%';
+  els.sweetZone.style.width=sweetWidth+'%';
+  const pHalf=Math.max(3,sweetWidth*0.28)/2;
+  els.perfectZone.style.left=(sweetCenter-pHalf)+'%';
+  els.perfectZone.style.width=(pHalf*2)+'%';
+}
+
+function showBanner(text,color){
+  els.banner.textContent=text;
+  els.banner.style.color=color;
+  els.banner.classList.add('show');
+  clearTimeout(showBanner._t);
+  showBanner._t=setTimeout(()=>els.banner.classList.remove('show'),700);
+}
+
+function tick(){
+  position+=direction*speed;
+  if(position>=100){position=100;direction=-1;}
+  if(position<=0){position=0;direction=1;}
+  els.marker.style.left=position+'%';
+  animId=requestAnimationFrame(tick);
+}
+
+function startRound(){
+  els.roundLabel.textContent='ROUND '+round;
+  positionZones();
+  position=Math.random()<0.5?0:100;
+  direction=position===0?1:-1;
+  running=true;
+  if(animId)cancelAnimationFrame(animId);
+  tick();
+}
+
+function addScore(base){
+  const mult=1+Math.floor(streak/5)*0.5;
+  score+=Math.round(base*mult);
+  if(score>highScore){highScore=score;els.highScoreVal.textContent=highScore;}
+}
+
+function shoot(){
+  if(!running)return;
+  running=false;
+  cancelAnimationFrame(animId);
+  const half=sweetWidth/2;
+  const inSweet=position>=sweetCenter-half&&position<=sweetCenter+half;
+  const pHalf=Math.max(3,sweetWidth*0.28)/2;
+  const inPerfect=position>=sweetCenter-pHalf&&position<=sweetCenter+pHalf;
+  if(inPerfect){
+    streak++;
+    if(streak>bestStreak)bestStreak=streak;
+    addScore(30);
+    showBanner('SWISH!','#ffd23f');
+    advanceDifficulty();
+  } else if(inSweet){
+    streak++;
+    if(streak>bestStreak)bestStreak=streak;
+    addScore(15);
+    showBanner('GOOD SHOT','#35d07f');
+    advanceDifficulty();
+  } else {
+    streak=0;
+    lives--;
+    renderLives();
+    showBanner('CLANK!','#ff3b3b');
+    if(lives<=0){setTimeout(endGame,500);return;}
+  }
+  els.streakVal.textContent=streak;
+  round++;
+  setTimeout(startRound,500);
+}
+
+function advanceDifficulty(){
+  speed=Math.min(SPEED_CAP,speed+0.09);
+  sweetWidth=Math.max(SWEET_FLOOR,sweetWidth-1.1);
+}
+
+function endGame(){
+  els.finalStreak.textContent=streak;
+  els.bestStreakVal.textContent=bestStreak;
+  els.finalScore.textContent=score;
+  els.overlay.style.display='flex';
+  // Notify parent page with final stats
+  try { window.parent.postMessage({ type:'GAME_OVER', score, bestStreak, roundsPlayed: round-1 }, '*'); } catch(e){}
+}
+
+function newGame(){
+  streak=0;score=0;lives=3;round=1;
+  speed=0.9;sweetWidth=34;
+  els.streakVal.textContent=0;
+  renderLives();
+  els.overlay.style.display='none';
+  startRound();
+}
+
+els.shootBtn.addEventListener('pointerdown',shoot);
+els.playAgainBtn.addEventListener('pointerdown',newGame);
+
+renderLives();
+startRound();
+</script>
+</body>
+</html>

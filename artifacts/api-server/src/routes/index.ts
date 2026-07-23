@@ -10,6 +10,7 @@ import gameVideosRouter from "./gameVideos";
 import storageRouter from "./storage";
 import cloudinaryRouter from "./cloudinary";
 import isoBallRouter from "./iso-ball";
+import arcadeRouter from "./arcade";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(gameVideosRouter);
 router.use(storageRouter);
 router.use(cloudinaryRouter);
 router.use(isoBallRouter);
+router.use(arcadeRouter);
 
 export default router;

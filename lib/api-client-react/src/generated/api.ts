@@ -20,6 +20,7 @@ import type {
   AddGameVideoBody,
   AdminUpdateProfileBody,
   AdminUserListItem,
+  ArcadeSession,
   CreateGameBody,
   CreatePlayerBody,
   CreateTeamBody,
@@ -30,8 +31,11 @@ import type {
   HealthStatus,
   ListGamesParams,
   ListPlayersParams,
+  MyArcadeStats,
   Player,
   PlayerStats,
+  PostArcadeSessionBody,
+  SaveAvatarConfigBody,
   StatLeaders,
   StatsSummary,
   Team,
@@ -2902,3 +2906,250 @@ export const useDeleteGameVideo = <
 > => {
   return useMutation(getDeleteGameVideoMutationOptions(options));
 };
+
+/**
+ * @summary Save avatar config for current user
+ */
+export const getSaveAvatarConfigUrl = () => {
+  return `/api/profiles/me/avatar-config`;
+};
+
+export const saveAvatarConfig = async (
+  saveAvatarConfigBody: SaveAvatarConfigBody,
+  options?: RequestInit,
+): Promise<UserProfile> => {
+  return customFetch<UserProfile>(getSaveAvatarConfigUrl(), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(saveAvatarConfigBody),
+  });
+};
+
+export const getSaveAvatarConfigMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveAvatarConfig>>,
+    TError,
+    { data: BodyType<SaveAvatarConfigBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveAvatarConfig>>,
+  TError,
+  { data: BodyType<SaveAvatarConfigBody> },
+  TContext
+> => {
+  const mutationKey = ["saveAvatarConfig"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveAvatarConfig>>,
+    { data: BodyType<SaveAvatarConfigBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return saveAvatarConfig(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveAvatarConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveAvatarConfig>>
+>;
+export type SaveAvatarConfigMutationBody = BodyType<SaveAvatarConfigBody>;
+export type SaveAvatarConfigMutationError = ErrorType<void>;
+
+/**
+ * @summary Save avatar config for current user
+ */
+export const useSaveAvatarConfig = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveAvatarConfig>>,
+    TError,
+    { data: BodyType<SaveAvatarConfigBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveAvatarConfig>>,
+  TError,
+  { data: BodyType<SaveAvatarConfigBody> },
+  TContext
+> => {
+  return useMutation(getSaveAvatarConfigMutationOptions(options));
+};
+
+/**
+ * @summary Submit an arcade game session
+ */
+export const getPostArcadeSessionUrl = () => {
+  return `/api/arcade/sessions`;
+};
+
+export const postArcadeSession = async (
+  postArcadeSessionBody: PostArcadeSessionBody,
+  options?: RequestInit,
+): Promise<ArcadeSession> => {
+  return customFetch<ArcadeSession>(getPostArcadeSessionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(postArcadeSessionBody),
+  });
+};
+
+export const getPostArcadeSessionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postArcadeSession>>,
+    TError,
+    { data: BodyType<PostArcadeSessionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof postArcadeSession>>,
+  TError,
+  { data: BodyType<PostArcadeSessionBody> },
+  TContext
+> => {
+  const mutationKey = ["postArcadeSession"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof postArcadeSession>>,
+    { data: BodyType<PostArcadeSessionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return postArcadeSession(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PostArcadeSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof postArcadeSession>>
+>;
+export type PostArcadeSessionMutationBody = BodyType<PostArcadeSessionBody>;
+export type PostArcadeSessionMutationError = ErrorType<void>;
+
+/**
+ * @summary Submit an arcade game session
+ */
+export const usePostArcadeSession = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof postArcadeSession>>,
+    TError,
+    { data: BodyType<PostArcadeSessionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof postArcadeSession>>,
+  TError,
+  { data: BodyType<PostArcadeSessionBody> },
+  TContext
+> => {
+  return useMutation(getPostArcadeSessionMutationOptions(options));
+};
+
+/**
+ * @summary Get current user best arcade stats per game
+ */
+export const getGetMyArcadeStatsUrl = () => {
+  return `/api/arcade/my-stats`;
+};
+
+export const getMyArcadeStats = async (
+  options?: RequestInit,
+): Promise<MyArcadeStats> => {
+  return customFetch<MyArcadeStats>(getGetMyArcadeStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyArcadeStatsQueryKey = () => {
+  return [`/api/arcade/my-stats`] as const;
+};
+
+export const getGetMyArcadeStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyArcadeStats>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyArcadeStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyArcadeStatsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMyArcadeStats>>
+  > = ({ signal }) => getMyArcadeStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyArcadeStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyArcadeStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyArcadeStats>>
+>;
+export type GetMyArcadeStatsQueryError = ErrorType<void>;
+
+/**
+ * @summary Get current user best arcade stats per game
+ */
+
+export function useGetMyArcadeStats<
+  TData = Awaited<ReturnType<typeof getMyArcadeStats>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyArcadeStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyArcadeStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

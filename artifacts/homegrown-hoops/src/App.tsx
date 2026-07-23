@@ -23,6 +23,11 @@ import { AdminPage } from "@/pages/admin";
 import { OurStoryPage } from "@/pages/our-story";
 import { ArchetypesPage } from "@/pages/archetypes";
 import { IsoBallPage } from "@/pages/iso-ball";
+import { ArcadePage } from "@/pages/arcade";
+import { WhoYaGotPage } from "@/pages/who-ya-got";
+import { FastBreakPage } from "@/pages/fast-break";
+import { ShotClockPage } from "@/pages/shot-clock";
+import { MyAvatarPage } from "@/pages/my-avatar";
 import { OnboardingPage } from "@/pages/onboarding";
 import { CustomSignUpPage } from "@/pages/sign-up";
 import { TermsPage } from "@/pages/terms";
@@ -205,6 +210,11 @@ function Router() {
             <Route path="/our-story" component={OurStoryPage} />
             <Route path="/archetypes" component={ArchetypesPage} />
             <Route path="/iso-ball" component={IsoBallPage} />
+            <Route path="/arcade" component={ArcadePage} />
+            <Route path="/arcade/who-ya-got" component={WhoYaGotPage} />
+            <Route path="/arcade/fast-break" component={FastBreakPage} />
+            <Route path="/arcade/shot-clock" component={ShotClockPage} />
+            <Route path="/my-avatar" component={MyAvatarPage} />
             <Route path="/terms" component={TermsPage} />
             <Route path="/privacy" component={PrivacyPage} />
             <Route component={NotFound} />

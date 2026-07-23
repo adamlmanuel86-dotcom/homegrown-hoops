@@ -1,0 +1,263 @@
+import React, { useState, useEffect, useCallback } from 'react';
+
+const PLAYERS = [
+  { id: 1, full_name: "Kareem Abdul-Jabbar", era_label: "1970s-80s", career_points: 38387, career_rebounds: 17440, career_assists: 5660, career_steals: 1160, career_blocks: 3189, championships: 6, career_ppg: 24.6 },
+  { id: 2, full_name: "Wilt Chamberlain", era_label: "1960s-70s", career_points: 31419, career_rebounds: 23924, career_assists: 4643, career_steals: null, career_blocks: null, championships: 2, career_ppg: 30.1 },
+  { id: 3, full_name: "Bill Russell", era_label: "1950s-60s", career_points: 14522, career_rebounds: 21620, career_assists: 4100, career_steals: null, career_blocks: null, championships: 11, career_ppg: 15.1 },
+  { id: 4, full_name: "Michael Jordan", era_label: "1980s-90s", career_points: 32292, career_rebounds: 6672, career_assists: 5633, career_steals: 2514, career_blocks: 893, championships: 6, career_ppg: 30.1 },
+  { id: 5, full_name: "Kobe Bryant", era_label: "1990s-2010s", career_points: 33643, career_rebounds: 7047, career_assists: 6306, career_steals: 1944, career_blocks: 640, championships: 5, career_ppg: 25.0 },
+  { id: 6, full_name: "LeBron James", era_label: "active", career_points: 43440, career_rebounds: 12095, career_assists: 12016, career_steals: null, career_blocks: null, championships: 4, career_ppg: 27.0 },
+  { id: 7, full_name: "Magic Johnson", era_label: "1980s-90s", career_points: 17707, career_rebounds: 6559, career_assists: 10141, career_steals: 1724, career_blocks: 374, championships: 5, career_ppg: 19.5 },
+  { id: 8, full_name: "Larry Bird", era_label: "1980s-90s", career_points: 21791, career_rebounds: 8974, career_assists: 5695, career_steals: 1556, career_blocks: 755, championships: 3, career_ppg: 24.3 },
+  { id: 9, full_name: "Tim Duncan", era_label: "1990s-2010s", career_points: 26496, career_rebounds: 15091, career_assists: 4225, career_steals: 1026, career_blocks: 3020, championships: 5, career_ppg: 19.0 },
+  { id: 10, full_name: "Shaquille O'Neal", era_label: "1990s-2000s", career_points: 28596, career_rebounds: 13099, career_assists: 3026, career_steals: 739, career_blocks: 2732, championships: 4, career_ppg: 23.7 },
+  { id: 11, full_name: "Hakeem Olajuwon", era_label: "1980s-2000s", career_points: 26946, career_rebounds: 13748, career_assists: 3058, career_steals: 2162, career_blocks: 3830, championships: 2, career_ppg: 21.8 },
+  { id: 12, full_name: "Karl Malone", era_label: "1980s-2000s", career_points: 36928, career_rebounds: 14968, career_assists: 5248, career_steals: 1477, career_blocks: 1120, championships: 0, career_ppg: 25.0 },
+  { id: 13, full_name: "John Stockton", era_label: "1980s-2000s", career_points: 13791, career_rebounds: 4051, career_assists: 15806, career_steals: 3265, career_blocks: 96, championships: 0, career_ppg: 13.1 },
+  { id: 14, full_name: "Charles Barkley", era_label: "1980s-90s", career_points: 23757, career_rebounds: 12546, career_assists: 4215, career_steals: 1648, career_blocks: 596, championships: 0, career_ppg: 22.1 },
+  { id: 15, full_name: "David Robinson", era_label: "1990s-2000s", career_points: 20790, career_rebounds: 10497, career_assists: 2954, career_steals: 1388, career_blocks: 2954, championships: 2, career_ppg: 21.1 },
+  { id: 16, full_name: "Patrick Ewing", era_label: "1980s-2000s", career_points: 24815, career_rebounds: 11607, career_assists: 1776, career_steals: 1061, career_blocks: 2894, championships: 0, career_ppg: 21.0 },
+  { id: 17, full_name: "Gary Payton", era_label: "1990s-2000s", career_points: 21813, career_rebounds: 6955, career_assists: 8966, career_steals: 2445, career_blocks: 217, championships: 1, career_ppg: 16.3 },
+  { id: 18, full_name: "Allen Iverson", era_label: "1990s-2000s", career_points: 24368, career_rebounds: 3394, career_assists: 5624, career_steals: 1983, career_blocks: 61, championships: 0, career_ppg: 26.7 },
+  { id: 19, full_name: "Kevin Garnett", era_label: "1990s-2010s", career_points: 26071, career_rebounds: 14662, career_assists: 5445, career_steals: 2049, career_blocks: 1916, championships: 1, career_ppg: 17.8 },
+  { id: 20, full_name: "Paul Pierce", era_label: "2000s-2010s", career_points: 26397, career_rebounds: 6442, career_assists: 4305, career_steals: 1725, career_blocks: 457, championships: 1, career_ppg: 19.7 },
+  { id: 21, full_name: "Dwyane Wade", era_label: "2000s-2010s", career_points: 23165, career_rebounds: 4459, career_assists: 5743, career_steals: 1673, career_blocks: 802, championships: 3, career_ppg: 22.0 },
+  { id: 22, full_name: "Dirk Nowitzki", era_label: "2000s-2010s", career_points: 31560, career_rebounds: 11489, career_assists: 3651, career_steals: 934, career_blocks: 1133, championships: 1, career_ppg: 20.7 },
+  { id: 23, full_name: "Steve Nash", era_label: "2000s-2010s", career_points: 17387, career_rebounds: 3939, career_assists: 10335, career_steals: 924, career_blocks: 82, championships: 0, career_ppg: 14.3 },
+  { id: 24, full_name: 'Oscar Robertson', era_label: '1960s-70s', career_points: 26710, career_rebounds: 7804, career_assists: 9887, career_steals: null, career_blocks: null, championships: 1, career_ppg: 25.7 },
+  { id: 25, full_name: 'Jerry West', era_label: '1960s-70s', career_points: 25192, career_rebounds: 5366, career_assists: 6238, career_steals: null, career_blocks: null, championships: 1, career_ppg: 27.0 },
+  { id: 26, full_name: 'Elgin Baylor', era_label: '1950s-70s', career_points: 23149, career_rebounds: 11463, career_assists: 3650, career_steals: null, career_blocks: null, championships: 0, career_ppg: 27.4 },
+  { id: 27, full_name: 'Julius Erving', era_label: '1970s-80s', career_points: 18364, career_rebounds: 5601, career_assists: 3224, career_steals: null, career_blocks: null, championships: 1, career_ppg: 22.0 },
+  { id: 28, full_name: 'Moses Malone', era_label: '1970s-90s', career_points: 27409, career_rebounds: 16212, career_assists: 1936, career_steals: null, career_blocks: null, championships: 1, career_ppg: 20.3 },
+  { id: 29, full_name: 'Isiah Thomas', era_label: '1980s-90s', career_points: 18822, career_rebounds: 3478, career_assists: 9061, career_steals: null, career_blocks: null, championships: 2, career_ppg: 19.2 },
+  { id: 30, full_name: 'Clyde Drexler', era_label: '1980s-90s', career_points: 22195, career_rebounds: 6677, career_assists: 6125, career_steals: 2207, career_blocks: null, championships: 1, career_ppg: 20.4 },
+  { id: 31, full_name: 'Scottie Pippen', era_label: '1980s-2000s', career_points: 18940, career_rebounds: 7494, career_assists: 6135, career_steals: 2307, career_blocks: null, championships: 6, career_ppg: 16.1 },
+  { id: 32, full_name: 'Dennis Rodman', era_label: '1980s-2000s', career_points: 6683, career_rebounds: 11954, career_assists: 1600, career_steals: null, career_blocks: null, championships: 5, career_ppg: 7.3 },
+  { id: 33, full_name: 'Reggie Miller', era_label: '1980s-2000s', career_points: 25279, career_rebounds: 4054, career_assists: 4141, career_steals: null, career_blocks: null, championships: 0, career_ppg: 18.2 },
+  { id: 34, full_name: 'Ray Allen', era_label: '1990s-2010s', career_points: 24505, career_rebounds: 5272, career_assists: 4361, career_steals: null, career_blocks: null, championships: 2, career_ppg: 18.9 },
+  { id: 35, full_name: 'Vince Carter', era_label: '1990s-2020s', career_points: 25728, career_rebounds: 4665, career_assists: 3343, career_steals: null, career_blocks: null, championships: 0, career_ppg: 16.7 },
+  { id: 36, full_name: 'Tracy McGrady', era_label: '1990s-2010s', career_points: 18381, career_rebounds: 5276, career_assists: 4161, career_steals: null, career_blocks: null, championships: 0, career_ppg: 19.6 },
+  { id: 37, full_name: 'Grant Hill', era_label: '1990s-2010s', career_points: 17618, career_rebounds: 6119, career_assists: 4111, career_steals: null, career_blocks: null, championships: 0, career_ppg: 16.7 },
+  { id: 38, full_name: 'George Gervin', era_label: '1970s-80s', career_points: 20708, career_rebounds: 5445, career_assists: 2214, career_steals: null, career_blocks: null, championships: 0, career_ppg: 25.1 },
+  { id: 39, full_name: 'Walt Frazier', era_label: '1960s-70s', career_points: 15581, career_rebounds: 4830, career_assists: 5040, career_steals: null, career_blocks: null, championships: 2, career_ppg: 18.9 },
+  { id: 40, full_name: 'Willis Reed', era_label: '1960s-70s', career_points: 12183, career_rebounds: 8414, career_assists: 1755, career_steals: null, career_blocks: null, championships: 2, career_ppg: 18.7 },
+  { id: 41, full_name: 'Bob Pettit', era_label: '1950s-60s', career_points: 20880, career_rebounds: 12849, career_assists: 2369, career_steals: null, career_blocks: null, championships: 1, career_ppg: 26.4 },
+  { id: 42, full_name: 'Nate Thurmond', era_label: '1960s-70s', career_points: 14437, career_rebounds: 14464, career_assists: 2181, career_steals: null, career_blocks: null, championships: 0, career_ppg: 15.0 },
+  { id: 43, full_name: 'Robert Parish', era_label: '1970s-90s', career_points: 23334, career_rebounds: 14715, career_assists: 1554, career_steals: null, career_blocks: null, championships: 4, career_ppg: 14.5 },
+  { id: 44, full_name: 'Pete Maravich', era_label: '1970s', career_points: 15948, career_rebounds: 4173, career_assists: 3563, career_steals: null, career_blocks: null, championships: 0, career_ppg: 24.2 },
+];
+
+const STAT_CATEGORIES = [
+  { key: 'career_points', label: 'career points' },
+  { key: 'career_rebounds', label: 'career rebounds' },
+  { key: 'career_assists', label: 'career assists' },
+  { key: 'career_steals', label: 'career steals' },
+  { key: 'career_blocks', label: 'career blocks' },
+  { key: 'championships', label: 'championships' },
+  { key: 'career_ppg', label: 'points per game' },
+];
+
+const CATEGORY_PROMPTS = {
+  career_points: 'Who scored more career points?',
+  career_rebounds: 'Who grabbed more career rebounds?',
+  career_assists: 'Who dished more career assists?',
+  career_steals: 'Who racked up more career steals?',
+  career_blocks: 'Who swatted more career blocks?',
+  championships: 'Who won more championships?',
+  career_ppg: 'Who averaged more points per game?',
+};
+
+function difficultyBand(streak) {
+  if (streak < 3) return { min: 0.5, max: 0.9 };
+  if (streak < 6) return { min: 0.28, max: 0.5 };
+  if (streak < 10) return { min: 0.12, max: 0.28 };
+  return { min: 0.03, max: 0.12 };
+}
+
+function pairKey(idA, idB) {
+  return idA < idB ? `${idA}-${idB}` : `${idB}-${idA}`;
+}
+
+function generateMatchup(playerPool, streak, seenPairs) {
+  const categoriesToTry = [...STAT_CATEGORIES].sort(() => Math.random() - 0.5);
+  const { min, max } = difficultyBand(streak);
+
+  for (const category of categoriesToTry) {
+    const eligible = playerPool.filter((p) => p[category.key] != null);
+    if (eligible.length < 6) continue;
+
+    const sorted = [...eligible].sort((a, b) => a[category.key] - b[category.key]);
+    const n = sorted.length;
+    const minGap = Math.max(1, Math.floor(n * min));
+    const maxGap = Math.max(minGap + 1, Math.floor(n * max));
+
+    // Collect every valid pair in the difficulty band, then pick uniformly at
+    // random — avoids always landing on the same extreme record-holders.
+    const candidates = [];
+    for (let i = 0; i < n; i++) {
+      for (let gap = minGap; gap <= maxGap; gap++) {
+        const j = i + gap;
+        if (j >= n) break;
+        const a = sorted[i];
+        const b = sorted[j];
+        if (a[category.key] === b[category.key]) continue;
+        if (seenPairs.has(pairKey(a.id, b.id))) continue;
+        candidates.push([a, b]);
+      }
+    }
+
+    if (candidates.length === 0) continue;
+
+    const [a, b] = candidates[Math.floor(Math.random() * candidates.length)];
+    const correctPlayerId = a[category.key] > b[category.key] ? a.id : b.id;
+    const swap = Math.random() < 0.5;
+
+    return {
+      category: category.key,
+      categoryLabel: category.label,
+      playerA: swap ? a : b,
+      playerB: swap ? b : a,
+      correctPlayerId,
+      pairKey: pairKey(a.id, b.id),
+    };
+  }
+
+  if (streak !== 0) return generateMatchup(playerPool, 0, seenPairs);
+  if (seenPairs.size > 0) return generateMatchup(playerPool, 0, new Set());
+  return null;
+}
+
+function formatStat(category, value) {
+  if (category === 'career_ppg') return `${value} PPG`;
+  if (category === 'championships') return `${value} ${value === 1 ? 'ring' : 'rings'}`;
+  return value.toLocaleString();
+}
+
+// Placeholder avatar — swap for the real Homegrown Hoops avatar component in production.
+function PlayerAvatar({ label, size = 96 }) {
+  const initials = label.split(' ').map((w) => w[0]).join('').slice(0, 2);
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: '50%',
+        background: 'linear-gradient(135deg,#1e293b,#334155)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#f97316', fontSize: size * 0.32, fontWeight: 800,
+        border: '3px solid #f97316',
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+export default function HigherLowerDemo() {
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [matchup, setMatchup] = useState(null);
+  const [seenPairs, setSeenPairs] = useState(new Set());
+  const [revealed, setRevealed] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
+
+  const nextRound = useCallback((currentStreak, pairs) => {
+    const next = generateMatchup(PLAYERS, currentStreak, pairs);
+    setMatchup(next);
+    setRevealed(null);
+  }, []);
+
+  useEffect(() => {
+    nextRound(0, new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handlePick(pickedId) {
+    if (revealed) return;
+    const correct = pickedId === matchup.correctPlayerId;
+    setRevealed(correct ? 'correct' : 'wrong');
+
+    if (correct) {
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      setBestStreak((b) => Math.max(b, newStreak));
+      const updated = new Set(seenPairs);
+      updated.add(matchup.pairKey);
+      setSeenPairs(updated);
+      setTimeout(() => nextRound(newStreak, updated), 900);
+    } else {
+      setGameOver(true);
+    }
+  }
+
+  function handlePlayAgain() {
+    setStreak(0);
+    setGameOver(false);
+    setSeenPairs(new Set());
+    nextRound(0, new Set());
+  }
+
+  if (!matchup) return null;
+
+  const { playerA, playerB, category, correctPlayerId } = matchup;
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 440, background: '#1e293b', borderRadius: 20, padding: 24, color: 'white', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+        <div style={{ textAlign: 'center', fontSize: 12, letterSpacing: 1, color: '#94a3b8', marginBottom: 4 }}>HIGHER OR LOWER</div>
+
+        {gameOver ? (
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>🏀</div>
+            <h2 style={{ margin: '0 0 8px' }}>Run over!</h2>
+            <p style={{ color: '#cbd5e1', margin: '4px 0' }}>You reached a streak of <b>{streak}</b></p>
+            <p style={{ color: '#cbd5e1', margin: '4px 0' }}>Best streak: <b>{bestStreak}</b></p>
+            <button
+              onClick={handlePlayAgain}
+              style={{ marginTop: 20, padding: '12px 28px', borderRadius: 10, border: 'none', background: '#f97316', color: 'white', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+            >
+              Play again
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, marginBottom: 16, fontSize: 14 }}>
+              <span>Streak: {streak}</span>
+              <span style={{ color: '#f97316' }}>Best: {bestStreak}</span>
+            </div>
+
+            <h3 style={{ textAlign: 'center', margin: '0 0 20px', fontSize: 18 }}>{CATEGORY_PROMPTS[category]}</h3>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              {[playerA, playerB].map((p) => {
+                const isCorrect = p.id === correctPlayerId;
+                const state = revealed ? (isCorrect ? 'correct' : 'incorrect') : null;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handlePick(p.id)}
+                    disabled={!!revealed}
+                    style={{
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                      padding: 16, borderRadius: 14, cursor: revealed ? 'default' : 'pointer',
+                      border: state === 'correct' ? '2px solid #22c55e' : state === 'incorrect' ? '2px solid #ef4444' : '2px solid #334155',
+                      background: state === 'correct' ? 'rgba(34,197,94,0.12)' : state === 'incorrect' ? 'rgba(239,68,68,0.12)' : '#0f172a',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <PlayerAvatar label={p.full_name} />
+                    <div style={{ fontWeight: 700, fontSize: 13, textAlign: 'center' }}>{p.full_name}</div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>{p.era_label}</div>
+                    {revealed && (
+                      <div style={{ fontSize: 15, fontWeight: 800, color: state === 'correct' ? '#22c55e' : '#ef4444' }}>
+                        {formatStat(category, p[category])}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
