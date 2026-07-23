@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useUser } from "@clerk/react";
+import { useUser, useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import {
   useGetMyProfile,
@@ -12,6 +12,7 @@ import { HomegrownHoopsLogo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { Walkthrough } from "@/components/walkthrough";
 import { AvatarCreator } from "@/components/AvatarCreator";
+import type { AvatarConfig } from "@/lib/avatarCanvas";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
 const GRAD_YEARS = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + i - 1);
@@ -26,7 +27,6 @@ type Step =
   | "year"
   | "photo"
   | "submitting"
-  | "avatar"
   | "reveal"
   | "pendingReveal"
   | "walkthrough";
@@ -47,6 +47,7 @@ function stepIndex(step: Step): number {
 
 export function OnboardingPage() {
   const { isSignedIn, isLoaded, user } = useUser();
+  const { getToken } = useAuth();
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
 
@@ -87,6 +88,8 @@ export function OnboardingPage() {
   // Prevents redirect-on-profile-load from firing right after we just created
   // the profile (must be declared before the useEffect that references it)
   const [justCreated, setJustCreated] = useState(false);
+  const [pendingAvatarConfig, setPendingAvatarConfig] = useState<AvatarConfig | null>(null);
+  const [showAvatarCreator, setShowAvatarCreator] = useState(false);
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
@@ -201,7 +204,21 @@ export function OnboardingPage() {
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      setStep("avatar");
+      if (pendingAvatarConfig) {
+        try {
+          const token = await getToken();
+          await fetch("/api/profiles/me/avatar-config", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ avatarConfig: pendingAvatarConfig }),
+          });
+          await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+        } catch {
+          // non-fatal — avatar can be set later from profile page
+        }
+      }
+      setStep("reveal");
+      triggerReveal();
     } catch (err) {
       console.log("[HH] advanceFromPhoto error:", err);
       setSubmitError("Something went wrong. Please try again.");
@@ -1037,92 +1054,6 @@ export function OnboardingPage() {
   }
 
   // ──────────────────────────────────────────────────
-  // AVATAR STEP — profile already created, avatar is optional
-  // ──────────────────────────────────────────────────
-  if (step === "avatar") {
-    function goToReveal() {
-      triggerReveal();
-      setStep("reveal");
-    }
-
-    return (
-      <div
-        className="min-h-[100dvh] flex flex-col"
-        style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(22 78% 12% / 0.3), hsl(222 42% 5%) 60%)" }}
-      >
-        {/* Header row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            padding: "28px 24px 16px",
-            gap: 12,
-          }}
-        >
-          <div>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "hsl(22, 78%, 52%)",
-                marginBottom: 6,
-              }}
-            >
-              Bonus Step · Optional
-            </p>
-            <h2
-              style={{
-                fontFamily: "'Anton', 'Barlow Condensed', Impact, sans-serif",
-                fontSize: "clamp(28px, 8vw, 36px)",
-                fontWeight: 900,
-                color: "#ffffff",
-                lineHeight: 1.05,
-                margin: 0,
-                textTransform: "uppercase",
-                letterSpacing: "0.02em",
-              }}
-            >
-              Design Your<br />Baller
-            </h2>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 6, fontWeight: 500 }}>
-              Your Arcade avatar. You can always change this later.
-            </p>
-          </div>
-          <button
-            onClick={goToReveal}
-            style={{
-              flexShrink: 0,
-              padding: "8px 16px",
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.15)",
-              background: "transparent",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              marginTop: 4,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Skip →
-          </button>
-        </div>
-
-        {/* Avatar creator — scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 pb-8">
-          <AvatarCreator
-            initialConfig={null}
-            onSaved={goToReveal}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // ──────────────────────────────────────────────────
   // PROFILE STEPS
   // ──────────────────────────────────────────────────
   const currentStepIdx = stepIndex(step);
@@ -1376,22 +1307,82 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* ── PHOTO ── */}
+          {/* ── PHOTO + AVATAR ── */}
           {step === "photo" && (
             <div className="space-y-6">
               <div>
                 <p className="label-upper text-xs text-primary mb-2">Step 6 of 6</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
-                  ADD A PHOTO
+                  ADD YOUR LOOK
                 </h2>
-                <p className="text-white/40 text-sm mt-2 font-medium">Optional — you can skip this.</p>
+                <p className="text-white/40 text-sm mt-2 font-medium">Profile photo and Arcade avatar — both optional.</p>
               </div>
 
-              <PhotoPicker
-                preview={avatarPreview}
-                onFileChange={handleFileChange}
-                onClear={() => { setAvatarPreview(null); setAvatarFile(null); }}
-              />
+              {/* Profile photo */}
+              <div>
+                <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Profile Photo</p>
+                <PhotoPicker
+                  preview={avatarPreview}
+                  onFileChange={handleFileChange}
+                  onClear={() => { setAvatarPreview(null); setAvatarFile(null); }}
+                />
+              </div>
+
+              {/* Arcade avatar */}
+              <div>
+                <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Arcade Avatar</p>
+                {pendingAvatarConfig && !showAvatarCreator ? (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "14px 16px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(249,115,22,0.4)",
+                    background: "rgba(249,115,22,0.06)",
+                  }}>
+                    <span style={{ color: "#F97316", fontSize: 18 }}>✓</span>
+                    <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 600, flex: 1 }}>Avatar ready</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAvatarCreator(true)}
+                      style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ) : showAvatarCreator ? (
+                  <AvatarCreator
+                    initialConfig={pendingAvatarConfig}
+                    onConfigReady={(config) => {
+                      setPendingAvatarConfig(config);
+                      setShowAvatarCreator(false);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarCreator(true)}
+                    style={{
+                      width: "100%",
+                      padding: "16px 12px",
+                      borderRadius: 12,
+                      border: "1px dashed rgba(255,255,255,0.2)",
+                      background: "transparent",
+                      color: "rgba(255,255,255,0.5)",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    }}
+                  >
+                    🎮 Design Your Arcade Avatar
+                  </button>
+                )}
+              </div>
 
               {uploadError && (
                 <p className="text-red-400 text-sm font-medium">{uploadError}</p>

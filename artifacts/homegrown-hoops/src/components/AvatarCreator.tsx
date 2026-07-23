@@ -22,6 +22,7 @@ import { apiBase } from "@/lib/api";
 interface AvatarCreatorProps {
   initialConfig?: AvatarConfig | null;
   onSaved?: (config: AvatarConfig) => void;
+  onConfigReady?: (config: AvatarConfig) => void;
 }
 
 function hexInt(n: number) {
@@ -76,7 +77,7 @@ const PREVIEW_SCALE = 3;
 const CANVAS_W = 44 * PREVIEW_SCALE;
 const CANVAS_H = 64 * PREVIEW_SCALE;
 
-export function AvatarCreator({ initialConfig, onSaved }: AvatarCreatorProps) {
+export function AvatarCreator({ initialConfig, onSaved, onConfigReady }: AvatarCreatorProps) {
   const { getToken } = useAuth();
   const qc = useQueryClient();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -130,6 +131,12 @@ export function AvatarCreator({ initialConfig, onSaved }: AvatarCreatorProps) {
   }
 
   async function handleSave() {
+    if (onConfigReady) {
+      onConfigReady(config);
+      setSaveMsg("saved");
+      setTimeout(() => setSaveMsg(null), 2000);
+      return;
+    }
     setSaving(true);
     setSaveMsg(null);
     try {
@@ -286,12 +293,12 @@ export function AvatarCreator({ initialConfig, onSaved }: AvatarCreatorProps) {
           disabled={saving}
           className="flex-1 py-3 rounded-xl bg-primary text-white font-black text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save Avatar"}
+          {saving ? "Saving…" : onConfigReady ? "Use This Look ✓" : "Save Avatar"}
         </button>
       </div>
 
       {saveMsg === "saved" && (
-        <p className="text-green-400 text-xs text-center font-bold">✓ Avatar saved!</p>
+        <p className="text-green-400 text-xs text-center font-bold">{onConfigReady ? "✓ Avatar ready!" : "✓ Avatar saved!"}</p>
       )}
       {saveMsg === "error" && (
         <p className="text-red-400 text-xs text-center font-bold">Save failed — try again</p>
