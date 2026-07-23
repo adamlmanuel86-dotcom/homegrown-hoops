@@ -1,7 +1,7 @@
-import { useGetStatsSummary, useGetStatLeaders, useListTeams } from "@workspace/api-client-react";
+import { useGetStatsSummary, useGetStatLeaders, useListTeams, useGetMyProfile } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Show, useUser } from "@clerk/react";
-import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Target, Share2, Crosshair, ShieldAlert, Square, Zap } from "lucide-react";
+import { Trophy, Users, CalendarDays, ArrowRight, TrendingUp, Target, Share2, Crosshair, ShieldAlert, Square, Zap, Gamepad2 } from "lucide-react";
 
 function CourtTexture() {
   return (
@@ -85,10 +85,13 @@ export function Home() {
   const { data: summary, isLoading: loadingSummary } = useGetStatsSummary();
   const { data: leaders, isLoading: loadingLeaders } = useGetStatLeaders();
   const { data: teams } = useListTeams();
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
+  const { data: profile } = useGetMyProfile({ query: { enabled: !!isSignedIn, retry: false } });
 
   const teamById = (id: number) =>
     teams?.find((t) => t.id === id)?.name ?? `Team #${id}`;
+
+  const needsAvatar = isSignedIn && profile && !profile.avatarConfig;
 
   return (
     <div className="space-y-10">
@@ -130,6 +133,40 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {/* Avatar creation prompt — shown only to signed-in users with no avatar yet */}
+      {needsAvatar && (
+        <a
+          href="/my-avatar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            padding: "16px 20px",
+            borderRadius: 16,
+            background: "linear-gradient(135deg, hsl(22,78%,18%), hsl(222,42%,12%))",
+            border: "1.5px solid hsl(22,78%,36%)",
+            textDecoration: "none",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+            background: "hsl(22,78%,46%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Gamepad2 style={{ width: 24, height: 24, color: "#fff" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: 18, fontWeight: 900, color: "#fff", textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 }}>
+              Design Your Baller
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 13, color: "hsl(22,78%,70%)", fontWeight: 600 }}>
+              Create your pixel art avatar — tap here to get started →
+            </p>
+          </div>
+        </a>
+      )}
 
       <SectionBreak />
 
