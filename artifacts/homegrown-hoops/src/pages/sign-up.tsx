@@ -156,9 +156,9 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const { error: linkErr } = await signUp.verifications.sendEmailLink({
-        redirectUrl: `${window.location.origin}${basePath}/onboarding`,
-      });
+      const { error: linkErr } = await signUp.verifications.sendEmailLink(
+        { redirectUrl: `${window.location.origin}${basePath}/onboarding` } as never,
+      );
       if (linkErr) {
         setError(linkErr.longMessage ?? linkErr.message ?? "Could not send magic link.");
       } else {

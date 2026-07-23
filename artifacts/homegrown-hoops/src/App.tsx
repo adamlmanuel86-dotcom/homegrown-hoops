@@ -1,10 +1,9 @@
 import { useEffect, useRef, Suspense } from "react";
-import { ClerkProvider, AuthenticateWithRedirectCallback, SignIn, Show, useClerk, useAuth } from "@clerk/react";
+import { ClerkProvider, AuthenticateWithRedirectCallback, SignIn, Show, useClerk } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import "@/lib/api";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ServerStatusBanner } from "@/components/server-status";
@@ -168,22 +167,6 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-/**
- * Registers Clerk's getToken as the Bearer-token supplier for every API call.
- * This ensures requests carry an Authorization header even when the session
- * cookie is on a different domain (e.g. Vercel → Railway cross-origin calls).
- */
-function ClerkTokenBridge() {
-  const { getToken } = useAuth();
-
-  useEffect(() => {
-    setAuthTokenGetter(() => getToken());
-    return () => setAuthTokenGetter(null);
-  }, [getToken]);
-
-  return null;
-}
-
 function Router() {
   return (
     <Switch>
@@ -231,7 +214,7 @@ function ClerkProviderWithRoutes() {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl || undefined}
+      proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
@@ -242,7 +225,6 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
-        <ClerkTokenBridge />
         <Suspense fallback={
           <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4">
             <span className="font-display text-2xl uppercase tracking-widest text-primary">Homegrown Hoops</span>

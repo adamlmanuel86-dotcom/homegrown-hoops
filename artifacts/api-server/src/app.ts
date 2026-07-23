@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
-import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
+import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -62,7 +62,16 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use(clerkMiddleware());
+app.use(
+  clerkMiddleware((req) => ({
+    proxyUrl: (() => {
+      const host = getClerkProxyHost(req);
+      if (!host) return undefined;
+      const protocol = req.headers["x-forwarded-proto"] || "https";
+      return `${protocol}://${host}${CLERK_PROXY_PATH}`;
+    })(),
+  })),
+);
 
 app.use("/api", router);
 
