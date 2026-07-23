@@ -1,8 +1,9 @@
 import { useEffect, useRef, Suspense } from "react";
-import { ClerkProvider, AuthenticateWithRedirectCallback, SignIn, Show, useClerk } from "@clerk/react";
+import { ClerkProvider, AuthenticateWithRedirectCallback, SignIn, Show, useClerk, useAuth } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import "@/lib/api";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -148,6 +149,15 @@ function SignUpPage() {
   return <CustomSignUpPage />;
 }
 
+function ClerkTokenBridge() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const qc = useQueryClient();
@@ -224,6 +234,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ClerkTokenBridge />
         <ClerkQueryClientCacheInvalidator />
         <Suspense fallback={
           <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4">
