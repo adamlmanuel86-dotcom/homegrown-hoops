@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useGetMyArcadeStats, type ArcadeGameStats } from "@workspace/api-client-react";
 
@@ -66,6 +67,12 @@ export function ArcadePage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <div className="mb-2">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-bold border-2 border-foreground/30 text-foreground/80 px-3 py-1.5 hover:border-primary hover:text-primary transition-all">
+          <ChevronLeft className="h-4 w-4" /> Home
+        </Link>
+      </div>
+
       <div className="mb-8 text-center">
         <h1 className="font-display text-4xl uppercase tracking-widest text-primary mb-2">Arcade</h1>
         <p className="text-white/50 text-sm">Mini-games for Homegrown Hoops heads. Pick a game and get buckets.</p>

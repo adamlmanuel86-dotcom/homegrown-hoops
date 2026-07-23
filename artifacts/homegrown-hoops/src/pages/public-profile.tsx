@@ -293,9 +293,31 @@ export function PublicProfilePage() {
         style={{
           maxWidth: 560,
           margin: "0 auto",
-          padding: "32px 20px 0",
+          padding: "24px 20px 0",
         }}
       >
+        <button
+          onClick={() => window.history.back()}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 13,
+            fontWeight: 700,
+            border: "2px solid rgba(255,255,255,0.25)",
+            color: "rgba(255,255,255,0.7)",
+            background: "none",
+            padding: "6px 12px",
+            cursor: "pointer",
+            marginBottom: 24,
+            letterSpacing: "0.01em",
+            transition: "border-color 0.15s, color 0.15s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "hsl(22,78%,60%)"; (e.currentTarget as HTMLButtonElement).style.color = "hsl(22,78%,60%)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.25)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.7)"; }}
+        >
+          ← Back
+        </button>
         {/* Season selector */}
         {seasons.length > 0 && (
           <div

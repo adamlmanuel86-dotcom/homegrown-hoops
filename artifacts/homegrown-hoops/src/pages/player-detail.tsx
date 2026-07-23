@@ -145,7 +145,7 @@ export function PlayerDetailPage() {
     <div className="space-y-8 max-w-4xl mx-auto">
       <Link
         href="/players"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-secondary transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm font-bold border-2 border-foreground/30 text-foreground/80 px-3 py-1.5 hover:border-primary hover:text-primary transition-all"
       >
         <ChevronLeft className="h-4 w-4" /> Back to Players
       </Link>
