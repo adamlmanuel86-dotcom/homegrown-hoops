@@ -1361,25 +1361,19 @@ export const PostArcadeSessionBody = zod.object({
  * @summary Get current user best arcade stats per game
  */
 export const GetMyArcadeStatsResponse = zod.object({
-  fastBreak: zod
-    .object({
-      bestScore: zod.number().optional(),
-      bestStreak: zod.number().optional(),
-      gamesPlayed: zod.number().optional(),
-    })
-    .nullable(),
-  whoYaGot: zod
-    .object({
-      bestScore: zod.number().optional(),
-      bestStreak: zod.number().optional(),
-      gamesPlayed: zod.number().optional(),
-    })
-    .nullable(),
-  shotClock: zod
-    .object({
-      bestScore: zod.number().optional(),
-      bestStreak: zod.number().optional(),
-      gamesPlayed: zod.number().optional(),
-    })
-    .nullable(),
+  fastBreak: zod.object({
+    bestScore: zod.number().optional(),
+    bestStreak: zod.number().optional(),
+    gamesPlayed: zod.number().optional(),
+  }),
+  whoYaGot: zod.object({
+    bestScore: zod.number().optional(),
+    bestStreak: zod.number().optional(),
+    gamesPlayed: zod.number().optional(),
+  }),
+  shotClock: zod.object({
+    bestScore: zod.number().optional(),
+    bestStreak: zod.number().optional(),
+    gamesPlayed: zod.number().optional(),
+  }),
 });

@@ -1671,7 +1671,6 @@ components:
 
     ArcadeGameStats:
       type: object
-      nullable: true
       properties:
         bestScore:
           type: integer

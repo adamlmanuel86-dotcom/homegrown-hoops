@@ -146,13 +146,12 @@ export interface PlayerStats {
   freeThrowPct: number;
 }
 
-export type GameStatus = typeof GameStatus[keyof typeof GameStatus];
-
+export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
 export const GameStatus = {
-  scheduled: 'scheduled',
-  in_progress: 'in_progress',
-  final: 'final',
+  scheduled: "scheduled",
+  in_progress: "in_progress",
+  final: "final",
 } as const;
 
 export interface ExternalLink {
@@ -182,13 +181,13 @@ export interface Game {
   createdAt: string;
 }
 
-export type CreateGameBodyStatus = typeof CreateGameBodyStatus[keyof typeof CreateGameBodyStatus];
-
+export type CreateGameBodyStatus =
+  (typeof CreateGameBodyStatus)[keyof typeof CreateGameBodyStatus];
 
 export const CreateGameBodyStatus = {
-  scheduled: 'scheduled',
-  in_progress: 'in_progress',
-  final: 'final',
+  scheduled: "scheduled",
+  in_progress: "in_progress",
+  final: "final",
 } as const;
 
 export interface CreateGameBody {
@@ -208,13 +207,13 @@ export interface CreateGameBody {
   externalLinks?: ExternalLink[];
 }
 
-export type UpdateGameBodyStatus = typeof UpdateGameBodyStatus[keyof typeof UpdateGameBodyStatus];
-
+export type UpdateGameBodyStatus =
+  (typeof UpdateGameBodyStatus)[keyof typeof UpdateGameBodyStatus];
 
 export const UpdateGameBodyStatus = {
-  scheduled: 'scheduled',
-  in_progress: 'in_progress',
-  final: 'final',
+  scheduled: "scheduled",
+  in_progress: "in_progress",
+  final: "final",
 } as const;
 
 export interface UpdateGameBody {
@@ -296,13 +295,12 @@ export interface StatsSummary {
   recentGames: Game[];
 }
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
-
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const UserRole = {
-  admin: 'admin',
-  coach: 'coach',
-  player: 'player',
+  admin: "admin",
+  coach: "coach",
+  player: "player",
 } as const;
 
 export interface RecognitionEntry {
@@ -317,53 +315,53 @@ export interface ArchetypeHistoryEntry {
   archetype: string;
 }
 
-export type AvatarConfigBuild = typeof AvatarConfigBuild[keyof typeof AvatarConfigBuild];
-
+export type AvatarConfigBuild =
+  (typeof AvatarConfigBuild)[keyof typeof AvatarConfigBuild];
 
 export const AvatarConfigBuild = {
-  standard: 'standard',
-  stocky: 'stocky',
-  lanky: 'lanky',
+  standard: "standard",
+  stocky: "stocky",
+  lanky: "lanky",
 } as const;
 
-export type AvatarConfigHairStyle = typeof AvatarConfigHairStyle[keyof typeof AvatarConfigHairStyle];
-
+export type AvatarConfigHairStyle =
+  (typeof AvatarConfigHairStyle)[keyof typeof AvatarConfigHairStyle];
 
 export const AvatarConfigHairStyle = {
-  fade: 'fade',
-  curls: 'curls',
-  bald: 'bald',
-  long: 'long',
-  afro: 'afro',
-  mohawk: 'mohawk',
-  flattop: 'flattop',
+  fade: "fade",
+  curls: "curls",
+  bald: "bald",
+  long: "long",
+  afro: "afro",
+  mohawk: "mohawk",
+  flattop: "flattop",
 } as const;
 
-export type AvatarConfigJerseyStyle = typeof AvatarConfigJerseyStyle[keyof typeof AvatarConfigJerseyStyle];
-
+export type AvatarConfigJerseyStyle =
+  (typeof AvatarConfigJerseyStyle)[keyof typeof AvatarConfigJerseyStyle];
 
 export const AvatarConfigJerseyStyle = {
-  solid: 'solid',
-  pinstripe: 'pinstripe',
+  solid: "solid",
+  pinstripe: "pinstripe",
 } as const;
 
-export type AvatarConfigEyebrows = typeof AvatarConfigEyebrows[keyof typeof AvatarConfigEyebrows];
-
+export type AvatarConfigEyebrows =
+  (typeof AvatarConfigEyebrows)[keyof typeof AvatarConfigEyebrows];
 
 export const AvatarConfigEyebrows = {
-  none: 'none',
-  angry: 'angry',
-  raised: 'raised',
+  none: "none",
+  angry: "angry",
+  raised: "raised",
 } as const;
 
-export type AvatarConfigMouth = typeof AvatarConfigMouth[keyof typeof AvatarConfigMouth];
-
+export type AvatarConfigMouth =
+  (typeof AvatarConfigMouth)[keyof typeof AvatarConfigMouth];
 
 export const AvatarConfigMouth = {
-  neutral: 'neutral',
-  smile: 'smile',
-  smirk: 'smirk',
-  frown: 'frown',
+  neutral: "neutral",
+  smile: "smile",
+  smirk: "smirk",
+  frown: "frown",
 } as const;
 
 export type AvatarConfigAccessories = {
@@ -510,13 +508,13 @@ export interface SaveAvatarConfigBody {
   avatarConfig: AvatarConfig;
 }
 
-export type ArcadeSessionGame = typeof ArcadeSessionGame[keyof typeof ArcadeSessionGame];
-
+export type ArcadeSessionGame =
+  (typeof ArcadeSessionGame)[keyof typeof ArcadeSessionGame];
 
 export const ArcadeSessionGame = {
-  'fast-break': 'fast-break',
-  'who-ya-got': 'who-ya-got',
-  'shot-clock': 'shot-clock',
+  "fast-break": "fast-break",
+  "who-ya-got": "who-ya-got",
+  "shot-clock": "shot-clock",
 } as const;
 
 export interface ArcadeSession {
@@ -529,13 +527,13 @@ export interface ArcadeSession {
   playedAt: string;
 }
 
-export type PostArcadeSessionBodyGame = typeof PostArcadeSessionBodyGame[keyof typeof PostArcadeSessionBodyGame];
-
+export type PostArcadeSessionBodyGame =
+  (typeof PostArcadeSessionBodyGame)[keyof typeof PostArcadeSessionBodyGame];
 
 export const PostArcadeSessionBodyGame = {
-  'fast-break': 'fast-break',
-  'who-ya-got': 'who-ya-got',
-  'shot-clock': 'shot-clock',
+  "fast-break": "fast-break",
+  "who-ya-got": "who-ya-got",
+  "shot-clock": "shot-clock",
 } as const;
 
 export interface PostArcadeSessionBody {
@@ -549,20 +547,19 @@ export interface ArcadeGameStats {
   bestScore?: number;
   bestStreak?: number;
   gamesPlayed?: number;
-} | null
+}
 
 export interface MyArcadeStats {
-  fastBreak: ArcadeGameStats | null;
-  whoYaGot: ArcadeGameStats | null;
-  shotClock: ArcadeGameStats | null;
+  fastBreak: ArcadeGameStats;
+  whoYaGot: ArcadeGameStats;
+  shotClock: ArcadeGameStats;
 }
 
 export type ListPlayersParams = {
-teamId?: number;
+  teamId?: number;
 };
 
 export type ListGamesParams = {
-teamId?: number;
-season?: string;
+  teamId?: number;
+  season?: string;
 };
-

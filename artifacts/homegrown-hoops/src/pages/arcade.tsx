@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useAuth } from "@clerk/react";
-import { useGetMyArcadeStats } from "@workspace/api-client-react";
+import { useGetMyArcadeStats, type ArcadeGameStats } from "@workspace/api-client-react";
 
 type GameTile = {
   id: string;
@@ -57,9 +57,11 @@ export function ArcadePage() {
     query: { enabled: isSignedIn === true, retry: false },
   });
 
-  function getBest(key: GameTile["statKey"]): { bestScore: number; bestStreak: number; gamesPlayed: number } | null {
+  function getBest(key: GameTile["statKey"]): ArcadeGameStats | null {
     if (!key || !arcadeStats) return null;
-    return arcadeStats[key] ?? null;
+    const stat = arcadeStats[key];
+    if (!stat || (!stat.bestScore && !stat.bestStreak && !stat.gamesPlayed)) return null;
+    return stat;
   }
 
   return (
@@ -83,8 +85,8 @@ export function ArcadePage() {
               <p className="text-white/60 text-sm leading-relaxed mb-4">{game.description}</p>
               {best && (
                 <div className="flex gap-4 text-xs font-bold text-white/40 border-t border-white/10 pt-3">
-                  <span>🔥 Best: <span className="text-primary">{best.bestStreak}</span></span>
-                  <span>🎮 Played: <span className="text-white/70">{best.gamesPlayed}</span></span>
+                  <span>🔥 Best: <span className="text-primary">{best.bestStreak ?? 0}</span></span>
+                  <span>🎮 Played: <span className="text-white/70">{best.gamesPlayed ?? 0}</span></span>
                 </div>
               )}
               <div className="mt-4">

@@ -1,0 +1,3 @@
+- [Arcade section architecture](arcade-section.md) — games use static HTML in public/games/ + React iframe wrapper; postMessage bridges scores to the API
+- [AvatarConfig frontend type](avatar-config.md) — AvatarConfig is defined in avatarCanvas.ts (not @workspace/db) since the frontend can't import server-only packages
+- [ArcadeGameStats nullable OpenAPI pattern](arcade-nullable.md) — do NOT use nullable:true on root object schemas; Orval generates `interface Foo {} | null` (invalid TS); put nullable on the property reference instead

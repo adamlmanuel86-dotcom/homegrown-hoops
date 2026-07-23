@@ -8,7 +8,7 @@
 import type { ArcadeGameStats } from "./arcadeGameStats";
 
 export interface MyArcadeStats {
-  fastBreak: ArcadeGameStats | null;
-  whoYaGot: ArcadeGameStats | null;
-  shotClock: ArcadeGameStats | null;
+  fastBreak: ArcadeGameStats;
+  whoYaGot: ArcadeGameStats;
+  shotClock: ArcadeGameStats;
 }

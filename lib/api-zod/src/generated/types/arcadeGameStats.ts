@@ -10,4 +10,4 @@ export interface ArcadeGameStats {
   bestScore?: number;
   bestStreak?: number;
   gamesPlayed?: number;
-} | null
+}
