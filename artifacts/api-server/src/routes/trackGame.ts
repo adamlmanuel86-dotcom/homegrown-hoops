@@ -19,8 +19,8 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
-  if (!profile || !["admin", "manager"].includes(profile.role)) {
-    res.status(403).json({ error: "Manager or admin access required" });
+  if (!profile || !["admin", "manager", "coach"].includes(profile.role)) {
+    res.status(403).json({ error: "Coach, manager, or admin access required" });
     return;
   }
 
@@ -65,8 +65,7 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     return;
   }
 
-  const isAdmin = profile.role === "admin";
-  const status = isAdmin ? "final" : "pending";
+  const status = "final";
 
   const [game] = await db
     .insert(gamesTable)
@@ -181,8 +180,7 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     resolvedPlayerIds.push(resolvedPlayerId);
   }
 
-  // Admins bypass approval queue — trigger recognition immediately
-  if (isAdmin && resolvedPlayerIds.length > 0) {
+  if (resolvedPlayerIds.length > 0) {
     try {
       await runFullRecognition(game.id, resolvedPlayerIds);
     } catch (err) {

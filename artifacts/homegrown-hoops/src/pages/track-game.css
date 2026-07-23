@@ -150,10 +150,23 @@
 .hgh-tracker .add-btn:active { border-color: var(--orange); color: var(--orange); }
 
 .hgh-tracker .player-row {
-  display: grid; grid-template-columns: 1fr 72px auto;
+  display: grid; grid-template-columns: 62px 1fr 72px auto;
   gap: 8px; align-items: center; margin-top: 8px;
 }
 .hgh-tracker .player-row input { padding: 11px 14px; font-size: 14px; }
+.hgh-tracker .jersey-wrap {
+  display: flex; align-items: center;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.hgh-tracker .jersey-hash {
+  padding: 0 4px 0 10px; color: var(--muted); font-size: 14px; font-weight: 700; line-height: 1;
+}
+.hgh-tracker .jersey-num {
+  width: 100%; background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 14px; font-weight: 700; padding: 11px 8px 11px 2px;
+  text-align: center;
+}
 .hgh-tracker .pos-select {
   background: var(--surface); border: 1.5px solid var(--border);
   border-radius: 12px; color: var(--text2);

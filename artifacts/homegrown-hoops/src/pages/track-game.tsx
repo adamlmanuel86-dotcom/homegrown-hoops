@@ -14,6 +14,7 @@ import "./track-game.css";
 interface SetupPlayer {
   uid: string;
   name: string;
+  jerseyNum: string;
   pos: string;
   playerId: number | null;
 }
@@ -154,6 +155,7 @@ export function TrackGamePage() {
         .map((p) => ({
           uid: uid(),
           name: `${p.firstName} ${p.lastName}`.trim(),
+          jerseyNum: p.number ?? "",
           pos: p.position ?? "PG",
           playerId: p.id,
         }))
@@ -168,6 +170,7 @@ export function TrackGamePage() {
         .map((p) => ({
           uid: uid(),
           name: `${p.firstName} ${p.lastName}`.trim(),
+          jerseyNum: p.number ?? "",
           pos: p.position ?? "PG",
           playerId: p.id,
         }))
@@ -183,12 +186,12 @@ export function TrackGamePage() {
 
   // ── Setup helpers
   function addSetupPlayer(team: "home" | "away") {
-    const sp: SetupPlayer = { uid: uid(), name: "", pos: "PG", playerId: null };
+    const sp: SetupPlayer = { uid: uid(), name: "", jerseyNum: "", pos: "PG", playerId: null };
     if (team === "home") setHomeSetupPlayers((p) => [...p, sp]);
     else setAwaySetupPlayers((p) => [...p, sp]);
   }
 
-  function updateSetupPlayer(team: "home" | "away", id: string, field: "name" | "pos", val: string) {
+  function updateSetupPlayer(team: "home" | "away", id: string, field: "name" | "pos" | "jerseyNum", val: string) {
     const upd = (prev: SetupPlayer[]) =>
       prev.map((p) => (p.uid === id ? { ...p, [field]: val } : p));
     if (team === "home") setHomeSetupPlayers(upd);
@@ -207,7 +210,12 @@ export function TrackGamePage() {
     if (mode === "myteam" && !opponentName.trim()) { showToast("Enter opponent name"); return; }
 
     const make = (players: SetupPlayer[], teamId: number) =>
-      players.filter((p) => p.name.trim()).map((p) => mkTracker(p.name.trim(), p.pos, p.playerId, teamId));
+      players
+        .filter((p) => p.name.trim() || p.jerseyNum.trim())
+        .map((p) => {
+          const name = p.name.trim() || `#${p.jerseyNum.trim()}`;
+          return mkTracker(name, p.pos, p.playerId, teamId);
+        });
 
     setHomePlayerStats(make(homeSetupPlayers, homeTeamId!));
     setAwayPlayerStats(mode === "both" ? make(awaySetupPlayers, awayTeamId!) : []);
@@ -520,9 +528,20 @@ export function TrackGamePage() {
             </div>
             {homeSetupPlayers.map((sp) => (
               <div key={sp.uid} className="player-row">
+                <div className="jersey-wrap">
+                  <span className="jersey-hash">#</span>
+                  <input
+                    type="text"
+                    className="jersey-num"
+                    placeholder="—"
+                    maxLength={3}
+                    value={sp.jerseyNum}
+                    onChange={(e) => updateSetupPlayer("home", sp.uid, "jerseyNum", e.target.value.replace(/\D/g, ""))}
+                  />
+                </div>
                 <input
                   type="text"
-                  placeholder="Player name"
+                  placeholder="Player name (optional)"
                   value={sp.name}
                   onChange={(e) => updateSetupPlayer("home", sp.uid, "name", e.target.value)}
                 />
@@ -547,9 +566,20 @@ export function TrackGamePage() {
               </div>
               {awaySetupPlayers.map((sp) => (
                 <div key={sp.uid} className="player-row">
+                  <div className="jersey-wrap">
+                    <span className="jersey-hash">#</span>
+                    <input
+                      type="text"
+                      className="jersey-num"
+                      placeholder="—"
+                      maxLength={3}
+                      value={sp.jerseyNum}
+                      onChange={(e) => updateSetupPlayer("away", sp.uid, "jerseyNum", e.target.value.replace(/\D/g, ""))}
+                    />
+                  </div>
                   <input
                     type="text"
-                    placeholder="Player name"
+                    placeholder="Player name (optional)"
                     value={sp.name}
                     onChange={(e) => updateSetupPlayer("away", sp.uid, "name", e.target.value)}
                   />
