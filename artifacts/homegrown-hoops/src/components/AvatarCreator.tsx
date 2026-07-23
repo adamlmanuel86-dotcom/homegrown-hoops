@@ -133,7 +133,7 @@ export function AvatarCreator({ initialConfig, onSaved }: AvatarCreatorProps) {
     setSaveMsg(null);
     try {
       const token = await getToken();
-      const res = await fetch(`${apiBase}/profiles/me/avatar-config`, {
+      const res = await fetch(`${apiBase}/api/profiles/me/avatar-config`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ avatarConfig: config }),
