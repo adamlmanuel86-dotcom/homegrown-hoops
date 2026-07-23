@@ -7,7 +7,7 @@ import {
   useListTeams,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ChevronRight, Camera, Compass, X, Upload } from "lucide-react";
+import { ArrowRight, ChevronRight, Camera, Compass, X, Upload, Gamepad2 } from "lucide-react";
 import { HomegrownHoopsLogo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { Walkthrough } from "@/components/walkthrough";
@@ -676,6 +676,51 @@ export function OnboardingPage() {
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", lineHeight: 1.6, margin: 0 }}>
             Your card updates after every game. Earn Stamps, claim your Archetype, build your Legacy.
           </p>
+
+          {/* ── Arcade callout ── */}
+          <a
+            href="/arcade"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              width: "100%",
+              maxWidth: 320,
+              padding: "14px 18px",
+              borderRadius: 14,
+              background: "rgba(249,115,22,0.08)",
+              border: "1px solid rgba(249,115,22,0.35)",
+              color: "inherit",
+              textDecoration: "none",
+              opacity: revealPhase >= 4 ? 1 : 0,
+              transition: "opacity 1.2s ease 0.3s",
+              cursor: "pointer",
+            }}
+            onClick={enterLeague}
+          >
+            <span style={{
+              width: 38, height: 38, borderRadius: 10,
+              background: "rgba(249,115,22,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <Gamepad2 style={{ width: 20, height: 20, color: "#F97316" }} />
+            </span>
+            <span style={{ flex: 1, textAlign: "left" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Arcade</span>
+                <span style={{
+                  fontSize: 9, fontWeight: 800, letterSpacing: "0.08em",
+                  background: "#F97316", color: "#fff",
+                  padding: "1px 5px", borderRadius: 4, textTransform: "uppercase",
+                }}>NEW</span>
+              </span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+                Ball IQ quizzes, mini-games &amp; more
+              </span>
+            </span>
+            <ArrowRight style={{ width: 15, height: 15, color: "rgba(249,115,22,0.6)", flexShrink: 0 }} />
+          </a>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
             <button

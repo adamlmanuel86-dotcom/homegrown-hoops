@@ -55,13 +55,18 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   location === link.href
                     ? "bg-white/10 text-white"
                     : "text-white/70 hover:text-white hover:bg-white/10"
                 }`}
               >
                 {link.label}
+                {link.href === "/arcade" && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[9px] font-black px-1 py-px rounded-sm leading-none tracking-wider uppercase">
+                    NEW
+                  </span>
+                )}
               </Link>
             ))}
 
@@ -177,6 +182,11 @@ export function Layout({ children }: { children: ReactNode }) {
               >
                 <link.icon className="h-4 w-4" />
                 {link.label}
+                {link.href === "/arcade" && (
+                  <span className="ml-auto bg-primary text-white text-[9px] font-black px-1.5 py-px rounded-sm leading-none tracking-wider uppercase">
+                    NEW
+                  </span>
+                )}
               </Link>
             ))}
 
