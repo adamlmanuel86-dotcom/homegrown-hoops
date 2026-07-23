@@ -553,12 +553,29 @@ export interface PostArcadeSessionBody {
   score: number;
   bestStreak: number;
   roundsPlayed: number;
+  fgm?: number;
+  fga?: number;
+  tpm?: number;
+  tpa?: number;
+  dunks?: number;
 }
 
 export interface ArcadeGameStats {
   bestScore?: number;
   bestStreak?: number;
   gamesPlayed?: number;
+  totalFgm?: number;
+  totalFga?: number;
+  totalTpm?: number;
+  totalTpa?: number;
+  totalDunks?: number;
+}
+
+export interface ArcadeRank {
+  /** @nullable */
+  rank: number | null;
+  total: number;
+  bestScore: number;
 }
 
 export interface MyArcadeStats {
@@ -575,3 +592,16 @@ export type ListGamesParams = {
   teamId?: number;
   season?: string;
 };
+
+export type GetMyArcadeRankParams = {
+  game: GetMyArcadeRankGame;
+};
+
+export type GetMyArcadeRankGame =
+  (typeof GetMyArcadeRankGame)[keyof typeof GetMyArcadeRankGame];
+
+export const GetMyArcadeRankGame = {
+  "fast-break": "fast-break",
+  "who-ya-got": "who-ya-got",
+  "shot-clock": "shot-clock",
+} as const;

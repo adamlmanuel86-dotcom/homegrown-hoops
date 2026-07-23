@@ -761,6 +761,28 @@ paths:
         "401":
           description: Unauthorized
 
+  /arcade/my-rank:
+    get:
+      operationId: getMyArcadeRank
+      tags: [arcade]
+      summary: Get current user rank for a specific game
+      parameters:
+        - name: game
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [fast-break, who-ya-got, shot-clock]
+      responses:
+        "200":
+          description: User rank for the given game
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArcadeRank"
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
     HealthStatus:
@@ -1671,6 +1693,16 @@ components:
           type: integer
         roundsPlayed:
           type: integer
+        fgm:
+          type: integer
+        fga:
+          type: integer
+        tpm:
+          type: integer
+        tpa:
+          type: integer
+        dunks:
+          type: integer
 
     ArcadeGameStats:
       type: object
@@ -1681,6 +1713,27 @@ components:
           type: integer
         gamesPlayed:
           type: integer
+        totalFgm:
+          type: integer
+        totalFga:
+          type: integer
+        totalTpm:
+          type: integer
+        totalTpa:
+          type: integer
+        totalDunks:
+          type: integer
+
+    ArcadeRank:
+      type: object
+      properties:
+        rank:
+          type: ["integer", "null"]
+        total:
+          type: integer
+        bestScore:
+          type: integer
+      required: [rank, total, bestScore]
 
     MyArcadeStats:
       type: object

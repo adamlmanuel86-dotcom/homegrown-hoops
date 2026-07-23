@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { eq, and, max, count, sql } from "drizzle-orm";
+import { eq, max, count, sum, sql } from "drizzle-orm";
 import { db, arcadeSessionsTable } from "@workspace/db";
-import { serializeRow, serializeRows } from "../lib/serialize";
+import { serializeRow } from "../lib/serialize";
 
 const router = Router();
 
@@ -13,12 +13,7 @@ router.post("/arcade/sessions", async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  const { game, score, bestStreak, roundsPlayed } = req.body as {
-    game: unknown;
-    score: unknown;
-    bestStreak: unknown;
-    roundsPlayed: unknown;
-  };
+  const { game, score, bestStreak, roundsPlayed, fgm, fga, tpm, tpa, dunks } = req.body as Record<string, unknown>;
 
   if (!VALID_GAMES.includes(game as ArcadeGame)) {
     return res.status(400).json({ error: "Invalid game" });
@@ -27,14 +22,21 @@ router.post("/arcade/sessions", async (req, res) => {
     return res.status(400).json({ error: "score, bestStreak, and roundsPlayed must be numbers" });
   }
 
+  const toInt = (v: unknown) => (typeof v === "number" ? Math.max(0, Math.floor(v)) : 0);
+
   const [session] = await db
     .insert(arcadeSessionsTable)
     .values({
       clerkUserId: userId,
       game: game as string,
-      score: Math.max(0, Math.floor(score)),
-      bestStreak: Math.max(0, Math.floor(bestStreak)),
-      roundsPlayed: Math.max(0, Math.floor(roundsPlayed)),
+      score: toInt(score),
+      bestStreak: toInt(bestStreak),
+      roundsPlayed: toInt(roundsPlayed),
+      fgm: toInt(fgm),
+      fga: toInt(fga),
+      tpm: toInt(tpm),
+      tpa: toInt(tpa),
+      dunks: toInt(dunks),
     })
     .returning();
 
@@ -51,12 +53,28 @@ router.get("/arcade/my-stats", async (req, res) => {
       bestScore: max(arcadeSessionsTable.score),
       bestStreak: max(arcadeSessionsTable.bestStreak),
       gamesPlayed: count(arcadeSessionsTable.id),
+      totalFgm: sum(arcadeSessionsTable.fgm),
+      totalFga: sum(arcadeSessionsTable.fga),
+      totalTpm: sum(arcadeSessionsTable.tpm),
+      totalTpa: sum(arcadeSessionsTable.tpa),
+      totalDunks: sum(arcadeSessionsTable.dunks),
     })
     .from(arcadeSessionsTable)
     .where(eq(arcadeSessionsTable.clerkUserId, userId))
     .groupBy(arcadeSessionsTable.game);
 
-  const statsMap: Record<string, { bestScore: number; bestStreak: number; gamesPlayed: number } | null> = {
+  type GameStats = {
+    bestScore: number;
+    bestStreak: number;
+    gamesPlayed: number;
+    totalFgm: number;
+    totalFga: number;
+    totalTpm: number;
+    totalTpa: number;
+    totalDunks: number;
+  } | null;
+
+  const statsMap: Record<string, GameStats> = {
     "fast-break": null,
     "who-ya-got": null,
     "shot-clock": null,
@@ -67,6 +85,11 @@ router.get("/arcade/my-stats", async (req, res) => {
       bestScore: Number(row.bestScore ?? 0),
       bestStreak: Number(row.bestStreak ?? 0),
       gamesPlayed: Number(row.gamesPlayed ?? 0),
+      totalFgm: Number(row.totalFgm ?? 0),
+      totalFga: Number(row.totalFga ?? 0),
+      totalTpm: Number(row.totalTpm ?? 0),
+      totalTpa: Number(row.totalTpa ?? 0),
+      totalDunks: Number(row.totalDunks ?? 0),
     };
   }
 
@@ -75,6 +98,40 @@ router.get("/arcade/my-stats", async (req, res) => {
     whoYaGot: statsMap["who-ya-got"],
     shotClock: statsMap["shot-clock"],
   });
+});
+
+router.get("/arcade/my-rank", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  const { game } = req.query as { game?: string };
+  if (!VALID_GAMES.includes(game as ArcadeGame)) {
+    return res.status(400).json({ error: "Invalid game" });
+  }
+
+  const rankResult = await db.execute<{ rank: string; total: string; best_score: string }>(sql`
+    SELECT rank, total, best_score FROM (
+      SELECT
+        clerk_user_id,
+        MAX(score) AS best_score,
+        COUNT(*) OVER () AS total,
+        RANK() OVER (ORDER BY MAX(score) DESC) AS rank
+      FROM arcade_sessions
+      WHERE game = ${game}
+      GROUP BY clerk_user_id
+    ) ranked
+    WHERE clerk_user_id = ${userId}
+  `);
+
+  if (rankResult.rows.length === 0) {
+    const totalResult = await db.execute<{ total: string }>(sql`
+      SELECT COUNT(DISTINCT clerk_user_id) AS total FROM arcade_sessions WHERE game = ${game}
+    `);
+    return res.json({ rank: null, total: Number(totalResult.rows[0]?.total ?? 0), bestScore: 0 });
+  }
+
+  const { rank, total, best_score } = rankResult.rows[0];
+  return res.json({ rank: Number(rank), total: Number(total), bestScore: Number(best_score) });
 });
 
 export default router;

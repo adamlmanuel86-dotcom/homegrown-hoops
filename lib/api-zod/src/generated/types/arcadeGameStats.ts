@@ -10,4 +10,9 @@ export interface ArcadeGameStats {
   bestScore?: number;
   bestStreak?: number;
   gamesPlayed?: number;
+  totalFgm?: number;
+  totalFga?: number;
+  totalTpm?: number;
+  totalTpa?: number;
+  totalDunks?: number;
 }

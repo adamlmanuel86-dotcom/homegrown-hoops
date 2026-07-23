@@ -11,6 +11,7 @@ import {
   useGetPlayerStatsBySeason,
   useGetIsoBallProfile,
   useGetMyArcadeStats,
+  useGetMyArcadeRank,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award, Gamepad2 } from "lucide-react";
@@ -28,6 +29,7 @@ export function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [arcadeModal, setArcadeModal] = useState<"fastBreak" | "whoYaGot" | "shotClock" | null>(null);
 
   async function handleShare() {
     const url = `${window.location.origin}${BASE_URL}/p/${clerkUserId}`;
@@ -815,33 +817,203 @@ export function ProfilePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {arcadeStats.fastBreak && (
-                <div className="bg-muted/40 rounded-lg p-3 space-y-1">
+                <button
+                  onClick={() => setArcadeModal("fastBreak")}
+                  className="bg-muted/40 hover:bg-muted/70 rounded-lg p-3 space-y-1 text-left transition-colors border border-transparent hover:border-primary/30 w-full"
+                >
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fast Break</p>
                   <p className="font-display text-2xl text-primary">{arcadeStats.fastBreak.bestScore}</p>
                   <p className="text-xs text-muted-foreground">Best Score</p>
                   <p className="text-xs text-foreground/70">{arcadeStats.fastBreak.gamesPlayed} games · {arcadeStats.fastBreak.bestStreak} streak</p>
-                </div>
+                  <p className="text-[10px] text-primary/60 font-bold">Tap for full stats →</p>
+                </button>
               )}
               {arcadeStats.whoYaGot && (
-                <div className="bg-muted/40 rounded-lg p-3 space-y-1">
+                <button
+                  onClick={() => setArcadeModal("whoYaGot")}
+                  className="bg-muted/40 hover:bg-muted/70 rounded-lg p-3 space-y-1 text-left transition-colors border border-transparent hover:border-primary/30 w-full"
+                >
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Who Ya Got</p>
                   <p className="font-display text-2xl text-primary">{arcadeStats.whoYaGot.bestScore}</p>
                   <p className="text-xs text-muted-foreground">Best Score</p>
                   <p className="text-xs text-foreground/70">{arcadeStats.whoYaGot.gamesPlayed} games · {arcadeStats.whoYaGot.bestStreak} streak</p>
-                </div>
+                  <p className="text-[10px] text-primary/60 font-bold">Tap for full stats →</p>
+                </button>
               )}
               {arcadeStats.shotClock && (
-                <div className="bg-muted/40 rounded-lg p-3 space-y-1">
+                <button
+                  onClick={() => setArcadeModal("shotClock")}
+                  className="bg-muted/40 hover:bg-muted/70 rounded-lg p-3 space-y-1 text-left transition-colors border border-transparent hover:border-primary/30 w-full"
+                >
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Shot Clock</p>
                   <p className="font-display text-2xl text-primary">{arcadeStats.shotClock.bestScore}</p>
                   <p className="text-xs text-muted-foreground">Best Score</p>
                   <p className="text-xs text-foreground/70">{arcadeStats.shotClock.gamesPlayed} games · {arcadeStats.shotClock.bestStreak} streak</p>
-                </div>
+                  <p className="text-[10px] text-primary/60 font-bold">Tap for full stats →</p>
+                </button>
               )}
             </div>
           )}
         </div>
       )}
+
+      {arcadeModal && arcadeStats && (
+        <ArcadeStatModal
+          gameKey={arcadeModal}
+          stats={
+            arcadeModal === "fastBreak" ? arcadeStats.fastBreak :
+            arcadeModal === "whoYaGot" ? arcadeStats.whoYaGot :
+            arcadeStats.shotClock
+          }
+          onClose={() => setArcadeModal(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Arcade stat modal ────────────────────────────────────────────────────────
+
+type ArcadeGameKey = "fastBreak" | "whoYaGot" | "shotClock";
+
+const GAME_LABEL: Record<ArcadeGameKey, string> = {
+  fastBreak: "FAST BREAK",
+  whoYaGot:  "WHO YA GOT",
+  shotClock: "SHOT CLOCK",
+};
+const GAME_SLUG: Record<ArcadeGameKey, "fast-break" | "who-ya-got" | "shot-clock"> = {
+  fastBreak: "fast-break",
+  whoYaGot:  "who-ya-got",
+  shotClock: "shot-clock",
+};
+const GAME_EMOJI: Record<ArcadeGameKey, string> = {
+  fastBreak: "🏀",
+  whoYaGot:  "🎯",
+  shotClock: "⏱️",
+};
+
+function fmtArcadePct(made: number, att: number): string {
+  if (!att) return "—";
+  return ((made / att) * 100).toFixed(1) + "%";
+}
+
+type GameStatShape = {
+  bestScore?: number;
+  bestStreak?: number;
+  gamesPlayed?: number;
+  totalFgm?: number;
+  totalFga?: number;
+  totalTpm?: number;
+  totalTpa?: number;
+  totalDunks?: number;
+} | null | undefined;
+
+function ArcadeStatModal({
+  gameKey,
+  stats,
+  onClose,
+}: {
+  gameKey: ArcadeGameKey;
+  stats: GameStatShape;
+  onClose: () => void;
+}) {
+  const { data: rankData } = useGetMyArcadeRank({ game: GAME_SLUG[gameKey] });
+
+  const isFB = gameKey === "fastBreak";
+  const fgm = stats?.totalFgm ?? 0;
+  const fga = stats?.totalFga ?? 0;
+  const tpm = stats?.totalTpm ?? 0;
+  const tpa = stats?.totalTpa ?? 0;
+  const dunks = stats?.totalDunks ?? 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-card border-t-2 sm:border-2 border-black shadow-[8px_8px_0_0_rgba(0,0,0,1)] rounded-t-2xl sm:rounded-2xl p-6 space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              {GAME_EMOJI[gameKey]} Arcade
+            </p>
+            <h2 className="font-display text-3xl leading-none mt-0.5">{GAME_LABEL[gameKey]}</h2>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-muted transition-colors mt-1">
+            <XIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Best score hero */}
+        <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Best Score</p>
+          <p className="font-display text-5xl text-primary mt-1">{stats?.bestScore ?? 0}</p>
+        </div>
+
+        {/* Core stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-muted/40 rounded-lg p-3 text-center">
+            <p className="font-display text-2xl">{stats?.gamesPlayed ?? 0}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Games Played</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-3 text-center">
+            <p className="font-display text-2xl">{stats?.bestStreak ?? 0}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Best Streak</p>
+          </div>
+        </div>
+
+        {/* Shooting stats — Fast Break only */}
+        {isFB && fga > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Career Shooting</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-muted/40 rounded-lg p-2 text-center">
+                <p className="font-bold text-sm">{fgm}-{fga}</p>
+                <p className="text-[10px] text-muted-foreground">FG</p>
+                <p className="text-xs font-bold text-primary">{fmtArcadePct(fgm, fga)}</p>
+              </div>
+              <div className="bg-muted/40 rounded-lg p-2 text-center">
+                <p className="font-bold text-sm">{tpm}-{tpa}</p>
+                <p className="text-[10px] text-muted-foreground">3PT</p>
+                <p className="text-xs font-bold text-primary">{fmtArcadePct(tpm, tpa)}</p>
+              </div>
+              <div className="bg-muted/40 rounded-lg p-2 text-center">
+                <p className="font-bold text-sm">{dunks}</p>
+                <p className="text-[10px] text-muted-foreground">Dunks</p>
+                <p className="text-xs font-bold text-primary">💪</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rank */}
+        {rankData && (
+          <div className="bg-muted/40 rounded-xl p-4 flex items-center gap-3">
+            <span className="text-3xl">
+              {rankData.rank === 1 ? "🏆" : rankData.rank === 2 ? "🥈" : rankData.rank === 3 ? "🥉" : "🎮"}
+            </span>
+            <div>
+              {rankData.rank ? (
+                <>
+                  <p className="font-display text-xl leading-none">
+                    #{rankData.rank}{" "}
+                    <span className="text-sm font-sans font-normal text-muted-foreground">
+                      out of {rankData.total} player{rankData.total !== 1 ? "s" : ""}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">All-time leaderboard</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No ranking yet — play more games!</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

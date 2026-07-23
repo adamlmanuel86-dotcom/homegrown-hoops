@@ -2131,7 +2131,7 @@ function openOverlay(title, sub, btnLabel, onClick){
   btn.textContent = btnLabel;
   btn.onclick = onClick;
   document.getElementById('overlay').style.display = 'flex';
-  try { window.parent.postMessage({ type: 'GAME_OVER', score: score, bestStreak: sessionBestStreak, roundsPlayed: level }, '*'); } catch(e) {}
+  try { window.parent.postMessage({ type: 'GAME_OVER', score: score, bestStreak: sessionBestStreak, roundsPlayed: level, fgm: stats.fgm, fga: stats.fga, tpm: stats.tpm, tpa: stats.tpa, dunks: stats.dunks }, '*'); } catch(e) {}
 }
 
 function setControlMode(shootActive, pastLine){

@@ -210,9 +210,14 @@ export async function runMigrations(): Promise<void> {
     await addCol("user_profiles", "tides",             "json NOT NULL DEFAULT '[]'");
     await addCol("user_profiles", "number",            "text");
     await addCol("user_profiles", "avatar_config",     "jsonb DEFAULT NULL");
-    await addCol("games",         "external_links",    "json NOT NULL DEFAULT '[]'");
-    await addCol("games",         "notes",             "text");
-    await addCol("teams",         "current_season",    "text");
+    await addCol("games",            "external_links",    "json NOT NULL DEFAULT '[]'");
+    await addCol("games",            "notes",             "text");
+    await addCol("teams",            "current_season",    "text");
+    await addCol("arcade_sessions",  "fgm",               "integer NOT NULL DEFAULT 0");
+    await addCol("arcade_sessions",  "fga",               "integer NOT NULL DEFAULT 0");
+    await addCol("arcade_sessions",  "tpm",               "integer NOT NULL DEFAULT 0");
+    await addCol("arcade_sessions",  "tpa",               "integer NOT NULL DEFAULT 0");
+    await addCol("arcade_sessions",  "dunks",             "integer NOT NULL DEFAULT 0");
     console.log("[migrate] Column additions OK");
 
     // ── Verify tables exist ───────────────────────────────────────────────────

@@ -44,6 +44,11 @@ export function FastBreakPage() {
               score: typeof e.data.score === "number" ? e.data.score : 0,
               bestStreak: typeof e.data.bestStreak === "number" ? e.data.bestStreak : 0,
               roundsPlayed: typeof e.data.roundsPlayed === "number" ? e.data.roundsPlayed : 0,
+              fgm: typeof e.data.fgm === "number" ? e.data.fgm : 0,
+              fga: typeof e.data.fga === "number" ? e.data.fga : 0,
+              tpm: typeof e.data.tpm === "number" ? e.data.tpm : 0,
+              tpa: typeof e.data.tpa === "number" ? e.data.tpa : 0,
+              dunks: typeof e.data.dunks === "number" ? e.data.dunks : 0,
             }),
           });
         } catch {

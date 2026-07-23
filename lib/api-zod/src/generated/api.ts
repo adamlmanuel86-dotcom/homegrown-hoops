@@ -1376,6 +1376,11 @@ export const PostArcadeSessionBody = zod.object({
   score: zod.number(),
   bestStreak: zod.number(),
   roundsPlayed: zod.number(),
+  fgm: zod.number().optional(),
+  fga: zod.number().optional(),
+  tpm: zod.number().optional(),
+  tpa: zod.number().optional(),
+  dunks: zod.number().optional(),
 });
 
 /**
@@ -1386,15 +1391,43 @@ export const GetMyArcadeStatsResponse = zod.object({
     bestScore: zod.number().optional(),
     bestStreak: zod.number().optional(),
     gamesPlayed: zod.number().optional(),
+    totalFgm: zod.number().optional(),
+    totalFga: zod.number().optional(),
+    totalTpm: zod.number().optional(),
+    totalTpa: zod.number().optional(),
+    totalDunks: zod.number().optional(),
   }),
   whoYaGot: zod.object({
     bestScore: zod.number().optional(),
     bestStreak: zod.number().optional(),
     gamesPlayed: zod.number().optional(),
+    totalFgm: zod.number().optional(),
+    totalFga: zod.number().optional(),
+    totalTpm: zod.number().optional(),
+    totalTpa: zod.number().optional(),
+    totalDunks: zod.number().optional(),
   }),
   shotClock: zod.object({
     bestScore: zod.number().optional(),
     bestStreak: zod.number().optional(),
     gamesPlayed: zod.number().optional(),
+    totalFgm: zod.number().optional(),
+    totalFga: zod.number().optional(),
+    totalTpm: zod.number().optional(),
+    totalTpa: zod.number().optional(),
+    totalDunks: zod.number().optional(),
   }),
+});
+
+/**
+ * @summary Get current user rank for a specific game
+ */
+export const GetMyArcadeRankQueryParams = zod.object({
+  game: zod.enum(["fast-break", "who-ya-got", "shot-clock"]),
+});
+
+export const GetMyArcadeRankResponse = zod.object({
+  rank: zod.number().nullable(),
+  total: zod.number(),
+  bestScore: zod.number(),
 });

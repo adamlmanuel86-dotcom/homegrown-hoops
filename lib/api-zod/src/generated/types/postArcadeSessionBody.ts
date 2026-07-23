@@ -12,4 +12,9 @@ export interface PostArcadeSessionBody {
   score: number;
   bestStreak: number;
   roundsPlayed: number;
+  fgm?: number;
+  fga?: number;
+  tpm?: number;
+  tpa?: number;
+  dunks?: number;
 }

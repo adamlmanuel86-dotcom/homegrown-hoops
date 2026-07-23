@@ -20,6 +20,7 @@ import type {
   AddGameVideoBody,
   AdminUpdateProfileBody,
   AdminUserListItem,
+  ArcadeRank,
   ArcadeSession,
   CreateGameBody,
   CreatePlayerBody,
@@ -28,6 +29,7 @@ import type {
   Game,
   GamePlayerStat,
   GameVideo,
+  GetMyArcadeRankParams,
   HealthStatus,
   ListGamesParams,
   ListPlayersParams,
@@ -3146,6 +3148,100 @@ export function useGetMyArcadeStats<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetMyArcadeStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get current user rank for a specific game
+ */
+export const getGetMyArcadeRankUrl = (params: GetMyArcadeRankParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/arcade/my-rank?${stringifiedParams}`
+    : `/api/arcade/my-rank`;
+};
+
+export const getMyArcadeRank = async (
+  params: GetMyArcadeRankParams,
+  options?: RequestInit,
+): Promise<ArcadeRank> => {
+  return customFetch<ArcadeRank>(getGetMyArcadeRankUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyArcadeRankQueryKey = (params?: GetMyArcadeRankParams) => {
+  return [`/api/arcade/my-rank`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMyArcadeRankQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyArcadeRank>>,
+  TError = ErrorType<void>,
+>(
+  params: GetMyArcadeRankParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMyArcadeRank>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyArcadeRankQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyArcadeRank>>> = ({
+    signal,
+  }) => getMyArcadeRank(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyArcadeRank>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyArcadeRankQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyArcadeRank>>
+>;
+export type GetMyArcadeRankQueryError = ErrorType<void>;
+
+/**
+ * @summary Get current user rank for a specific game
+ */
+
+export function useGetMyArcadeRank<
+  TData = Awaited<ReturnType<typeof getMyArcadeRank>>,
+  TError = ErrorType<void>,
+>(
+  params: GetMyArcadeRankParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMyArcadeRank>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyArcadeRankQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
