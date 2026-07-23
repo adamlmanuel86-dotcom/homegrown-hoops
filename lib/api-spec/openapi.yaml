@@ -976,6 +976,34 @@ paths:
         "401":
           description: Unauthorized
 
+  /arcade/leaderboard:
+    get:
+      operationId: getArcadeLeaderboard
+      tags: [arcade]
+      summary: Get top players for a specific arcade game
+      parameters:
+        - name: game
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [fast-break, who-ya-got, shot-clock]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArcadeLeaderboardEntry"
+
   /arcade/my-rank:
     get:
       operationId: getMyArcadeRank
@@ -1984,6 +2012,19 @@ components:
           type: integer
         totalDunks:
           type: integer
+
+    ArcadeLeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        clerkUserId:
+          type: string
+        displayName:
+          type: string
+        bestScore:
+          type: integer
+      required: [rank, clerkUserId, displayName, bestScore]
 
     ArcadeRank:
       type: object

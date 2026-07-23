@@ -1837,6 +1837,26 @@ export const GetMyArcadeStatsResponse = zod.object({
 });
 
 /**
+ * @summary Get top players for a specific arcade game
+ */
+export const getArcadeLeaderboardQueryLimitDefault = 10;
+
+export const GetArcadeLeaderboardQueryParams = zod.object({
+  game: zod.enum(["fast-break", "who-ya-got", "shot-clock"]),
+  limit: zod.coerce.number().default(getArcadeLeaderboardQueryLimitDefault),
+});
+
+export const GetArcadeLeaderboardResponseItem = zod.object({
+  rank: zod.number(),
+  clerkUserId: zod.string(),
+  displayName: zod.string(),
+  bestScore: zod.number(),
+});
+export const GetArcadeLeaderboardResponse = zod.array(
+  GetArcadeLeaderboardResponseItem,
+);
+
+/**
  * @summary Get current user rank for a specific game
  */
 export const GetMyArcadeRankQueryParams = zod.object({

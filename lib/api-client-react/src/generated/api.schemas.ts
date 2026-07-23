@@ -614,6 +614,13 @@ export interface ArcadeGameStats {
   totalDunks?: number;
 }
 
+export interface ArcadeLeaderboardEntry {
+  rank: number;
+  clerkUserId: string;
+  displayName: string;
+  bestScore: number;
+}
+
 export interface ArcadeRank {
   /** @nullable */
   rank: number | null;
@@ -753,6 +760,20 @@ export type ListGamesParams = {
   teamId?: number;
   season?: string;
 };
+
+export type GetArcadeLeaderboardParams = {
+  game: GetArcadeLeaderboardGame;
+  limit?: number;
+};
+
+export type GetArcadeLeaderboardGame =
+  (typeof GetArcadeLeaderboardGame)[keyof typeof GetArcadeLeaderboardGame];
+
+export const GetArcadeLeaderboardGame = {
+  "fast-break": "fast-break",
+  "who-ya-got": "who-ya-got",
+  "shot-clock": "shot-clock",
+} as const;
 
 export type GetMyArcadeRankParams = {
   game: GetMyArcadeRankGame;

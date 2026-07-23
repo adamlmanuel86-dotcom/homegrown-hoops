@@ -100,6 +100,45 @@ router.get("/arcade/my-stats", async (req, res) => {
   });
 });
 
+router.get("/arcade/leaderboard", async (req, res) => {
+  const { game, limit: limitStr } = req.query as { game?: string; limit?: string };
+  if (!VALID_GAMES.includes(game as ArcadeGame)) {
+    return res.status(400).json({ error: "Invalid game" });
+  }
+  const limit = Math.min(Math.max(parseInt(limitStr ?? "10", 10) || 10, 1), 50);
+
+  const rows = await db.execute<{
+    rank: string;
+    clerk_user_id: string;
+    display_name: string;
+    best_score: string;
+  }>(sql`
+    SELECT
+      RANK() OVER (ORDER BY s.best_score DESC) AS rank,
+      s.clerk_user_id,
+      COALESCE(p.first_name || ' ' || p.last_name, 'Player') AS display_name,
+      s.best_score
+    FROM (
+      SELECT clerk_user_id, MAX(score) AS best_score
+      FROM arcade_sessions
+      WHERE game = ${game}
+      GROUP BY clerk_user_id
+    ) s
+    LEFT JOIN user_profiles p ON p.clerk_user_id = s.clerk_user_id
+    ORDER BY s.best_score DESC
+    LIMIT ${limit}
+  `);
+
+  return res.json(
+    rows.rows.map((r) => ({
+      rank: Number(r.rank),
+      clerkUserId: r.clerk_user_id,
+      displayName: r.display_name,
+      bestScore: Number(r.best_score),
+    }))
+  );
+});
+
 router.get("/arcade/my-rank", async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) return res.status(401).json({ error: "Unauthorized" });

@@ -284,6 +284,18 @@ export function ProfilePage() {
   const { data: arcadeStats } = useGetMyArcadeStats({
     query: { enabled: isOwner },
   });
+  const { data: fbRank } = useGetMyArcadeRank(
+    { game: "fast-break" },
+    { query: { enabled: isOwner } },
+  );
+  const { data: wygRank } = useGetMyArcadeRank(
+    { game: "who-ya-got" },
+    { query: { enabled: isOwner } },
+  );
+  const { data: scRank } = useGetMyArcadeRank(
+    { game: "shot-clock" },
+    { query: { enabled: isOwner } },
+  );
 
   if (isLoading) {
     return (
@@ -883,6 +895,12 @@ export function ProfilePage() {
                             <p className="text-[9px] uppercase tracking-wider text-white/35 mt-0.5">{s.label}</p>
                           </div>
                         ))}
+                        {fbRank?.rank != null && (
+                          <div className="py-2.5 text-center px-3 border-r border-white/10">
+                            <p className="font-black text-base text-orange-400 leading-none">#{fbRank.rank}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/35 mt-0.5">of {fbRank.total}</p>
+                          </div>
+                        )}
                         <div className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-orange-400 group-hover:text-orange-300 transition-colors border-l border-white/10">Play →</div>
                       </div>
                     </>
@@ -960,7 +978,15 @@ export function ProfilePage() {
                         </div>
                       )}
                       {wyg && (
-                        <div className="mt-2 self-end text-[10px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">Play →</div>
+                        <div className="mt-2 flex items-center justify-between">
+                          {wygRank?.rank != null && (
+                            <div>
+                              <span className="font-display text-xl text-purple-400">#{wygRank.rank}</span>
+                              <span className="text-[9px] uppercase tracking-wider text-white/35 ml-1">of {wygRank.total}</span>
+                            </div>
+                          )}
+                          <div className="self-end text-[10px] font-black uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">Play →</div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1016,6 +1042,12 @@ export function ProfilePage() {
                             <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">{s.label}</p>
                           </div>
                         ))}
+                        {scRank?.rank != null && (
+                          <div className="py-3 text-center px-3 border-r border-white/8">
+                            <p className="font-black text-xl text-red-400 leading-none">#{scRank.rank}</p>
+                            <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">of {scRank.total}</p>
+                          </div>
+                        )}
                         <div className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-400 group-hover:text-red-300 transition-colors border-l border-white/8">Play →</div>
                       </div>
                     </>

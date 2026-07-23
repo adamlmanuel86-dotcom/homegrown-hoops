@@ -20,6 +20,7 @@ import type {
   AddGameVideoBody,
   AdminUpdateProfileBody,
   AdminUserListItem,
+  ArcadeLeaderboardEntry,
   ArcadeRank,
   ArcadeSession,
   ClaimJerseyBody,
@@ -30,6 +31,7 @@ import type {
   Game,
   GamePlayerStat,
   GameVideo,
+  GetArcadeLeaderboardParams,
   GetMyArcadeRankParams,
   HealthStatus,
   JerseyStub,
@@ -3897,6 +3899,109 @@ export function useGetMyArcadeStats<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetMyArcadeStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get top players for a specific arcade game
+ */
+export const getGetArcadeLeaderboardUrl = (
+  params: GetArcadeLeaderboardParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/arcade/leaderboard?${stringifiedParams}`
+    : `/api/arcade/leaderboard`;
+};
+
+export const getArcadeLeaderboard = async (
+  params: GetArcadeLeaderboardParams,
+  options?: RequestInit,
+): Promise<ArcadeLeaderboardEntry[]> => {
+  return customFetch<ArcadeLeaderboardEntry[]>(
+    getGetArcadeLeaderboardUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetArcadeLeaderboardQueryKey = (
+  params?: GetArcadeLeaderboardParams,
+) => {
+  return [`/api/arcade/leaderboard`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetArcadeLeaderboardQueryOptions = <
+  TData = Awaited<ReturnType<typeof getArcadeLeaderboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetArcadeLeaderboardParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getArcadeLeaderboard>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetArcadeLeaderboardQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getArcadeLeaderboard>>
+  > = ({ signal }) =>
+    getArcadeLeaderboard(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getArcadeLeaderboard>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetArcadeLeaderboardQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getArcadeLeaderboard>>
+>;
+export type GetArcadeLeaderboardQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get top players for a specific arcade game
+ */
+
+export function useGetArcadeLeaderboard<
+  TData = Awaited<ReturnType<typeof getArcadeLeaderboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetArcadeLeaderboardParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getArcadeLeaderboard>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetArcadeLeaderboardQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
