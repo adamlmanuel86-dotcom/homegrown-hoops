@@ -27,6 +27,7 @@ type Step =
   | "year"
   | "photo"
   | "submitting"
+  | "avatar"
   | "reveal"
   | "pendingReveal"
   | "walkthrough";
@@ -156,7 +157,7 @@ export function OnboardingPage() {
     }
   }
 
-  async function advanceFromPhoto(skip: boolean) {
+  async function advanceFromPhoto(skip: boolean, overrideAvatarConfig?: AvatarConfig) {
     console.log("[HH] advanceFromPhoto called — skip:", skip, "isSubmittingRef:", isSubmittingRef.current);
     if (isSubmittingRef.current) {
       console.log("[HH] advanceFromPhoto — already submitting, ignoring");
@@ -204,13 +205,14 @@ export function OnboardingPage() {
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      if (pendingAvatarConfig) {
+      const avatarConfigToSave = overrideAvatarConfig ?? pendingAvatarConfig;
+      if (avatarConfigToSave) {
         try {
           const token = await getToken();
           await fetch("/api/profiles/me/avatar-config", {
             method: "PATCH",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ avatarConfig: pendingAvatarConfig }),
+            body: JSON.stringify({ avatarConfig: avatarConfigToSave }),
           });
           await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
         } catch {
@@ -1054,6 +1056,58 @@ export function OnboardingPage() {
   }
 
   // ──────────────────────────────────────────────────
+  // AVATAR STEP (pre-submit — avatar stored in state, saved after profile creation)
+  // ──────────────────────────────────────────────────
+  if (step === "avatar") {
+    return (
+      <div
+        className="min-h-[100dvh] flex flex-col"
+        style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(22 78% 12% / 0.3), hsl(222 42% 5%) 60%)" }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 20px 8px" }}>
+          <button
+            type="button"
+            onClick={() => setStep("photo")}
+            style={{
+              flexShrink: 0,
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.15)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.5)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            ← Back
+          </button>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "hsl(22,78%,52%)", margin: 0 }}>
+              Optional
+            </p>
+            <h2 style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: "clamp(22px,6vw,28px)", fontWeight: 900, color: "#fff", lineHeight: 1.05, margin: 0, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+              Design Your Baller
+            </h2>
+          </div>
+        </div>
+
+        {/* Scrollable creator */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
+          <AvatarCreator
+            initialConfig={pendingAvatarConfig}
+            onConfigReady={(config) => {
+              setPendingAvatarConfig(config);
+              void advanceFromPhoto(false, config);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
   // PROFILE STEPS
   // ──────────────────────────────────────────────────
   const currentStepIdx = stepIndex(step);
@@ -1077,7 +1131,7 @@ export function OnboardingPage() {
         ))}
       </div>
 
-      <div className={`flex-1 flex flex-col items-center px-6 py-8 ${step === "photo" ? "justify-start overflow-y-auto" : "justify-center"}`}>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
         <div className="w-full max-w-sm" style={{ animation: "fadeUp 0.5s ease both" }}>
 
           {/* ── NAME ── */}
@@ -1307,82 +1361,46 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* ── PHOTO + AVATAR ── */}
+          {/* ── PHOTO ── */}
           {step === "photo" && (
             <div className="space-y-6">
               <div>
                 <p className="label-upper text-xs text-primary mb-2">Step 6 of 6</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
-                  ADD YOUR LOOK
+                  ADD A PHOTO
                 </h2>
-                <p className="text-white/40 text-sm mt-2 font-medium">Profile photo and Arcade avatar — both optional.</p>
+                <p className="text-white/40 text-sm mt-2 font-medium">Optional — skip either or both.</p>
               </div>
 
-              {/* Profile photo */}
-              <div>
-                <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Profile Photo</p>
-                <PhotoPicker
-                  preview={avatarPreview}
-                  onFileChange={handleFileChange}
-                  onClear={() => { setAvatarPreview(null); setAvatarFile(null); }}
-                />
-              </div>
+              <PhotoPicker
+                preview={avatarPreview}
+                onFileChange={handleFileChange}
+                onClear={() => { setAvatarPreview(null); setAvatarFile(null); }}
+              />
 
-              {/* Arcade avatar */}
-              <div>
-                <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Arcade Avatar</p>
-                {pendingAvatarConfig && !showAvatarCreator ? (
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "14px 16px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(249,115,22,0.4)",
-                    background: "rgba(249,115,22,0.06)",
-                  }}>
-                    <span style={{ color: "#F97316", fontSize: 18 }}>✓</span>
-                    <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 600, flex: 1 }}>Avatar ready</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowAvatarCreator(true)}
-                      style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                ) : showAvatarCreator ? (
-                  <AvatarCreator
-                    initialConfig={pendingAvatarConfig}
-                    onConfigReady={(config) => {
-                      setPendingAvatarConfig(config);
-                      setShowAvatarCreator(false);
-                    }}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowAvatarCreator(true)}
-                    style={{
-                      width: "100%",
-                      padding: "16px 12px",
-                      borderRadius: 12,
-                      border: "1px dashed rgba(255,255,255,0.2)",
-                      background: "transparent",
-                      color: "rgba(255,255,255,0.5)",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                    }}
-                  >
-                    🎮 Design Your Arcade Avatar
-                  </button>
-                )}
-              </div>
+              {/* Avatar CTA */}
+              <button
+                type="button"
+                onClick={() => setStep("avatar")}
+                style={{
+                  width: "100%",
+                  padding: "15px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(249,115,22,0.35)",
+                  background: "rgba(249,115,22,0.07)",
+                  color: "hsl(22,78%,60%)",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  letterSpacing: "0.01em",
+                }}
+              >
+                🎮 Create My Avatar
+              </button>
 
               {uploadError && (
                 <p className="text-red-400 text-sm font-medium">{uploadError}</p>
