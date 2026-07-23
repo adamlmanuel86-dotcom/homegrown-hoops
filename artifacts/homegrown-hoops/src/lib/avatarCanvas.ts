@@ -11,6 +11,7 @@ export type AvatarConfig = {
   accessoryColor: number;
   eyebrows: "none" | "angry" | "raised";
   mouth: "neutral" | "smile" | "smirk" | "frown";
+  glasses: "none" | "clear" | "tinted" | "shades" | "goggles";
 };
 
 export const BUILDS = {
@@ -28,6 +29,7 @@ export const BUILD_KEYS: AvatarConfig["build"][] = ["standard", "stocky", "lanky
 export const ACCESSORY_KEYS: (keyof AvatarConfig["accessories"])[] = ["headband", "wristbands", "kneepads"];
 export const EYEBROW_STYLES: AvatarConfig["eyebrows"][] = ["none", "angry", "raised"];
 export const MOUTH_STYLES: AvatarConfig["mouth"][] = ["neutral", "smile", "smirk", "frown"];
+export const GLASSES_STYLES: AvatarConfig["glasses"][] = ["none", "clear", "tinted", "shades", "goggles"];
 
 export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
   skin: SKIN_TONES[0],
@@ -42,6 +44,7 @@ export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
   accessoryColor: HAIR_ACCESSORY_COLORS[0],
   eyebrows: "none",
   mouth: "neutral",
+  glasses: "none",
 };
 
 function hexIntToRgba(color: number, alpha: number): string {
@@ -112,6 +115,7 @@ export type DrawPalette = {
   accessories: AvatarConfig["accessories"];
   accessoryColor: number;
   expression: { eyebrows: AvatarConfig["eyebrows"]; mouth: AvatarConfig["mouth"] };
+  glasses: AvatarConfig["glasses"];
 };
 
 export function avatarConfigToPalette(cfg: AvatarConfig): DrawPalette {
@@ -126,6 +130,7 @@ export function avatarConfigToPalette(cfg: AvatarConfig): DrawPalette {
     accessories: cfg.accessories,
     accessoryColor: cfg.accessoryColor,
     expression: { eyebrows: cfg.eyebrows, mouth: cfg.mouth },
+    glasses: cfg.glasses,
   };
 }
 
@@ -291,6 +296,48 @@ function drawBaller(
     } else {
       g.fillRoundedRect(cx - headR * 0.24, my, headR * 0.48, headR * 0.13, headR * 0.06);
     }
+
+    // Glasses — drawn over the face
+    if (palette.glasses && palette.glasses !== "none") {
+      const eyeLX = cx - headR * 0.37;
+      const eyeRX = cx + headR * 0.37;
+      const eyeY = headY + headR * 0.04;
+      const lensW = headR * 0.56;
+      const lensH = headR * 0.44;
+      const fc = palette.accessoryColor || 0xc8a060;
+      if (palette.glasses === "shades") {
+        g.fillStyle(0x111111, 0.94);
+        g.fillRoundedRect(cx - headR * 0.85, eyeY - lensH * 0.65, headR * 1.7, lensH * 1.1, lensH * 0.42);
+        g.fillStyle(0xffffff, 0.1);
+        g.fillRoundedRect(cx - headR * 0.80, eyeY - lensH * 0.58, headR * 1.6, lensH * 0.26, lensH * 0.14);
+      } else if (palette.glasses === "clear") {
+        g.fillStyle(fc, 0.88);
+        g.fillEllipse(eyeLX, eyeY, lensW + 2.4, lensH + 2.0);
+        g.fillEllipse(eyeRX, eyeY, lensW + 2.4, lensH + 2.0);
+        g.fillRect(cx - 1.6, eyeY - 1.1, 3.2, 2.0);
+        g.fillStyle(0xffffff, 0.08);
+        g.fillEllipse(eyeLX, eyeY, lensW, lensH);
+        g.fillEllipse(eyeRX, eyeY, lensW, lensH);
+      } else if (palette.glasses === "tinted") {
+        g.fillStyle(fc, 0.86);
+        g.fillEllipse(eyeLX, eyeY, lensW + 2.2, lensH + 1.8);
+        g.fillEllipse(eyeRX, eyeY, lensW + 2.2, lensH + 1.8);
+        g.fillRect(cx - 1.5, eyeY - 0.9, 3.0, 1.8);
+        g.fillStyle(0x1144aa, 0.6);
+        g.fillEllipse(eyeLX, eyeY, lensW, lensH);
+        g.fillEllipse(eyeRX, eyeY, lensW, lensH);
+      } else if (palette.glasses === "goggles") {
+        g.fillStyle(fc, 0.92);
+        g.fillEllipse(eyeLX, eyeY, lensW + 3.4, lensH + 2.8);
+        g.fillEllipse(eyeRX, eyeY, lensW + 3.4, lensH + 2.8);
+        g.fillRect(cx - 2.6, eyeY - lensH * 0.55, 5.2, lensH * 1.0);
+        g.fillRect(cx - headR * 0.95, eyeY - lensH * 0.25, headR * 0.15, lensH * 0.5);
+        g.fillRect(cx + headR * 0.80, eyeY - lensH * 0.25, headR * 0.15, lensH * 0.5);
+        g.fillStyle(0x88ccff, 0.22);
+        g.fillEllipse(eyeLX, eyeY, lensW, lensH);
+        g.fillEllipse(eyeRX, eyeY, lensW, lensH);
+      }
+    }
   }
 
   if (palette.accessories) {
@@ -347,5 +394,6 @@ export function randomAvatarConfig(): AvatarConfig {
     accessoryColor: rand(HAIR_ACCESSORY_COLORS),
     eyebrows: rand(EYEBROW_STYLES),
     mouth: rand(MOUTH_STYLES),
+    glasses: Math.random() < 0.3 ? rand(GLASSES_STYLES.filter((g) => g !== "none") as AvatarConfig["glasses"][]) : "none",
   };
 }

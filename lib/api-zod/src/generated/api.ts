@@ -657,6 +657,9 @@ export const ListProfilesResponseItem = zod.object({
       accessoryColor: zod.number(),
       eyebrows: zod.enum(["none", "angry", "raised"]),
       mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
     })
     .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
@@ -758,6 +761,9 @@ export const GetMyProfileResponse = zod.object({
       accessoryColor: zod.number(),
       eyebrows: zod.enum(["none", "angry", "raised"]),
       mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
     })
     .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
@@ -881,6 +887,9 @@ export const UpdateMyProfileResponse = zod.object({
       accessoryColor: zod.number(),
       eyebrows: zod.enum(["none", "angry", "raised"]),
       mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
     })
     .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
@@ -985,6 +994,9 @@ export const GetProfileResponse = zod.object({
       accessoryColor: zod.number(),
       eyebrows: zod.enum(["none", "angry", "raised"]),
       mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
     })
     .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
@@ -1094,6 +1106,9 @@ export const UpdateProfileResponse = zod.object({
       accessoryColor: zod.number(),
       eyebrows: zod.enum(["none", "angry", "raised"]),
       mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
     })
     .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
@@ -1247,6 +1262,9 @@ export const SaveAvatarConfigBody = zod.object({
     accessoryColor: zod.number(),
     eyebrows: zod.enum(["none", "angry", "raised"]),
     mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+    glasses: zod
+      .enum(["none", "clear", "tinted", "shades", "goggles"])
+      .optional(),
   }),
 });
 
@@ -1290,6 +1308,9 @@ export const SaveAvatarConfigResponse = zod.object({
       accessoryColor: zod.number(),
       eyebrows: zod.enum(["none", "angry", "raised"]),
       mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
     })
     .nullish(),
   number: zod.string().nullish().describe("Player jersey number"),

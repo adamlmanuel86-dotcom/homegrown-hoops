@@ -52,8 +52,10 @@
   .hooperPickRow{display:flex;gap:10px;width:100%;max-width:420px;}
   .hooperPickBtn{flex:1;background:#ff7a1a;border:none;color:#fff;font-weight:900;font-size:12px;letter-spacing:0.3px;padding:13px 4px;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,0.35);touch-action:manipulation;-webkit-touch-callout:none;user-select:none;}
   .hooperPickBtn:active{transform:translateY(2px);box-shadow:none;}
-  #hooperLocked{text-align:center;color:#5a6a80;font-weight:900;font-size:11px;letter-spacing:0.5px;background:rgba(22,40,63,0.7);padding:10px 16px;border-radius:12px;pointer-events:none;}
+  #hooperLocked{text-align:center;color:#5a6a80;font-weight:900;font-size:11px;letter-spacing:0.5px;background:rgba(22,40,63,0.7);padding:10px 16px;border-radius:12px;pointer-events:none;transition:background 0.2s,border-color 0.2s,color 0.2s;border:1px solid transparent;}
   #hooperLocked span{display:block;font-weight:400;font-size:9px;margin-top:3px;letter-spacing:0.3px;}
+  #hooperLocked.ready{pointer-events:auto;cursor:pointer;background:rgba(255,122,26,0.18);border-color:rgba(255,122,26,0.6);color:#ff9944;}
+  #hooperLocked.ready:active{background:rgba(255,122,26,0.32);}
   #hooperShuffle{background:#22314f;border:none;color:#fff;font-weight:900;font-size:14px;letter-spacing:0.5px;padding:13px 26px;border-radius:24px;box-shadow:0 4px 0 rgba(0,0,0,0.35);pointer-events:auto;touch-action:manipulation;-webkit-touch-callout:none;user-select:none;}
   #hooperShuffle:active{transform:translateY(3px);box-shadow:none;}
   #hypeBar{position:fixed;top:78px;left:14px;right:14px;height:7px;background:rgba(15,27,45,0.6);border-radius:4px;overflow:hidden;z-index:5;border:1px solid rgba(255,255,255,0.15);transition:box-shadow 0.2s;}
@@ -139,6 +141,7 @@ const ARC_BOW = 42; // how far the 3PT line bows toward the player at center cou
 
 let level = 1;
 let selectedHooperPalette = null; // chosen on the "Choose Your Hooper" screen — persists for the session
+let receivedAvatarPalette = null; // sent from the React wrapper via postMessage when user has a saved avatar
 let selectedHooperName = '';
 let sessionBestStreak = 0;
 let stats = { fgm: 0, fga: 0, tpm: 0, tpa: 0, dunks: 0, points: 0 }; // session box score — resets on reload; career persistence needs the real backend
@@ -371,6 +374,22 @@ function drawFan(g, x, y, skinTone, shirtColor, s){
 }
 const SKIN_TONES = [0xf0c9a0, 0xd8a878, 0xc98a5b, 0x8a5a34, 0x6b4226];
 
+function avatarConfigToGamePalette(cfg) {
+  return {
+    skin: cfg.skin,
+    jersey: cfg.jersey,
+    jerseyStyle: cfg.jerseyStyle || 'solid',
+    secondaryColor: cfg.secondaryColor || 0xffffff,
+    shorts: cfg.shorts,
+    hair: { style: cfg.hairStyle || 'fade', color: cfg.hairColor || 0x1a1a1a },
+    build: cfg.build || 'standard',
+    accessories: cfg.accessories || { headband: false, wristbands: false, kneepads: false },
+    accessoryColor: cfg.accessoryColor || 0xffffff,
+    expression: { eyebrows: cfg.eyebrows || 'none', mouth: cfg.mouth || 'neutral' },
+    glasses: cfg.glasses || 'none',
+  };
+}
+
 function drawBaller(g, palette, runFrame, armPose, poseColor, showFace){
   const { skin, jersey, shorts, hair, build } = palette;
   const b = BUILDS[build];
@@ -542,6 +561,46 @@ function drawBaller(g, palette, runFrame, armPose, poseColor, showFace){
       g.fillCircle(cx+headR*0.25, my+headR*0.14, headR*0.055);
     } else {
       g.fillRoundedRect(cx-headR*0.24, my, headR*0.48, headR*0.13, headR*0.06);
+    }
+
+    // Glasses — drawn over the face
+    if (palette.glasses && palette.glasses !== 'none') {
+      const eyeLX = cx - headR*0.37, eyeRX = cx + headR*0.37;
+      const eyeY = headY + headR*0.04;
+      const lensW = headR*0.56, lensH = headR*0.44;
+      const fc = palette.accessoryColor || 0xc8a060;
+      if (palette.glasses === 'shades') {
+        g.fillStyle(0x111111, 0.94);
+        g.fillRoundedRect(cx - headR*0.85, eyeY - lensH*0.65, headR*1.7, lensH*1.1, lensH*0.42);
+        g.fillStyle(0xffffff, 0.1);
+        g.fillRoundedRect(cx - headR*0.80, eyeY - lensH*0.58, headR*1.6, lensH*0.26, lensH*0.14);
+      } else if (palette.glasses === 'clear') {
+        g.fillStyle(fc, 0.88);
+        g.fillEllipse(eyeLX, eyeY, lensW+2.4, lensH+2.0);
+        g.fillEllipse(eyeRX, eyeY, lensW+2.4, lensH+2.0);
+        g.fillRect(cx-1.6, eyeY-1.1, 3.2, 2.0);
+        g.fillStyle(0xffffff, 0.08);
+        g.fillEllipse(eyeLX, eyeY, lensW, lensH);
+        g.fillEllipse(eyeRX, eyeY, lensW, lensH);
+      } else if (palette.glasses === 'tinted') {
+        g.fillStyle(fc, 0.86);
+        g.fillEllipse(eyeLX, eyeY, lensW+2.2, lensH+1.8);
+        g.fillEllipse(eyeRX, eyeY, lensW+2.2, lensH+1.8);
+        g.fillRect(cx-1.5, eyeY-0.9, 3.0, 1.8);
+        g.fillStyle(0x1144aa, 0.6);
+        g.fillEllipse(eyeLX, eyeY, lensW, lensH);
+        g.fillEllipse(eyeRX, eyeY, lensW, lensH);
+      } else if (palette.glasses === 'goggles') {
+        g.fillStyle(fc, 0.92);
+        g.fillEllipse(eyeLX, eyeY, lensW+3.4, lensH+2.8);
+        g.fillEllipse(eyeRX, eyeY, lensW+3.4, lensH+2.8);
+        g.fillRect(cx-2.6, eyeY-lensH*0.55, 5.2, lensH*1.0);
+        g.fillRect(cx-headR*0.95, eyeY-lensH*0.25, headR*0.15, lensH*0.5);
+        g.fillRect(cx+headR*0.80, eyeY-lensH*0.25, headR*0.15, lensH*0.5);
+        g.fillStyle(0x88ccff, 0.22);
+        g.fillEllipse(eyeLX, eyeY, lensW, lensH);
+        g.fillEllipse(eyeRX, eyeY, lensW, lensH);
+      }
     }
   }
 
@@ -2091,6 +2150,20 @@ document.getElementById('hooperShuffle').addEventListener('pointerdown', () => {
   if (!sceneRef || !sceneRef.hooperOptions) return;
   sceneRef.hooperOptions = [randomHooper(), randomHooper(), randomHooper()];
   sceneRef.renderHooperOptions();
+});
+document.getElementById('hooperLocked').addEventListener('pointerdown', () => {
+  if (!receivedAvatarPalette || !sceneRef) return;
+  selectedHooperPalette = receivedAvatarPalette;
+  document.getElementById('hooperSelectUI').style.display = 'none';
+  sceneRef.scene.restart();
+});
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'PLAYER_AVATAR' && e.data.config) {
+    receivedAvatarPalette = avatarConfigToGamePalette(e.data.config);
+    const btn = document.getElementById('hooperLocked');
+    btn.classList.add('ready');
+    btn.innerHTML = '🏀 USE MY AVATAR<br><span>Tap to play as yourself!</span>';
+  }
 });
 function queueMove(move){ queuedMove = { move, ts: Date.now() }; }
 document.getElementById('crossover').addEventListener('pointerdown', ()=>queueMove(MOVES.CROSSOVER));

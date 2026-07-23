@@ -8,6 +8,7 @@
 import type { AvatarConfigAccessories } from "./avatarConfigAccessories";
 import type { AvatarConfigBuild } from "./avatarConfigBuild";
 import type { AvatarConfigEyebrows } from "./avatarConfigEyebrows";
+import type { AvatarConfigGlasses } from "./avatarConfigGlasses";
 import type { AvatarConfigHairStyle } from "./avatarConfigHairStyle";
 import type { AvatarConfigJerseyStyle } from "./avatarConfigJerseyStyle";
 import type { AvatarConfigMouth } from "./avatarConfigMouth";
@@ -25,4 +26,5 @@ export interface AvatarConfig {
   accessoryColor: number;
   eyebrows: AvatarConfigEyebrows;
   mouth: AvatarConfigMouth;
+  glasses?: AvatarConfigGlasses;
 }

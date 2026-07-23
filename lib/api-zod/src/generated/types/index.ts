@@ -17,6 +17,7 @@ export * from "./avatarConfig";
 export * from "./avatarConfigAccessories";
 export * from "./avatarConfigBuild";
 export * from "./avatarConfigEyebrows";
+export * from "./avatarConfigGlasses";
 export * from "./avatarConfigHairStyle";
 export * from "./avatarConfigJerseyStyle";
 export * from "./avatarConfigMouth";

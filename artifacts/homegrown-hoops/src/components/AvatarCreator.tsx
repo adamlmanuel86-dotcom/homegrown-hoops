@@ -15,6 +15,7 @@ import {
   ACCESSORY_KEYS,
   EYEBROW_STYLES,
   MOUTH_STYLES,
+  GLASSES_STYLES,
 } from "@/lib/avatarCanvas";
 import { apiBase } from "@/lib/api";
 
@@ -253,6 +254,23 @@ export function AvatarCreator({ initialConfig, onSaved }: AvatarCreatorProps) {
         <div className="mt-1">
           <OptRow values={MOUTH_STYLES} selected={config.mouth} onSelect={(v) => update({ mouth: v })} />
         </div>
+      </Section>
+
+      <Section title="Glasses">
+        <OptRow
+          values={GLASSES_STYLES}
+          selected={config.glasses}
+          onSelect={(v) => update({ glasses: v })}
+          label={(v) => v === "none" ? "NONE" : v === "clear" ? "CLEAR" : v === "tinted" ? "TINTED" : v === "shades" ? "SHADES" : "GOGGLES"}
+        />
+        {config.glasses !== "none" && config.glasses !== "shades" && (
+          <div className="mt-3">
+            <label className="text-xs text-white/40 font-bold uppercase tracking-wider">Frame / Lens Color</label>
+            <div className="mt-1">
+              <SwatchRow values={HAIR_ACCESSORY_COLORS} selected={config.accessoryColor} onSelect={(v) => update({ accessoryColor: v })} />
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Actions */}

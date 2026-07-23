@@ -1607,6 +1607,9 @@ components:
         mouth:
           type: string
           enum: [neutral, smile, smirk, frown]
+        glasses:
+          type: string
+          enum: [none, clear, tinted, shades, goggles]
       required:
         - skin
         - build

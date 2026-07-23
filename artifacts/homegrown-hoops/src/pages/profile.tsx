@@ -804,38 +804,42 @@ export function ProfilePage() {
         archetype={displayArchetype}
       />
 
-      {isOwner && arcadeStats && (arcadeStats.fastBreak || arcadeStats.whoYaGot || arcadeStats.shotClock) && (
+      {isOwner && arcadeStats && (
         <div className="card-base p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Gamepad2 className="h-4 w-4 text-primary" />
             <h3 className="label-upper text-xs text-muted-foreground">Arcade Stats</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {arcadeStats.fastBreak && (
-              <div className="bg-muted/40 rounded-lg p-3 space-y-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fast Break</p>
-                <p className="font-display text-2xl text-primary">{arcadeStats.fastBreak.bestScore}</p>
-                <p className="text-xs text-muted-foreground">Best Score</p>
-                <p className="text-xs text-foreground/70">{arcadeStats.fastBreak.gamesPlayed} games · {arcadeStats.fastBreak.bestStreak} streak</p>
-              </div>
-            )}
-            {arcadeStats.whoYaGot && (
-              <div className="bg-muted/40 rounded-lg p-3 space-y-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Who Ya Got</p>
-                <p className="font-display text-2xl text-primary">{arcadeStats.whoYaGot.bestScore}</p>
-                <p className="text-xs text-muted-foreground">Best Score</p>
-                <p className="text-xs text-foreground/70">{arcadeStats.whoYaGot.gamesPlayed} games · {arcadeStats.whoYaGot.bestStreak} streak</p>
-              </div>
-            )}
-            {arcadeStats.shotClock && (
-              <div className="bg-muted/40 rounded-lg p-3 space-y-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Shot Clock</p>
-                <p className="font-display text-2xl text-primary">{arcadeStats.shotClock.bestScore}</p>
-                <p className="text-xs text-muted-foreground">Best Score</p>
-                <p className="text-xs text-foreground/70">{arcadeStats.shotClock.gamesPlayed} games · {arcadeStats.shotClock.bestStreak} streak</p>
-              </div>
-            )}
-          </div>
+          {!(arcadeStats.fastBreak || arcadeStats.whoYaGot || arcadeStats.shotClock) ? (
+            <p className="text-xs text-muted-foreground/70">No arcade sessions yet — play a game!</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {arcadeStats.fastBreak && (
+                <div className="bg-muted/40 rounded-lg p-3 space-y-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fast Break</p>
+                  <p className="font-display text-2xl text-primary">{arcadeStats.fastBreak.bestScore}</p>
+                  <p className="text-xs text-muted-foreground">Best Score</p>
+                  <p className="text-xs text-foreground/70">{arcadeStats.fastBreak.gamesPlayed} games · {arcadeStats.fastBreak.bestStreak} streak</p>
+                </div>
+              )}
+              {arcadeStats.whoYaGot && (
+                <div className="bg-muted/40 rounded-lg p-3 space-y-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Who Ya Got</p>
+                  <p className="font-display text-2xl text-primary">{arcadeStats.whoYaGot.bestScore}</p>
+                  <p className="text-xs text-muted-foreground">Best Score</p>
+                  <p className="text-xs text-foreground/70">{arcadeStats.whoYaGot.gamesPlayed} games · {arcadeStats.whoYaGot.bestStreak} streak</p>
+                </div>
+              )}
+              {arcadeStats.shotClock && (
+                <div className="bg-muted/40 rounded-lg p-3 space-y-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Shot Clock</p>
+                  <p className="font-display text-2xl text-primary">{arcadeStats.shotClock.bestScore}</p>
+                  <p className="text-xs text-muted-foreground">Best Score</p>
+                  <p className="text-xs text-foreground/70">{arcadeStats.shotClock.gamesPlayed} games · {arcadeStats.shotClock.bestStreak} streak</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

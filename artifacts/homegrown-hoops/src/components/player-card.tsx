@@ -597,8 +597,8 @@ function AvatarThumb({ config }: { config: AvatarConfig }) {
     const scaleX = 90 / off.width;
     const dw = off.width * scaleX;
     const dh = off.height * scaleX;
-    const dx = (90 - dw) / 2;
-    const dy = 2 - 6.4 * scaleX;
+    const dx = (90 - dw) / 2 - 3;
+    const dy = 7 - 6.4 * scaleX;
     ctx.clearRect(0, 0, 90, 90);
     ctx.drawImage(off, dx, dy, dw, dh);
   }, [config]);

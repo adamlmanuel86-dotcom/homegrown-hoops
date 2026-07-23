@@ -364,6 +364,17 @@ export const AvatarConfigMouth = {
   frown: "frown",
 } as const;
 
+export type AvatarConfigGlasses =
+  (typeof AvatarConfigGlasses)[keyof typeof AvatarConfigGlasses];
+
+export const AvatarConfigGlasses = {
+  none: "none",
+  clear: "clear",
+  tinted: "tinted",
+  shades: "shades",
+  goggles: "goggles",
+} as const;
+
 export type AvatarConfigAccessories = {
   headband: boolean;
   wristbands: boolean;
@@ -383,6 +394,7 @@ export interface AvatarConfig {
   accessoryColor: number;
   eyebrows: AvatarConfigEyebrows;
   mouth: AvatarConfigMouth;
+  glasses?: AvatarConfigGlasses;
 }
 
 export interface UserProfile {
