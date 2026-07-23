@@ -21,17 +21,19 @@ import { TIDES } from "@/components/recognition";
 import { apiBase } from "@/lib/api";
 
 
-const ROLES = ["admin", "coach", "player"] as const;
+const ROLES = ["admin", "manager", "coach", "player"] as const;
 type Role = typeof ROLES[number];
 
 const roleBadge: Record<Role, string> = {
   admin: "bg-primary/10 text-primary font-bold",
+  manager: "bg-purple-900/40 text-purple-300 font-semibold",
   coach: "bg-blue-900/40 text-blue-300 font-semibold",
   player: "bg-muted text-muted-foreground font-medium",
 };
 
 const roleLabel: Record<Role, string> = {
   admin: "Admin",
+  manager: "Manager",
   coach: "Coach",
   player: "Player",
 };
@@ -511,6 +513,28 @@ export function AdminPage() {
         <p className="label-upper mb-1">Management</p>
         <h1 className="font-display text-4xl md:text-5xl text-secondary">ADMIN PANEL</h1>
         <p className="text-muted-foreground mt-2">Manage teams, users, and league settings.</p>
+      </div>
+
+      {/* Quick Links */}
+      <div className="card-base overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-muted/30">
+          <Shield className="h-5 w-5 text-primary" />
+          <h2 className="font-bold text-secondary">Quick Links</h2>
+        </div>
+        <div className="flex flex-wrap gap-3 px-6 py-4">
+          <a
+            href="/track-game"
+            className="inline-flex items-center gap-2 border-2 border-border px-4 py-2 text-sm font-bold hover:bg-muted shadow-[3px_3px_0_0_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)]"
+          >
+            📋 Track a Game
+          </a>
+          <a
+            href="/admin/pending-games"
+            className="inline-flex items-center gap-2 bg-yellow-600 text-white border-2 border-border px-4 py-2 text-sm font-bold hover:opacity-90 shadow-[3px_3px_0_0_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)]"
+          >
+            ⏳ Pending Games
+          </a>
+        </div>
       </div>
 
       {/* Game Management */}

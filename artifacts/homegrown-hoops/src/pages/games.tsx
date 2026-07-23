@@ -9,6 +9,7 @@ const statusStyle: Record<string, string> = {
   final: "bg-secondary text-white",
   in_progress: "bg-green-500 text-white",
   scheduled: "bg-muted text-muted-foreground",
+  pending: "bg-yellow-600 text-white",
 };
 
 function deriveSeason(dateStr: string): string {

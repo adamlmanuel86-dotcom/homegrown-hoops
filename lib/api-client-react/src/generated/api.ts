@@ -34,12 +34,15 @@ import type {
   ListGamesParams,
   ListPlayersParams,
   MyArcadeStats,
+  PendingGameReview,
   Player,
   PlayerStats,
   PostArcadeSessionBody,
+  RejectPendingGameBody,
   SaveAvatarConfigBody,
   StatLeaders,
   StatsSummary,
+  SubmitTrackGameBody,
   Team,
   TeamStats,
   UpdateGameBody,
@@ -1893,6 +1896,338 @@ export const useUpdateUserRole = <
   TContext
 > => {
   return useMutation(getUpdateUserRoleMutationOptions(options));
+};
+
+/**
+ * @summary Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.
+ */
+export const getSubmitTrackGameUrl = () => {
+  return `/api/track-game/submit`;
+};
+
+export const submitTrackGame = async (
+  submitTrackGameBody: SubmitTrackGameBody,
+  options?: RequestInit,
+): Promise<Game> => {
+  return customFetch<Game>(getSubmitTrackGameUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitTrackGameBody),
+  });
+};
+
+export const getSubmitTrackGameMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitTrackGame>>,
+    TError,
+    { data: BodyType<SubmitTrackGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitTrackGame>>,
+  TError,
+  { data: BodyType<SubmitTrackGameBody> },
+  TContext
+> => {
+  const mutationKey = ["submitTrackGame"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitTrackGame>>,
+    { data: BodyType<SubmitTrackGameBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitTrackGame(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitTrackGameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitTrackGame>>
+>;
+export type SubmitTrackGameMutationBody = BodyType<SubmitTrackGameBody>;
+export type SubmitTrackGameMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.
+ */
+export const useSubmitTrackGame = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitTrackGame>>,
+    TError,
+    { data: BodyType<SubmitTrackGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitTrackGame>>,
+  TError,
+  { data: BodyType<SubmitTrackGameBody> },
+  TContext
+> => {
+  return useMutation(getSubmitTrackGameMutationOptions(options));
+};
+
+/**
+ * @summary List all pending games with player stats (admin only)
+ */
+export const getListPendingGamesUrl = () => {
+  return `/api/admin/pending-games`;
+};
+
+export const listPendingGames = async (
+  options?: RequestInit,
+): Promise<PendingGameReview[]> => {
+  return customFetch<PendingGameReview[]>(getListPendingGamesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPendingGamesQueryKey = () => {
+  return [`/api/admin/pending-games`] as const;
+};
+
+export const getListPendingGamesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPendingGames>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingGames>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPendingGamesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPendingGames>>
+  > = ({ signal }) => listPendingGames({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingGames>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPendingGamesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPendingGames>>
+>;
+export type ListPendingGamesQueryError = ErrorType<void>;
+
+/**
+ * @summary List all pending games with player stats (admin only)
+ */
+
+export function useListPendingGames<
+  TData = Awaited<ReturnType<typeof listPendingGames>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPendingGames>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPendingGamesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve a pending game (marks final, triggers recognition)
+ */
+export const getApprovePendingGameUrl = (id: number) => {
+  return `/api/admin/pending-games/${id}/approve`;
+};
+
+export const approvePendingGame = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Game> => {
+  return customFetch<Game>(getApprovePendingGameUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getApprovePendingGameMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approvePendingGame>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approvePendingGame>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["approvePendingGame"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approvePendingGame>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return approvePendingGame(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApprovePendingGameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approvePendingGame>>
+>;
+
+export type ApprovePendingGameMutationError = ErrorType<void>;
+
+/**
+ * @summary Approve a pending game (marks final, triggers recognition)
+ */
+export const useApprovePendingGame = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approvePendingGame>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approvePendingGame>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getApprovePendingGameMutationOptions(options));
+};
+
+/**
+ * @summary Reject a pending game with a note
+ */
+export const getRejectPendingGameUrl = (id: number) => {
+  return `/api/admin/pending-games/${id}/reject`;
+};
+
+export const rejectPendingGame = async (
+  id: number,
+  rejectPendingGameBody: RejectPendingGameBody,
+  options?: RequestInit,
+): Promise<Game> => {
+  return customFetch<Game>(getRejectPendingGameUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectPendingGameBody),
+  });
+};
+
+export const getRejectPendingGameMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectPendingGame>>,
+    TError,
+    { id: number; data: BodyType<RejectPendingGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rejectPendingGame>>,
+  TError,
+  { id: number; data: BodyType<RejectPendingGameBody> },
+  TContext
+> => {
+  const mutationKey = ["rejectPendingGame"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rejectPendingGame>>,
+    { id: number; data: BodyType<RejectPendingGameBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return rejectPendingGame(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectPendingGameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rejectPendingGame>>
+>;
+export type RejectPendingGameMutationBody = BodyType<RejectPendingGameBody>;
+export type RejectPendingGameMutationError = ErrorType<void>;
+
+/**
+ * @summary Reject a pending game with a note
+ */
+export const useRejectPendingGame = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectPendingGame>>,
+    TError,
+    { id: number; data: BodyType<RejectPendingGameBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rejectPendingGame>>,
+  TError,
+  { id: number; data: BodyType<RejectPendingGameBody> },
+  TContext
+> => {
+  return useMutation(getRejectPendingGameMutationOptions(options));
 };
 
 /**

@@ -1,0 +1,157 @@
+import { Router, type IRouter } from "express";
+import { eq, and } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
+import { db, gamesTable, gamePlayerStatsTable, playersTable, userProfilesTable } from "@workspace/db";
+import { serializeRow } from "../lib/serialize";
+import { runFullRecognition } from "../recognition";
+
+const router: IRouter = Router();
+
+router.post("/track-game/submit", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (!profile || !["admin", "manager"].includes(profile.role)) {
+    res.status(403).json({ error: "Manager or admin access required" });
+    return;
+  }
+
+  const body = req.body as {
+    homeTeamId: number;
+    awayTeamId?: number | null;
+    opponentName?: string | null;
+    homeScore: number;
+    awayScore: number;
+    gameDate: string;
+    season: string;
+    location?: string | null;
+    playerStats: Array<{
+      playerId?: number | null;
+      playerName: string;
+      teamId: number;
+      points: number;
+      rebounds: number;
+      assists: number;
+      steals?: number;
+      blocks?: number;
+      turnovers?: number;
+      fieldGoalsMade?: number;
+      fieldGoalsAttempted?: number;
+      threePointersMade?: number;
+      threePointersAttempted?: number;
+      freeThrowsMade?: number;
+      freeThrowsAttempted?: number;
+    }>;
+  };
+
+  if (!body.homeTeamId || body.homeScore == null || body.awayScore == null || !body.gameDate || !body.season) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  const awayTeamId = body.awayTeamId ?? null;
+  const opponentName = body.opponentName ?? null;
+
+  if (!awayTeamId && !opponentName) {
+    res.status(400).json({ error: "Either awayTeamId or opponentName is required" });
+    return;
+  }
+
+  const isAdmin = profile.role === "admin";
+  const status = isAdmin ? "final" : "pending";
+
+  const [game] = await db
+    .insert(gamesTable)
+    .values({
+      homeTeamId: body.homeTeamId,
+      awayTeamId,
+      homeScore: body.homeScore,
+      awayScore: body.awayScore,
+      gameDate: body.gameDate,
+      season: body.season,
+      location: body.location ?? null,
+      status,
+      opponentName,
+      submittedBy: userId,
+      externalLinks: [],
+    })
+    .returning();
+
+  // Insert player stats — resolve or create player rows as needed
+  const resolvedPlayerIds: number[] = [];
+
+  for (const stat of body.playerStats ?? []) {
+    let resolvedPlayerId = stat.playerId ?? null;
+
+    if (!resolvedPlayerId && stat.playerName && stat.teamId) {
+      const nameParts = stat.playerName.trim().split(/\s+/);
+      const firstName = nameParts[0] ?? "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      if (firstName) {
+        const [existing] = await db
+          .select({ id: playersTable.id })
+          .from(playersTable)
+          .where(
+            and(
+              eq(playersTable.firstName, firstName),
+              eq(playersTable.lastName, lastName),
+              eq(playersTable.teamId, stat.teamId)
+            )
+          );
+
+        if (existing) {
+          resolvedPlayerId = existing.id;
+        } else {
+          const [created] = await db
+            .insert(playersTable)
+            .values({ firstName, lastName, teamId: stat.teamId })
+            .returning({ id: playersTable.id });
+          resolvedPlayerId = created.id;
+        }
+      }
+    }
+
+    if (!resolvedPlayerId) continue;
+
+    await db.insert(gamePlayerStatsTable).values({
+      gameId: game.id,
+      playerId: resolvedPlayerId,
+      points: stat.points,
+      rebounds: stat.rebounds,
+      assists: stat.assists,
+      steals: stat.steals ?? null,
+      blocks: stat.blocks ?? null,
+      turnovers: stat.turnovers ?? null,
+      fieldGoalsMade: stat.fieldGoalsMade ?? 0,
+      fieldGoalsAttempted: stat.fieldGoalsAttempted ?? 0,
+      threesMade: stat.threePointersMade ?? null,
+      threesAttempted: stat.threePointersAttempted ?? 0,
+      freeThrowsMade: stat.freeThrowsMade ?? 0,
+      freeThrowsAttempted: stat.freeThrowsAttempted ?? 0,
+      minutesPlayed: 0,
+    });
+    resolvedPlayerIds.push(resolvedPlayerId);
+  }
+
+  // Admins bypass approval queue — trigger recognition immediately
+  if (isAdmin && resolvedPlayerIds.length > 0) {
+    try {
+      await runFullRecognition(game.id, resolvedPlayerIds);
+    } catch (err) {
+      console.error("[trackGame] Recognition error (non-fatal):", err);
+    }
+  }
+
+  res.status(201).json(serializeRow(game));
+});
+
+export default router;

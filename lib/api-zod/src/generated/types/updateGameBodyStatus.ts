@@ -13,4 +13,5 @@ export const UpdateGameBodyStatus = {
   scheduled: "scheduled",
   in_progress: "in_progress",
   final: "final",
+  pending: "pending",
 } as const;

@@ -467,6 +467,100 @@ paths:
         "404":
           description: User not found
 
+  /track-game/submit:
+    post:
+      operationId: submitTrackGame
+      tags: [games]
+      summary: Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitTrackGameBody"
+      responses:
+        "201":
+          description: Game submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+
+  /admin/pending-games:
+    get:
+      operationId: listPendingGames
+      tags: [admin]
+      summary: List all pending games with player stats (admin only)
+      responses:
+        "200":
+          description: List of pending game reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PendingGameReview"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/pending-games/{id}/approve:
+    post:
+      operationId: approvePendingGame
+      tags: [admin]
+      summary: Approve a pending game (marks final, triggers recognition)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Game approved and marked final
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Game not found
+
+  /admin/pending-games/{id}/reject:
+    post:
+      operationId: rejectPendingGame
+      tags: [admin]
+      summary: Reject a pending game with a note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectPendingGameBody"
+      responses:
+        "200":
+          description: Game rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Game not found
+
   /profiles:
     get:
       operationId: listProfiles
@@ -1076,8 +1170,14 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [scheduled, in_progress, final]
+          enum: [scheduled, in_progress, final, pending]
         notes:
+          type: ["string", "null"]
+        opponentName:
+          type: ["string", "null"]
+        pendingNote:
+          type: ["string", "null"]
+        submittedBy:
           type: ["string", "null"]
         externalLinks:
           type: array
@@ -1089,7 +1189,6 @@ components:
       required:
         - id
         - homeTeamId
-        - awayTeamId
         - gameDate
         - season
         - status
@@ -1115,8 +1214,10 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [scheduled, in_progress, final]
+          enum: [scheduled, in_progress, final, pending]
         notes:
+          type: ["string", "null"]
+        opponentName:
           type: ["string", "null"]
         externalLinks:
           type: array
@@ -1124,7 +1225,6 @@ components:
             $ref: "#/components/schemas/ExternalLink"
       required:
         - homeTeamId
-        - awayTeamId
         - gameDate
         - season
         - status
@@ -1144,7 +1244,7 @@ components:
           type: ["string", "null"]
         status:
           type: string
-          enum: [scheduled, in_progress, final]
+          enum: [scheduled, in_progress, final, pending]
         notes:
           type: ["string", "null"]
         externalLinks:
@@ -1339,7 +1439,7 @@ components:
 
     UserRole:
       type: string
-      enum: [admin, coach, player]
+      enum: [admin, manager, coach, player]
 
     ExternalLink:
       type: object
@@ -1745,3 +1845,166 @@ components:
         shotClock:
           $ref: "#/components/schemas/ArcadeGameStats"
       required: [fastBreak, whoYaGot, shotClock]
+
+    SubmitPlayerStatRow:
+      type: object
+      properties:
+        playerId:
+          type: ["integer", "null"]
+        playerName:
+          type: string
+        teamId:
+          type: integer
+        points:
+          type: integer
+        rebounds:
+          type: integer
+        assists:
+          type: integer
+        steals:
+          type: integer
+        blocks:
+          type: integer
+        turnovers:
+          type: integer
+        fieldGoalsMade:
+          type: integer
+        fieldGoalsAttempted:
+          type: integer
+        threePointersMade:
+          type: integer
+        threePointersAttempted:
+          type: integer
+        freeThrowsMade:
+          type: integer
+        freeThrowsAttempted:
+          type: integer
+      required:
+        - playerName
+        - teamId
+        - points
+        - rebounds
+        - assists
+
+    SubmitTrackGameBody:
+      type: object
+      properties:
+        homeTeamId:
+          type: integer
+        awayTeamId:
+          type: ["integer", "null"]
+        opponentName:
+          type: ["string", "null"]
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+        gameDate:
+          type: string
+        season:
+          type: string
+        location:
+          type: ["string", "null"]
+        playerStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubmitPlayerStatRow"
+      required:
+        - homeTeamId
+        - homeScore
+        - awayScore
+        - gameDate
+        - season
+        - playerStats
+
+    PendingGamePlayerStat:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        playerFirstName:
+          type: ["string", "null"]
+        playerLastName:
+          type: ["string", "null"]
+        points:
+          type: ["integer", "null"]
+        rebounds:
+          type: ["integer", "null"]
+        assists:
+          type: ["integer", "null"]
+        steals:
+          type: ["integer", "null"]
+        blocks:
+          type: ["integer", "null"]
+        turnovers:
+          type: ["integer", "null"]
+        fieldGoalsMade:
+          type: integer
+        fieldGoalsAttempted:
+          type: integer
+        threePointersMade:
+          type: ["integer", "null"]
+        threePointersAttempted:
+          type: integer
+        freeThrowsMade:
+          type: integer
+        freeThrowsAttempted:
+          type: integer
+      required:
+        - id
+        - playerId
+
+    PendingGameReview:
+      type: object
+      properties:
+        id:
+          type: integer
+        homeTeamId:
+          type: integer
+        awayTeamId:
+          type: ["integer", "null"]
+        homeTeamName:
+          type: ["string", "null"]
+        awayTeamName:
+          type: ["string", "null"]
+        opponentName:
+          type: ["string", "null"]
+        homeScore:
+          type: ["integer", "null"]
+        awayScore:
+          type: ["integer", "null"]
+        gameDate:
+          type: string
+        season:
+          type: string
+        location:
+          type: ["string", "null"]
+        pendingNote:
+          type: ["string", "null"]
+        submittedBy:
+          type: ["string", "null"]
+        submittedByName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        playerStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingGamePlayerStat"
+      required:
+        - id
+        - homeTeamId
+        - gameDate
+        - season
+        - createdAt
+        - playerStats
+
+    RejectPendingGameBody:
+      type: object
+      properties:
+        note:
+          type: string
+      required:
+        - note

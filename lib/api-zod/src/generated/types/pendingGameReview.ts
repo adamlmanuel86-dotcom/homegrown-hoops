@@ -5,13 +5,19 @@
  * Homegrown Hoops Basketball Stats Tracking API
  * OpenAPI spec version: 0.1.0
  */
-import type { ExternalLink } from "./externalLink";
-import type { GameStatus } from "./gameStatus";
+import type { PendingGamePlayerStat } from "./pendingGamePlayerStat";
 
-export interface Game {
+export interface PendingGameReview {
   id: number;
   homeTeamId: number;
-  awayTeamId?: number;
+  /** @nullable */
+  awayTeamId?: number | null;
+  /** @nullable */
+  homeTeamName?: string | null;
+  /** @nullable */
+  awayTeamName?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
   /** @nullable */
   homeScore?: number | null;
   /** @nullable */
@@ -20,16 +26,12 @@ export interface Game {
   season: string;
   /** @nullable */
   location?: string | null;
-  status: GameStatus;
-  /** @nullable */
-  notes?: string | null;
-  /** @nullable */
-  opponentName?: string | null;
   /** @nullable */
   pendingNote?: string | null;
   /** @nullable */
   submittedBy?: string | null;
-  /** Ordered list of external video links for this game. */
-  externalLinks: ExternalLink[];
+  /** @nullable */
+  submittedByName?: string | null;
   createdAt: string;
+  playerStats: PendingGamePlayerStat[];
 }

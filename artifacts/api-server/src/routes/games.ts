@@ -82,8 +82,8 @@ router.post("/games", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
-  if (profile?.role !== "admin") {
-    res.status(403).json({ error: "Admin access required" });
+  if (!["admin", "manager"].includes(profile?.role ?? "")) {
+    res.status(403).json({ error: "Admin or manager access required" });
     return;
   }
 
@@ -197,10 +197,11 @@ router.patch("/games/:id", async (req, res): Promise<void> => {
     };
 
     const homeRecord = calcRecord(game.homeTeamId);
-    const awayRecord = calcRecord(game.awayTeamId);
-
     await db.update(teamsTable).set(homeRecord).where(eq(teamsTable.id, game.homeTeamId));
-    await db.update(teamsTable).set(awayRecord).where(eq(teamsTable.id, game.awayTeamId));
+    if (game.awayTeamId != null) {
+      const awayRecord = calcRecord(game.awayTeamId);
+      await db.update(teamsTable).set(awayRecord).where(eq(teamsTable.id, game.awayTeamId!));
+    }
   }
 
   res.json(UpdateGameResponse.parse(normalizeGame(serializeRow(game))));

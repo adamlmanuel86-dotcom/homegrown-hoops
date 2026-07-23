@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, timestamp, json, jsonb } from 
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const USER_ROLES = ["admin", "coach", "player"] as const;
+export const USER_ROLES = ["admin", "manager", "coach", "player"] as const;
 export type UserRole = typeof USER_ROLES[number];
 
 export type AvatarConfig = {

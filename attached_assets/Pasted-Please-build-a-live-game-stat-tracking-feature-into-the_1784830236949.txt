@@ -1,0 +1,22 @@
+Please build a live game stat tracking feature into the Homegrown Hoops platform based on the HTML prototype at artifacts/homegrown-hoops/public/hgh-live-tracker.html. Here is exactly what needs to be built:
+
+1. Add a new page at /track-game accessible to users with a manager or admin role. This page should contain the full stat tracking interface from the prototype — setup screen with tracking mode toggle, tracking screen with player stat buttons per player, opponent bar for my-team-only mode, edit modal with auto point adjustment, and summary box score screen.
+
+2. On the setup screen managers can select any team from any league in the database from a dropdown. They select home team and away team. If tracking my-team-only they select their team as home and enter the opponent name manually.
+
+3. The setup screen pulls the selected team’s registered roster from the database automatically so managers tap existing player names rather than typing them. Unregistered players can still be added manually by name.
+
+4. When the manager taps Confirm Upload the game is submitted with status pending. No Legacy Scores, Stamps or Archetypes update yet. The game shows as Pending Review on the games page.
+
+5. Add an admin review queue at /admin/pending-games showing all pending games. Each game shows the full box score for review. Admin can tap Approve to mark the game as final and trigger recognition recalculation for all players, or Reject to send it back with a note explaining why.
+
+6. When an admin submits a game through /track-game it bypasses the approval queue entirely and is marked final immediately with recognition recalculation triggered automatically.
+
+7. After a game is approved players see a visual indicator on their profile that a new game has been approved and their Legacy Score and Stamps have updated.
+
+8. Add a Manager role to the user system separate from Admin and regular Player. Admins can assign the Manager role to any user through the admin panel. Managers can access /track-game and submit games for any team in any league.
+
+9. Make sure the stat tracking interface matches the prototype visually — dark theme, Barlow Condensed font, orange accents, colored stat buttons with accent bars, polished edit modal with slide up animation.
+
+Please push all changes to GitHub when complete.”
+

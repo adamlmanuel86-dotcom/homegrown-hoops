@@ -259,14 +259,17 @@ export const ListGamesQueryParams = zod.object({
 export const ListGamesResponseItem = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number(),
+  awayTeamId: zod.number().optional(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
   season: zod.string(),
   location: zod.string().nullish(),
-  status: zod.enum(["scheduled", "in_progress", "final"]),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
   notes: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
+  pendingNote: zod.string().nullish(),
+  submittedBy: zod.string().nullish(),
   externalLinks: zod
     .array(
       zod.object({
@@ -288,14 +291,15 @@ export const ListGamesResponse = zod.array(ListGamesResponseItem);
  */
 export const CreateGameBody = zod.object({
   homeTeamId: zod.number(),
-  awayTeamId: zod.number(),
+  awayTeamId: zod.number().optional(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
   season: zod.string(),
   location: zod.string().nullish(),
-  status: zod.enum(["scheduled", "in_progress", "final"]),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
   notes: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
   externalLinks: zod
     .array(
       zod.object({
@@ -320,14 +324,17 @@ export const GetGameParams = zod.object({
 export const GetGameResponse = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number(),
+  awayTeamId: zod.number().optional(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
   season: zod.string(),
   location: zod.string().nullish(),
-  status: zod.enum(["scheduled", "in_progress", "final"]),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
   notes: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
+  pendingNote: zod.string().nullish(),
+  submittedBy: zod.string().nullish(),
   externalLinks: zod
     .array(
       zod.object({
@@ -356,7 +363,7 @@ export const UpdateGameBody = zod.object({
   gameDate: zod.string().optional(),
   season: zod.string().optional(),
   location: zod.string().nullish(),
-  status: zod.enum(["scheduled", "in_progress", "final"]).optional(),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]).optional(),
   notes: zod.string().nullish(),
   externalLinks: zod
     .array(
@@ -375,14 +382,17 @@ export const UpdateGameBody = zod.object({
 export const UpdateGameResponse = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number(),
+  awayTeamId: zod.number().optional(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
   season: zod.string(),
   location: zod.string().nullish(),
-  status: zod.enum(["scheduled", "in_progress", "final"]),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
   notes: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
+  pendingNote: zod.string().nullish(),
+  submittedBy: zod.string().nullish(),
   externalLinks: zod
     .array(
       zod.object({
@@ -554,14 +564,17 @@ export const GetStatsSummaryResponse = zod.object({
     zod.object({
       id: zod.number(),
       homeTeamId: zod.number(),
-      awayTeamId: zod.number(),
+      awayTeamId: zod.number().optional(),
       homeScore: zod.number().nullish(),
       awayScore: zod.number().nullish(),
       gameDate: zod.string(),
       season: zod.string(),
       location: zod.string().nullish(),
-      status: zod.enum(["scheduled", "in_progress", "final"]),
+      status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
       notes: zod.string().nullish(),
+      opponentName: zod.string().nullish(),
+      pendingNote: zod.string().nullish(),
+      submittedBy: zod.string().nullish(),
       externalLinks: zod
         .array(
           zod.object({
@@ -587,7 +600,7 @@ export const ListAdminUsersResponseItem = zod.object({
   clerkUserId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   isAdmin: zod.boolean(),
   createdAt: zod.string(),
 });
@@ -601,7 +614,7 @@ export const UpdateUserRoleParams = zod.object({
 });
 
 export const UpdateUserRoleBody = zod.object({
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
 });
 
 export const UpdateUserRoleResponse = zod.object({
@@ -609,8 +622,159 @@ export const UpdateUserRoleResponse = zod.object({
   clerkUserId: zod.string(),
   firstName: zod.string(),
   lastName: zod.string(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   isAdmin: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.
+ */
+export const SubmitTrackGameBody = zod.object({
+  homeTeamId: zod.number(),
+  awayTeamId: zod.number().nullish(),
+  opponentName: zod.string().nullish(),
+  homeScore: zod.number(),
+  awayScore: zod.number(),
+  gameDate: zod.string(),
+  season: zod.string(),
+  location: zod.string().nullish(),
+  playerStats: zod.array(
+    zod.object({
+      playerId: zod.number().nullish(),
+      playerName: zod.string(),
+      teamId: zod.number(),
+      points: zod.number(),
+      rebounds: zod.number(),
+      assists: zod.number(),
+      steals: zod.number().optional(),
+      blocks: zod.number().optional(),
+      turnovers: zod.number().optional(),
+      fieldGoalsMade: zod.number().optional(),
+      fieldGoalsAttempted: zod.number().optional(),
+      threePointersMade: zod.number().optional(),
+      threePointersAttempted: zod.number().optional(),
+      freeThrowsMade: zod.number().optional(),
+      freeThrowsAttempted: zod.number().optional(),
+    }),
+  ),
+});
+
+/**
+ * @summary List all pending games with player stats (admin only)
+ */
+export const ListPendingGamesResponseItem = zod.object({
+  id: zod.number(),
+  homeTeamId: zod.number(),
+  awayTeamId: zod.number().nullish(),
+  homeTeamName: zod.string().nullish(),
+  awayTeamName: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
+  homeScore: zod.number().nullish(),
+  awayScore: zod.number().nullish(),
+  gameDate: zod.string(),
+  season: zod.string(),
+  location: zod.string().nullish(),
+  pendingNote: zod.string().nullish(),
+  submittedBy: zod.string().nullish(),
+  submittedByName: zod.string().nullish(),
+  createdAt: zod.string(),
+  playerStats: zod.array(
+    zod.object({
+      id: zod.number(),
+      playerId: zod.number(),
+      playerFirstName: zod.string().nullish(),
+      playerLastName: zod.string().nullish(),
+      points: zod.number().nullish(),
+      rebounds: zod.number().nullish(),
+      assists: zod.number().nullish(),
+      steals: zod.number().nullish(),
+      blocks: zod.number().nullish(),
+      turnovers: zod.number().nullish(),
+      fieldGoalsMade: zod.number().optional(),
+      fieldGoalsAttempted: zod.number().optional(),
+      threePointersMade: zod.number().nullish(),
+      threePointersAttempted: zod.number().optional(),
+      freeThrowsMade: zod.number().optional(),
+      freeThrowsAttempted: zod.number().optional(),
+    }),
+  ),
+});
+export const ListPendingGamesResponse = zod.array(ListPendingGamesResponseItem);
+
+/**
+ * @summary Approve a pending game (marks final, triggers recognition)
+ */
+export const ApprovePendingGameParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ApprovePendingGameResponse = zod.object({
+  id: zod.number(),
+  homeTeamId: zod.number(),
+  awayTeamId: zod.number().optional(),
+  homeScore: zod.number().nullish(),
+  awayScore: zod.number().nullish(),
+  gameDate: zod.string(),
+  season: zod.string(),
+  location: zod.string().nullish(),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
+  notes: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
+  pendingNote: zod.string().nullish(),
+  submittedBy: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .describe("Ordered list of external video links for this game."),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Reject a pending game with a note
+ */
+export const RejectPendingGameParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RejectPendingGameBody = zod.object({
+  note: zod.string(),
+});
+
+export const RejectPendingGameResponse = zod.object({
+  id: zod.number(),
+  homeTeamId: zod.number(),
+  awayTeamId: zod.number().optional(),
+  homeScore: zod.number().nullish(),
+  awayScore: zod.number().nullish(),
+  gameDate: zod.string(),
+  season: zod.string(),
+  location: zod.string().nullish(),
+  status: zod.enum(["scheduled", "in_progress", "final", "pending"]),
+  notes: zod.string().nullish(),
+  opponentName: zod.string().nullish(),
+  pendingNote: zod.string().nullish(),
+  submittedBy: zod.string().nullish(),
+  externalLinks: zod
+    .array(
+      zod.object({
+        label: zod
+          .string()
+          .describe(
+            "Human-readable label for this link, e.g. 'First Half' or 'Full Game'.",
+          ),
+        url: zod.string().describe("Full URL to the external video."),
+      }),
+    )
+    .describe("Ordered list of external video links for this game."),
   createdAt: zod.string(),
 });
 
@@ -629,7 +793,7 @@ export const ListProfilesResponseItem = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -733,7 +897,7 @@ export const GetMyProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -859,7 +1023,7 @@ export const UpdateMyProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -966,7 +1130,7 @@ export const GetProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1078,7 +1242,7 @@ export const UpdateProfileResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({
@@ -1280,7 +1444,7 @@ export const SaveAvatarConfigResponse = zod.object({
   teamId: zod.number().nullish(),
   verified: zod.boolean(),
   isAdmin: zod.boolean(),
-  role: zod.enum(["admin", "coach", "player"]),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
   avatarUrl: zod.string().nullish(),
   avatarConfig: zod
     .object({

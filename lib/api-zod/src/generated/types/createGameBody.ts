@@ -10,7 +10,7 @@ import type { ExternalLink } from "./externalLink";
 
 export interface CreateGameBody {
   homeTeamId: number;
-  awayTeamId: number;
+  awayTeamId?: number;
   /** @nullable */
   homeScore?: number | null;
   /** @nullable */
@@ -22,5 +22,7 @@ export interface CreateGameBody {
   status: CreateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
   externalLinks?: ExternalLink[];
 }

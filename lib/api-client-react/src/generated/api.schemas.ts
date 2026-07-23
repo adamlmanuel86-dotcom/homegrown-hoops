@@ -152,6 +152,7 @@ export const GameStatus = {
   scheduled: "scheduled",
   in_progress: "in_progress",
   final: "final",
+  pending: "pending",
 } as const;
 
 export interface ExternalLink {
@@ -164,7 +165,7 @@ export interface ExternalLink {
 export interface Game {
   id: number;
   homeTeamId: number;
-  awayTeamId: number;
+  awayTeamId?: number;
   /** @nullable */
   homeScore?: number | null;
   /** @nullable */
@@ -176,6 +177,12 @@ export interface Game {
   status: GameStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  pendingNote?: string | null;
+  /** @nullable */
+  submittedBy?: string | null;
   /** Ordered list of external video links for this game. */
   externalLinks: ExternalLink[];
   createdAt: string;
@@ -188,11 +195,12 @@ export const CreateGameBodyStatus = {
   scheduled: "scheduled",
   in_progress: "in_progress",
   final: "final",
+  pending: "pending",
 } as const;
 
 export interface CreateGameBody {
   homeTeamId: number;
-  awayTeamId: number;
+  awayTeamId?: number;
   /** @nullable */
   homeScore?: number | null;
   /** @nullable */
@@ -204,6 +212,8 @@ export interface CreateGameBody {
   status: CreateGameBodyStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
   externalLinks?: ExternalLink[];
 }
 
@@ -214,6 +224,7 @@ export const UpdateGameBodyStatus = {
   scheduled: "scheduled",
   in_progress: "in_progress",
   final: "final",
+  pending: "pending",
 } as const;
 
 export interface UpdateGameBody {
@@ -299,6 +310,7 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const UserRole = {
   admin: "admin",
+  manager: "manager",
   coach: "coach",
   player: "player",
 } as const;
@@ -582,6 +594,101 @@ export interface MyArcadeStats {
   fastBreak: ArcadeGameStats;
   whoYaGot: ArcadeGameStats;
   shotClock: ArcadeGameStats;
+}
+
+export interface SubmitPlayerStatRow {
+  /** @nullable */
+  playerId?: number | null;
+  playerName: string;
+  teamId: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals?: number;
+  blocks?: number;
+  turnovers?: number;
+  fieldGoalsMade?: number;
+  fieldGoalsAttempted?: number;
+  threePointersMade?: number;
+  threePointersAttempted?: number;
+  freeThrowsMade?: number;
+  freeThrowsAttempted?: number;
+}
+
+export interface SubmitTrackGameBody {
+  homeTeamId: number;
+  /** @nullable */
+  awayTeamId?: number | null;
+  /** @nullable */
+  opponentName?: string | null;
+  homeScore: number;
+  awayScore: number;
+  gameDate: string;
+  season: string;
+  /** @nullable */
+  location?: string | null;
+  playerStats: SubmitPlayerStatRow[];
+}
+
+export interface PendingGamePlayerStat {
+  id: number;
+  playerId: number;
+  /** @nullable */
+  playerFirstName?: string | null;
+  /** @nullable */
+  playerLastName?: string | null;
+  /** @nullable */
+  points?: number | null;
+  /** @nullable */
+  rebounds?: number | null;
+  /** @nullable */
+  assists?: number | null;
+  /** @nullable */
+  steals?: number | null;
+  /** @nullable */
+  blocks?: number | null;
+  /** @nullable */
+  turnovers?: number | null;
+  fieldGoalsMade?: number;
+  fieldGoalsAttempted?: number;
+  /** @nullable */
+  threePointersMade?: number | null;
+  threePointersAttempted?: number;
+  freeThrowsMade?: number;
+  freeThrowsAttempted?: number;
+}
+
+export interface PendingGameReview {
+  id: number;
+  homeTeamId: number;
+  /** @nullable */
+  awayTeamId?: number | null;
+  /** @nullable */
+  homeTeamName?: string | null;
+  /** @nullable */
+  awayTeamName?: string | null;
+  /** @nullable */
+  opponentName?: string | null;
+  /** @nullable */
+  homeScore?: number | null;
+  /** @nullable */
+  awayScore?: number | null;
+  gameDate: string;
+  season: string;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  pendingNote?: string | null;
+  /** @nullable */
+  submittedBy?: string | null;
+  /** @nullable */
+  submittedByName?: string | null;
+  createdAt: string;
+  playerStats: PendingGamePlayerStat[];
+}
+
+export interface RejectPendingGameBody {
+  note: string;
 }
 
 export type ListPlayersParams = {

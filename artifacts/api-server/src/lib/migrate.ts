@@ -34,6 +34,8 @@ export async function runMigrations(): Promise<void> {
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$;
     `);
+    // Add 'pending' value if not already present (cannot run inside a transaction block)
+    await client.query(`ALTER TYPE game_status ADD VALUE IF NOT EXISTS 'pending';`);
     console.log("[migrate] game_status enum OK");
 
     // ── teams ────────────────────────────────────────────────────────────────
@@ -212,6 +214,21 @@ export async function runMigrations(): Promise<void> {
     await addCol("user_profiles", "avatar_config",     "jsonb DEFAULT NULL");
     await addCol("games",            "external_links",    "json NOT NULL DEFAULT '[]'");
     await addCol("games",            "notes",             "text");
+    await addCol("games",            "opponent_name",     "text");
+    await addCol("games",            "pending_note",      "text");
+    await addCol("games",            "submitted_by",      "text");
+    // Make away_team_id nullable for my-team-only tracking mode
+    await client.query(`
+      DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema='public' AND table_name='games'
+            AND column_name='away_team_id' AND is_nullable='NO'
+        ) THEN
+          ALTER TABLE games ALTER COLUMN away_team_id DROP NOT NULL;
+        END IF;
+      END $$;
+    `);
     await addCol("teams",            "current_season",    "text");
     await addCol("arcade_sessions",  "fgm",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "fga",               "integer NOT NULL DEFAULT 0");

@@ -12,4 +12,5 @@ export const GameStatus = {
   scheduled: "scheduled",
   in_progress: "in_progress",
   final: "final",
+  pending: "pending",
 } as const;

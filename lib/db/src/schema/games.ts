@@ -3,14 +3,14 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { teamsTable } from "./teams";
 
-export const gameStatusEnum = pgEnum("game_status", ["scheduled", "in_progress", "final"]);
+export const gameStatusEnum = pgEnum("game_status", ["scheduled", "in_progress", "final", "pending"]);
 
 export type ExternalLink = { label: string; url: string };
 
 export const gamesTable = pgTable("games", {
   id: serial("id").primaryKey(),
   homeTeamId: integer("home_team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
-  awayTeamId: integer("away_team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
+  awayTeamId: integer("away_team_id").references(() => teamsTable.id, { onDelete: "cascade" }),
   homeScore: integer("home_score"),
   awayScore: integer("away_score"),
   gameDate: text("game_date").notNull(),
@@ -18,6 +18,9 @@ export const gamesTable = pgTable("games", {
   location: text("location"),
   status: gameStatusEnum("status").notNull().default("scheduled"),
   notes: text("notes"),
+  opponentName: text("opponent_name"),
+  pendingNote: text("pending_note"),
+  submittedBy: text("submitted_by"),
   externalLinks: json("external_links").$type<ExternalLink[]>().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

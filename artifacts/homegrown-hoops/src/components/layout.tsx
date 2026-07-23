@@ -25,6 +25,7 @@ export function Layout({ children }: { children: ReactNode }) {
   });
 
   const isAdmin = myProfile?.role === "admin";
+  const isManager = myProfile?.role === "manager" || isAdmin;
 
   const links = [
     { href: "/", label: "Home", icon: Home },
@@ -94,17 +95,27 @@ export function Layout({ children }: { children: ReactNode }) {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52 bg-secondary border-white/10 text-white">
-                    {isAdmin && (
+                    {isManager && (
                       <>
                         <DropdownMenuItem asChild>
                           <Link
-                            href="/admin"
-                            className="flex items-center gap-2 cursor-pointer text-primary font-bold focus:bg-primary/10 focus:text-primary"
+                            href="/track-game"
+                            className="flex items-center gap-2 cursor-pointer text-orange-400 font-bold focus:bg-primary/10 focus:text-primary"
                           >
-                            <Shield className="h-4 w-4" />
-                            Admin Panel
+                            📋 Track Game
                           </Link>
                         </DropdownMenuItem>
+                        {isAdmin && (
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href="/admin"
+                              className="flex items-center gap-2 cursor-pointer text-primary font-bold focus:bg-primary/10 focus:text-primary"
+                            >
+                              <Shield className="h-4 w-4" />
+                              Admin Panel
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator className="bg-white/10" />
                       </>
                     )}
@@ -191,6 +202,15 @@ export function Layout({ children }: { children: ReactNode }) {
 
               {/* ── Signed-in ── */}
               <Show when="signed-in">
+                {isManager && (
+                  <Link
+                    href="/track-game"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-orange-400 bg-orange-400/10 border border-orange-400/20 hover:bg-orange-400/20 transition-colors"
+                  >
+                    📋 Track Game
+                  </Link>
+                )}
                 {isAdmin && (
                   <Link
                     href="/admin"

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ne, isNull, or, inArray } from "drizzle-orm";
+import { eq, and, ne, isNull, or, inArray, desc } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable, teamsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
@@ -50,7 +50,7 @@ router.get("/admin/users", async (req, res): Promise<void> => {
   res.json(serializeRows(users));
 });
 
-const VALID_ROLES = ["admin", "coach", "player"] as const;
+const VALID_ROLES = ["admin", "manager", "coach", "player"] as const;
 type ValidRole = typeof VALID_ROLES[number];
 
 router.patch("/admin/users/:clerkUserId/role", async (req, res): Promise<void> => {
@@ -440,6 +440,180 @@ router.post("/admin/sync-all-players", async (req, res): Promise<void> => {
   }
 
   res.json({ success: true, removed, upserted });
+});
+
+// ── Pending Game Review Queue ─────────────────────────────────────────────────
+
+router.get("/admin/pending-games", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const pendingGames = await db
+    .select()
+    .from(gamesTable)
+    .where(eq(gamesTable.status, "pending"))
+    .orderBy(desc(gamesTable.createdAt));
+
+  const results = await Promise.all(
+    pendingGames.map(async (game) => {
+      const [homeTeam] = game.homeTeamId
+        ? await db.select({ name: teamsTable.name }).from(teamsTable).where(eq(teamsTable.id, game.homeTeamId))
+        : [];
+      const [awayTeam] = game.awayTeamId
+        ? await db.select({ name: teamsTable.name }).from(teamsTable).where(eq(teamsTable.id, game.awayTeamId))
+        : [];
+      const [submitter] = game.submittedBy
+        ? await db
+            .select({ firstName: userProfilesTable.firstName, lastName: userProfilesTable.lastName })
+            .from(userProfilesTable)
+            .where(eq(userProfilesTable.clerkUserId, game.submittedBy))
+        : [];
+
+      const playerStats = await db
+        .select({
+          id: gamePlayerStatsTable.id,
+          playerId: gamePlayerStatsTable.playerId,
+          playerFirstName: playersTable.firstName,
+          playerLastName: playersTable.lastName,
+          points: gamePlayerStatsTable.points,
+          rebounds: gamePlayerStatsTable.rebounds,
+          assists: gamePlayerStatsTable.assists,
+          steals: gamePlayerStatsTable.steals,
+          blocks: gamePlayerStatsTable.blocks,
+          turnovers: gamePlayerStatsTable.turnovers,
+          fieldGoalsMade: gamePlayerStatsTable.fieldGoalsMade,
+          fieldGoalsAttempted: gamePlayerStatsTable.fieldGoalsAttempted,
+          threePointersMade: gamePlayerStatsTable.threesMade,
+          threePointersAttempted: gamePlayerStatsTable.threesAttempted,
+          freeThrowsMade: gamePlayerStatsTable.freeThrowsMade,
+          freeThrowsAttempted: gamePlayerStatsTable.freeThrowsAttempted,
+        })
+        .from(gamePlayerStatsTable)
+        .leftJoin(playersTable, eq(gamePlayerStatsTable.playerId, playersTable.id))
+        .where(eq(gamePlayerStatsTable.gameId, game.id));
+
+      const createdAtStr =
+        game.createdAt instanceof Date
+          ? game.createdAt.toISOString()
+          : String(game.createdAt);
+
+      return {
+        id: game.id,
+        homeTeamId: game.homeTeamId,
+        awayTeamId: game.awayTeamId ?? null,
+        homeTeamName: homeTeam?.name ?? null,
+        awayTeamName: awayTeam?.name ?? null,
+        opponentName: game.opponentName ?? null,
+        homeScore: game.homeScore ?? null,
+        awayScore: game.awayScore ?? null,
+        gameDate: game.gameDate,
+        season: game.season,
+        location: game.location ?? null,
+        pendingNote: game.pendingNote ?? null,
+        submittedBy: game.submittedBy ?? null,
+        submittedByName: submitter
+          ? `${submitter.firstName} ${submitter.lastName}`
+          : null,
+        createdAt: createdAtStr,
+        playerStats,
+      };
+    })
+  );
+
+  res.json(results);
+});
+
+router.post("/admin/pending-games/:id/approve", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const gameId = parseInt(req.params.id);
+  if (isNaN(gameId)) {
+    res.status(400).json({ error: "Invalid game id" });
+    return;
+  }
+
+  const [game] = await db.select().from(gamesTable).where(eq(gamesTable.id, gameId));
+  if (!game) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+  if (game.status !== "pending") {
+    res.status(400).json({ error: "Game is not in pending status" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(gamesTable)
+    .set({ status: "final" })
+    .where(eq(gamesTable.id, gameId))
+    .returning();
+
+  // Update team win/loss records
+  if (updated.homeScore != null && updated.awayScore != null) {
+    const allGames = await db.select().from(gamesTable).where(eq(gamesTable.status, "final"));
+    const calcRecord = (teamId: number) => {
+      let wins = 0, losses = 0;
+      for (const g of allGames) {
+        const hs = g.homeScore ?? 0, as_ = g.awayScore ?? 0;
+        if (g.homeTeamId === teamId) { if (hs > as_) wins++; else losses++; }
+        else if (g.awayTeamId === teamId) { if (as_ > hs) wins++; else losses++; }
+      }
+      return { wins, losses };
+    };
+    if (updated.homeTeamId) await db.update(teamsTable).set(calcRecord(updated.homeTeamId)).where(eq(teamsTable.id, updated.homeTeamId));
+    if (updated.awayTeamId) await db.update(teamsTable).set(calcRecord(updated.awayTeamId)).where(eq(teamsTable.id, updated.awayTeamId));
+  }
+
+  // Trigger recognition for all players in this game
+  const statRows = await db
+    .select({ playerId: gamePlayerStatsTable.playerId })
+    .from(gamePlayerStatsTable)
+    .where(eq(gamePlayerStatsTable.gameId, gameId));
+  const playerIds = statRows.map((r) => r.playerId);
+
+  if (playerIds.length > 0) {
+    try {
+      const { runFullRecognition } = await import("../recognition");
+      await runFullRecognition(gameId, playerIds);
+    } catch (err) {
+      console.error("[admin/approve] Recognition error (non-fatal):", err);
+    }
+  }
+
+  res.json(serializeRow(updated));
+});
+
+router.post("/admin/pending-games/:id/reject", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const gameId = parseInt(req.params.id);
+  if (isNaN(gameId)) {
+    res.status(400).json({ error: "Invalid game id" });
+    return;
+  }
+
+  const { note } = req.body as { note?: string };
+  if (!note) {
+    res.status(400).json({ error: "Rejection note is required" });
+    return;
+  }
+
+  const [game] = await db.select().from(gamesTable).where(eq(gamesTable.id, gameId));
+  if (!game) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+  if (game.status !== "pending") {
+    res.status(400).json({ error: "Game is not in pending status" });
+    return;
+  }
+
+  // Delete game (cascades player stats) and return the note for UI feedback
+  await db.delete(gamesTable).where(eq(gamesTable.id, gameId));
+
+  res.json({ success: true, note, deletedGameId: gameId });
 });
 
 export default router;

@@ -11,6 +11,7 @@ import storageRouter from "./storage";
 import cloudinaryRouter from "./cloudinary";
 import isoBallRouter from "./iso-ball";
 import arcadeRouter from "./arcade";
+import trackGameRouter from "./trackGame";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(storageRouter);
 router.use(cloudinaryRouter);
 router.use(isoBallRouter);
 router.use(arcadeRouter);
+router.use(trackGameRouter);
 
 export default router;
