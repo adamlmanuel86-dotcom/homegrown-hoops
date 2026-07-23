@@ -235,6 +235,8 @@ export async function runMigrations(): Promise<void> {
     await addCol("arcade_sessions",  "tpm",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "tpa",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "dunks",             "integer NOT NULL DEFAULT 0");
+    await addCol("user_profiles",    "is_pending",        "boolean NOT NULL DEFAULT FALSE");
+    await addCol("user_profiles",    "requested_role",    "text DEFAULT NULL");
 
     // ── Jersey stubs (unregistered player tracking) ───────────────────────────
     await addCol("players", "is_jersey_stub", "boolean NOT NULL DEFAULT FALSE");
