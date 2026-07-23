@@ -199,11 +199,11 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
   const isFirstUser = Number(total) === 0;
   const shouldBeAdmin = protected_ || isFirstUser;
 
-  const role = shouldBeAdmin ? "admin" : "player";
-
   // Extract requestedRole before spreading into DB insert
   const { requestedRole: reqRole, ...profileData } = parsed.data as typeof parsed.data & { requestedRole?: string | null };
-  const isPending = !shouldBeAdmin && (reqRole === "parent" || reqRole === "manager");
+  // Only managers need admin approval; parents get immediate access
+  const isPending = !shouldBeAdmin && reqRole === "manager";
+  const role = shouldBeAdmin ? "admin" : (reqRole === "parent" ? "parent" : "player");
 
   const [profile] = await db
     .insert(userProfilesTable)

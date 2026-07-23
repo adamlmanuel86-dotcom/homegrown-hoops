@@ -207,6 +207,12 @@ export function OnboardingPage() {
           graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
           avatarUrl: finalAvatarUrl || null,
           number: form.jerseyNumber || null,
+          ...(form.accountType === "parent"
+            ? {
+                requestedRole: "parent" as const,
+                ...(pendingBallers.length > 0 ? { myBallers: pendingBallers } : {}),
+              }
+            : {}),
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -1253,24 +1259,21 @@ export function OnboardingPage() {
           )}
           <button
             type="button"
-            onClick={() => { void handlePendingSubmit(); }}
-            disabled={isSubmitting}
+            onClick={() => setStep("photo")}
             style={{
               width: "100%", padding: "15px 20px", borderRadius: 14,
               background: "linear-gradient(135deg, #F97316, #B45309)",
               border: "none", color: "#fff", fontSize: 15, fontWeight: 700,
               letterSpacing: "0.03em", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              opacity: isSubmitting ? 0.7 : 1,
             }}
           >
-            {isSubmitting ? "Submitting…" : pendingBallers.length > 0 ? "Request Access →" : "Request Access →"}
-            {!isSubmitting && <ArrowRight style={{ width: 18, height: 18 }} />}
+            Next
+            <ArrowRight style={{ width: 18, height: 18 }} />
           </button>
           <button
             type="button"
-            onClick={() => { setPendingBallers([]); void handlePendingSubmit(); }}
-            disabled={isSubmitting}
+            onClick={() => { setPendingBallers([]); setStep("photo"); }}
             style={{
               width: "100%", padding: "10px 20px", borderRadius: 14,
               background: "transparent", border: "1px solid rgba(255,255,255,0.12)",
@@ -1545,7 +1548,7 @@ export function OnboardingPage() {
           {step === "photo" && (
             <div className="space-y-5">
               <div>
-                <p className="label-upper text-xs text-primary mb-2">Step 6 of 6</p>
+                <p className="label-upper text-xs text-primary mb-2">{form.accountType === "parent" ? "Step 2 of 2" : "Step 6 of 6"}</p>
                 <h2 className="font-display text-4xl text-white leading-tight">
                   ADD YOUR LOOK
                 </h2>
@@ -1599,15 +1602,17 @@ export function OnboardingPage() {
               )}
 
               <div style={{ display: "flex", gap: 12 }}>
-                {/* SKIP button */}
+                {/* Back / Skip button */}
                 <button
                   type="button"
                   onTouchEnd={(e) => {
-                    console.log("[HH] Skip onTouchEnd fired, isSubmitting:", isSubmittingRef.current);
                     e.preventDefault();
+                    if (form.accountType === "parent") { setStep("ballers"); return; }
+                    console.log("[HH] Skip onTouchEnd fired, isSubmitting:", isSubmittingRef.current);
                     advanceFromPhoto(true);
                   }}
                   onClick={() => {
+                    if (form.accountType === "parent") { setStep("ballers"); return; }
                     console.log("[HH] Skip onClick fired, isSubmitting:", isSubmittingRef.current);
                     advanceFromPhoto(true);
                   }}
@@ -1627,7 +1632,7 @@ export function OnboardingPage() {
                     WebkitUserSelect: "none",
                   }}
                 >
-                  {isSubmitting ? "…" : "Skip"}
+                  {form.accountType === "parent" ? "← Back" : (isSubmitting ? "…" : "Skip")}
                 </button>
 
                 {/* CREATE MY CARD button — no btn-primary, pure inline styles */}
