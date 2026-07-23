@@ -576,7 +576,7 @@ export function MyProfilePage() {
             const tpPct = fb && fb.totalTpa && fb.totalTpa > 0
               ? Math.round((fb.totalTpm! / fb.totalTpa) * 100) : null;
             return (
-              <Link href="/fast-break">
+              <Link href="/arcade/fast-break">
                 <div
                   className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
                   style={{ background: "linear-gradient(135deg, #0f1a10 0%, #1a2e1a 100%)" }}
@@ -674,7 +674,7 @@ export function MyProfilePage() {
               ? Math.round((wygScore / Math.max(wygPlayed * 3, 1)) * 100)
               : 0;
             return (
-              <Link href="/who-ya-got">
+              <Link href="/arcade/who-ya-got">
                 <div
                   className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
                   style={{ background: "linear-gradient(135deg, #0e0a1f 0%, #1a1040 100%)" }}
@@ -754,7 +754,7 @@ export function MyProfilePage() {
           {(() => {
             const sc = arcadeStats?.shotClock ?? null;
             return (
-              <Link href="/shot-clock">
+              <Link href="/arcade/shot-clock">
                 <div
                   className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
                   style={{ background: "linear-gradient(135deg, #1a0808 0%, #2a1010 100%)" }}
