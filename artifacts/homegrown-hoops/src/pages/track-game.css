@@ -1,0 +1,659 @@
+/* HGH Live Tracker — scoped under .hgh-tracker */
+
+.hgh-tracker {
+  --bg: #070c14;
+  --surface: #0d1520;
+  --surface2: #111f30;
+  --surface3: #162540;
+  --border: #1a2d42;
+  --border2: #243d56;
+  --orange: #f97316;
+  --orange-glow: rgba(249,115,22,0.15);
+  --text: #e8f0fc;
+  --text2: #94afc9;
+  --muted: #4a6480;
+  --green: #22c55e;
+  --red: #ef4444;
+  --gold: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hgh-tracker *, .hgh-tracker *::before, .hgh-tracker *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── SETUP ── */
+.hgh-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px 20px 32px;
+  min-height: 100vh;
+}
+
+.hgh-tracker .logo { display: flex; align-items: center; gap: 12px; }
+.hgh-tracker .logo-ball {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 18px rgba(249,115,22,0.4);
+  position: relative; overflow: hidden; flex-shrink: 0;
+}
+.hgh-tracker .logo-ball::before {
+  content: '';
+  position: absolute;
+  width: 46px; height: 46px;
+  border: 2px solid rgba(0,0,0,0.25);
+  border-radius: 50%;
+  top: -8px; left: 50%; transform: translateX(-50%);
+}
+.hgh-tracker .logo-ball::after {
+  content: '';
+  position: absolute;
+  width: 2px; height: 48px;
+  background: rgba(0,0,0,0.2);
+  top: -4px; left: 50%; transform: translateX(-50%);
+}
+.hgh-tracker .logo-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.1;
+}
+.hgh-tracker .logo-text span { color: var(--orange); display: block; }
+
+.hgh-tracker .setup-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 32px; font-weight: 900; letter-spacing: 0.02em; line-height: 1;
+}
+.hgh-tracker .setup-title em { color: var(--orange); font-style: normal; }
+
+.hgh-tracker label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--muted);
+  display: block; margin-bottom: 6px;
+}
+
+.hgh-tracker input, .hgh-tracker select {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px; font-weight: 500;
+  padding: 14px 16px;
+  width: 100%; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hgh-tracker input:focus, .hgh-tracker select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px var(--orange-glow);
+}
+.hgh-tracker select option { background: #0d1520; }
+
+.hgh-tracker .vs-row {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: end; gap: 12px;
+}
+.hgh-tracker .vs-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 800; color: var(--muted);
+  text-align: center; padding-bottom: 14px; letter-spacing: 0.1em;
+}
+
+.hgh-tracker .divider { height: 1px; background: var(--border); }
+
+.hgh-tracker .mode-toggle {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--surface2); border-radius: 12px;
+  border: 1.5px solid var(--border); overflow: hidden;
+}
+.hgh-tracker .mode-opt {
+  padding: 13px 8px; text-align: center; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--muted);
+  transition: all 0.15s; line-height: 1.3;
+}
+.hgh-tracker .mode-opt span {
+  display: block; font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-top: 2px; opacity: 0.7;
+}
+.hgh-tracker .mode-opt.active { background: var(--orange-glow); color: var(--orange); }
+.hgh-tracker .mode-opt:first-child { border-right: 1px solid var(--border); }
+
+.hgh-tracker .section-head { display: flex; align-items: center; justify-content: space-between; }
+.hgh-tracker .section-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--orange);
+}
+.hgh-tracker .section-label.away { color: var(--text2); }
+
+.hgh-tracker .add-btn {
+  background: transparent;
+  border: 1.5px dashed var(--border2);
+  border-radius: 12px; color: var(--muted);
+  font-size: 13px; font-weight: 600;
+  padding: 11px 16px; width: 100%; cursor: pointer;
+  text-align: center; margin-top: 8px; transition: all 0.15s;
+}
+.hgh-tracker .add-btn:active { border-color: var(--orange); color: var(--orange); }
+
+.hgh-tracker .player-row {
+  display: grid; grid-template-columns: 1fr 72px auto;
+  gap: 8px; align-items: center; margin-top: 8px;
+}
+.hgh-tracker .player-row input { padding: 11px 14px; font-size: 14px; }
+.hgh-tracker .pos-select {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text2);
+  font-size: 13px; font-weight: 600;
+  padding: 11px 6px; outline: none; width: 100%;
+}
+.hgh-tracker .remove-btn {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 20px; padding: 4px 8px; cursor: pointer; line-height: 1;
+}
+
+.hgh-tracker .start-btn {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: none; border-radius: 14px; color: white;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 18px; width: 100%; cursor: pointer;
+  text-transform: uppercase; margin-top: auto;
+  box-shadow: 0 4px 24px rgba(249,115,22,0.35);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.hgh-tracker .start-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+/* ── TRACKER SCREEN ── */
+.hgh-tracker-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.hgh-tracker .tracker-header {
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(13,21,32,0.95) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.hgh-tracker .scoreboard {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.hgh-tracker .team-score { text-align: center; }
+.hgh-tracker .team-score-name {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hgh-tracker .team-score-pts {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 42px; font-weight: 900; line-height: 1; letter-spacing: -0.01em;
+}
+.hgh-tracker .team-score-pts.home {
+  color: var(--orange); text-shadow: 0 0 20px rgba(249,115,22,0.4);
+}
+.hgh-tracker .score-divider {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 700; color: var(--muted); text-align: center;
+}
+
+.hgh-tracker .header-controls {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hgh-tracker .period-btns { display: flex; gap: 5px; }
+.hgh-tracker .period-btn {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700;
+  padding: 5px 11px; cursor: pointer;
+  letter-spacing: 0.04em; transition: all 0.12s;
+}
+.hgh-tracker .period-btn.active {
+  border-color: var(--orange); color: var(--orange); background: var(--orange-glow);
+}
+
+.hgh-tracker .undo-btn {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--text2);
+  font-size: 12px; font-weight: 600;
+  padding: 5px 12px; cursor: pointer;
+  letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.12s;
+}
+.hgh-tracker .undo-btn:active { border-color: var(--orange); color: var(--orange); }
+
+.hgh-tracker .teams-tabs {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.hgh-tracker .team-tab {
+  padding: 13px 8px; text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hgh-tracker .team-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* OPPONENT BAR */
+.hgh-tracker .opp-bar {
+  background: var(--surface2); border-bottom: 1px solid var(--border);
+  padding: 10px 16px; display: none;
+}
+.hgh-tracker .opp-bar.visible { display: block; }
+.hgh-tracker .opp-bar-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px;
+}
+.hgh-tracker .opp-stat-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.hgh-tracker .opp-btn {
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 10px; cursor: pointer;
+  padding: 8px 12px; display: flex; align-items: center; gap: 6px;
+  transition: all 0.12s; flex: 1; min-width: 70px; justify-content: center;
+}
+.hgh-tracker .opp-btn:active {
+  border-color: var(--orange); background: var(--orange-glow); transform: scale(0.95);
+}
+.hgh-tracker .opp-btn-info { text-align: left; }
+.hgh-tracker .opp-btn-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 800; color: var(--text); line-height: 1;
+}
+.hgh-tracker .opp-btn-label {
+  font-size: 8px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--muted);
+}
+
+.hgh-tracker .opp-score-row {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.hgh-tracker .opp-score-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted);
+}
+.hgh-tracker .opp-score-btns { display: flex; gap: 6px; align-items: center; }
+.hgh-tracker .opp-score-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 900; color: var(--text2);
+  min-width: 32px; text-align: center;
+}
+.hgh-tracker .opp-score-btn {
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 8px; color: var(--text2); font-size: 14px; font-weight: 700;
+  width: 32px; height: 32px; cursor: pointer; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.hgh-tracker .opp-score-btn:active { border-color: var(--orange); color: var(--orange); }
+
+/* PLAYERS LIST */
+.hgh-tracker .players-list {
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  flex: 1; overflow-y: auto;
+}
+
+.hgh-tracker .player-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hgh-tracker .player-card.selected {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.2), 0 4px 16px rgba(249,115,22,0.1);
+}
+
+.hgh-tracker .player-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px; cursor: pointer;
+}
+.hgh-tracker .player-info { display: flex; align-items: center; gap: 10px; }
+.hgh-tracker .player-avatar {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--surface2), var(--surface3));
+  border: 1px solid var(--border2); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 800; color: var(--orange); flex-shrink: 0;
+}
+.hgh-tracker .player-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.hgh-tracker .player-pos-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--surface2);
+  border-radius: 4px; padding: 1px 5px; margin-top: 2px;
+}
+
+.hgh-tracker .player-mini-stats { display: flex; gap: 14px; }
+.hgh-tracker .mini-stat { text-align: center; }
+.hgh-tracker .mini-stat-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 800; line-height: 1;
+}
+.hgh-tracker .mini-stat-lbl {
+  font-size: 9px; color: var(--muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.hgh-tracker .stat-panel {
+  display: none; padding: 12px 12px 14px;
+  border-top: 1px solid var(--border); background: var(--surface2);
+}
+.hgh-tracker .stat-panel.open { display: block; }
+
+.hgh-tracker .stat-section-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--border2);
+  margin-bottom: 6px; margin-top: 10px;
+}
+.hgh-tracker .stat-section-title:first-child { margin-top: 0; }
+
+.hgh-tracker .stat-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px;
+}
+
+.hgh-tracker .stat-btn {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; cursor: pointer;
+  padding: 12px 4px 10px; text-align: center;
+  transition: transform 0.08s, border-color 0.08s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  position: relative; overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+}
+.hgh-tracker .stat-btn:active { transform: scale(0.9); border-color: var(--orange); }
+
+.hgh-tracker .stat-btn-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 24px; font-weight: 900; line-height: 1;
+}
+.hgh-tracker .stat-btn-label {
+  font-size: 8px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--muted); line-height: 1.2;
+}
+
+.hgh-tracker .stat-btn.pts .stat-btn-count { color: var(--orange); }
+.hgh-tracker .stat-btn.three .stat-btn-count { color: var(--gold); }
+.hgh-tracker .stat-btn.ft-make .stat-btn-count { color: var(--green); }
+.hgh-tracker .stat-btn.miss2 .stat-btn-count,
+.hgh-tracker .stat-btn.miss3 .stat-btn-count,
+.hgh-tracker .stat-btn.ft-miss .stat-btn-count { color: #334d66; }
+.hgh-tracker .stat-btn.reb .stat-btn-count { color: var(--blue); }
+.hgh-tracker .stat-btn.ast .stat-btn-count { color: var(--green); }
+.hgh-tracker .stat-btn.stl .stat-btn-count { color: var(--purple); }
+.hgh-tracker .stat-btn.blk .stat-btn-count { color: var(--cyan); }
+.hgh-tracker .stat-btn.to .stat-btn-count { color: var(--red); }
+.hgh-tracker .stat-btn.foul .stat-btn-count { color: var(--gold); }
+
+/* colored top accent bar per stat type */
+.hgh-tracker .stat-btn::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; opacity: 0.6;
+}
+.hgh-tracker .stat-btn.pts::after { background: var(--orange); }
+.hgh-tracker .stat-btn.three::after { background: var(--gold); }
+.hgh-tracker .stat-btn.ft-make::after { background: var(--green); }
+.hgh-tracker .stat-btn.miss2::after,
+.hgh-tracker .stat-btn.miss3::after,
+.hgh-tracker .stat-btn.ft-miss::after { background: var(--border2); }
+.hgh-tracker .stat-btn.reb::after { background: var(--blue); }
+.hgh-tracker .stat-btn.ast::after { background: var(--green); }
+.hgh-tracker .stat-btn.stl::after { background: var(--purple); }
+.hgh-tracker .stat-btn.blk::after { background: var(--cyan); }
+.hgh-tracker .stat-btn.to::after { background: var(--red); }
+.hgh-tracker .stat-btn.foul::after { background: var(--gold); }
+
+/* PERCENTAGE STRIP */
+.hgh-tracker .pct-strip {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.hgh-tracker .pct-item { text-align: center; padding: 4px 0; }
+.hgh-tracker .pct-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 900; line-height: 1;
+}
+.hgh-tracker .pct-val.good { color: var(--green); }
+.hgh-tracker .pct-val.ok { color: var(--gold); }
+.hgh-tracker .pct-val.bad { color: var(--red); }
+.hgh-tracker .pct-val.neutral { color: #334d66; }
+.hgh-tracker .pct-lbl {
+  font-size: 9px; color: var(--muted); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.hgh-tracker .pct-sub { font-size: 9px; color: #334d66; margin-top: 1px; }
+
+.hgh-tracker .edit-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: transparent; border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--muted);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 8px 12px; cursor: pointer; margin-top: 10px; width: 100%; transition: all 0.15s;
+}
+.hgh-tracker .edit-btn:active { border-color: var(--text2); color: var(--text2); }
+
+/* END GAME BAR */
+.hgh-tracker .end-game-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, transparent 0%, var(--bg) 30%);
+  z-index: 20;
+}
+.hgh-tracker .end-game-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none; border-radius: 14px; color: white;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 18px; width: 100%; cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 0 4px 24px rgba(34,197,94,0.35);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.hgh-tracker .end-game-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+/* ── SUMMARY ── */
+.hgh-summary {
+  display: flex; flex-direction: column;
+  gap: 18px; padding: 24px 16px 32px;
+  min-height: 100vh; overflow-y: auto;
+}
+
+.hgh-tracker .summary-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px; font-weight: 900; text-align: center;
+}
+.hgh-tracker .summary-title span { color: var(--green); }
+.hgh-tracker .summary-sub { font-size: 12px; color: var(--muted); text-align: center; }
+
+.hgh-tracker .final-score {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+  border: 1px solid var(--border2); border-radius: 18px; padding: 22px 16px;
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 8px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.hgh-tracker .final-team-name {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted); margin-bottom: 6px;
+}
+.hgh-tracker .final-pts {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: -0.02em;
+}
+.hgh-tracker .final-pts.home {
+  color: var(--orange); text-shadow: 0 0 30px rgba(249,115,22,0.5);
+}
+.hgh-tracker .final-divider {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; color: var(--muted); font-weight: 700;
+}
+
+/* BOX SCORE */
+.hgh-tracker .box-section { display: flex; flex-direction: column; gap: 8px; }
+.hgh-tracker .box-team-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--orange);
+}
+.hgh-tracker .box-team-label.away { color: var(--text2); }
+
+.hgh-tracker .box-table {
+  background: var(--surface); border-radius: 13px;
+  border: 1px solid var(--border); overflow: hidden;
+}
+.hgh-tracker .box-row {
+  display: grid; grid-template-columns: 1.5fr repeat(9, 1fr);
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  font-size: 11px; gap: 2px; align-items: center;
+}
+.hgh-tracker .box-row:last-child { border-bottom: none; }
+.hgh-tracker .box-row.header {
+  color: var(--muted); font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; background: var(--surface2);
+}
+.hgh-tracker .box-name {
+  font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hgh-tracker .box-val { text-align: center; font-weight: 600; }
+.hgh-tracker .box-val.pts {
+  color: var(--orange); font-weight: 800;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 13px;
+}
+.hgh-tracker .box-pct { text-align: center; font-size: 10px; color: var(--text2); font-weight: 600; }
+.hgh-tracker .box-pct.good { color: var(--green); }
+.hgh-tracker .box-pct.ok { color: var(--gold); }
+.hgh-tracker .box-pct.bad { color: var(--red); }
+
+.hgh-tracker .confirm-btn {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: none; border-radius: 14px; color: white;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 18px; width: 100%; cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 0 4px 24px rgba(249,115,22,0.35);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.hgh-tracker .confirm-btn:active { opacity: 0.85; transform: scale(0.98); }
+.hgh-tracker .confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* TOAST */
+.hgh-tracker .toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white; font-size: 13px; font-weight: 700;
+  padding: 11px 22px; border-radius: 24px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 300; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+  pointer-events: none;
+}
+.hgh-tracker .toast.show { transform: translateX(-50%) translateY(0); }
+
+/* EDIT MODAL */
+.hgh-tracker .modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 200;
+  align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.hgh-tracker .modal-overlay.open { display: flex; }
+.hgh-tracker .modal {
+  background: var(--surface);
+  border-top: 1px solid var(--border2);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-radius: 24px 24px 0 0;
+  padding: 0 0 40px;
+  width: 100%; max-width: 480px;
+  animation: hghSlideUp 0.28s cubic-bezier(0.34, 1.1, 0.64, 1);
+  max-height: 90vh; overflow-y: auto;
+}
+@keyframes hghSlideUp { from { transform: translateY(100%); } }
+
+.hgh-tracker .modal-handle {
+  width: 36px; height: 4px; background: var(--border2);
+  border-radius: 2px; margin: 12px auto 0;
+}
+.hgh-tracker .modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 0; margin-bottom: 16px;
+}
+.hgh-tracker .modal-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 900; line-height: 1;
+}
+.hgh-tracker .modal-player-name { color: var(--orange); }
+.hgh-tracker .modal-close {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 50%; color: var(--muted); font-size: 14px;
+  width: 30px; height: 30px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.hgh-tracker .modal-section { padding: 0 20px; margin-bottom: 16px; }
+.hgh-tracker .modal-section-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--muted);
+  margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hgh-tracker .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hgh-tracker .edit-field { display: flex; flex-direction: column; gap: 4px; }
+.hgh-tracker .edit-field-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted);
+}
+
+.hgh-tracker .edit-stepper {
+  display: flex; align-items: center;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 10px; overflow: hidden; height: 44px;
+}
+.hgh-tracker .step-btn {
+  background: transparent; border: none; color: var(--text2);
+  font-size: 20px; font-weight: 400;
+  width: 44px; height: 44px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s;
+}
+.hgh-tracker .step-btn:active { background: var(--surface2); color: var(--orange); }
+.hgh-tracker .step-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 900;
+  text-align: center; flex: 1; color: var(--text); line-height: 1;
+}
+
+.hgh-tracker .modal-footer { padding: 0 20px; }
+.hgh-tracker .modal-save {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  border: none; border-radius: 14px; color: white;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 17px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 16px; width: 100%; cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(249,115,22,0.3);
+  transition: opacity 0.15s;
+}
+.hgh-tracker .modal-save:active { opacity: 0.85; }

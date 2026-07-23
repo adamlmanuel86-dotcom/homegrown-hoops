@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@clerk/react";
 import {
@@ -7,223 +7,382 @@ import {
   useGetMyProfile,
   useSubmitTrackGame,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import "./track-game.css";
 
-type Screen = "setup" | "tracking" | "summary";
-type Mode = "full" | "my_team_only";
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-interface PlayerStat {
+interface SetupPlayer {
+  uid: string;
+  name: string;
+  pos: string;
   playerId: number | null;
-  playerName: string;
-  teamId: number;
+}
+
+interface TrackerPlayer {
+  uid: string;
+  name: string;
+  pos: string;
   pts: number;
-  fgm: number;
-  fga: number;
-  tpm: number;
-  tpa: number;
-  ftm: number;
-  fta: number;
   reb: number;
   ast: number;
   stl: number;
   blk: number;
-  tov: number;
+  to: number;
+  fouls: number;
+  fgm: number;  // total FGM (2s + 3s combined)
+  fga: number;
+  fg3m: number;
+  fg3a: number;
+  ftm: number;
+  fta: number;
+  playerId: number | null;
+  teamId: number;
 }
+
+interface HistoryEntry {
+  team: "home" | "away";
+  idx: number;
+  prevPlayer: TrackerPlayer;
+  prevOppScore: number;
+}
+
+type Screen = "setup" | "tracker" | "summary";
+type Mode = "myteam" | "both";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+let _uid = 0;
+function uid() { return `u${++_uid}`; }
+
+function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 function deriveSeason(dateStr: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  const month = d.getUTCMonth() + 1;
-  const year = d.getUTCFullYear();
-  const startYear = month >= 9 ? year : year - 1;
-  return `${startYear}-${String(startYear + 1).slice(2)}`;
+  const m = d.getUTCMonth() + 1;
+  const y = d.getUTCFullYear();
+  const sy = m >= 9 ? y : y - 1;
+  return `${sy}-${String(sy + 1).slice(2)}`;
 }
 
-function calcPts(p: PlayerStat): number {
-  return (p.fgm - p.tpm) * 2 + p.tpm * 3 + p.ftm;
+function mkTracker(
+  name: string, pos: string, playerId: number | null, teamId: number
+): TrackerPlayer {
+  return {
+    uid: uid(), name, pos, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
+    to: 0, fouls: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0,
+    playerId, teamId,
+  };
 }
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+function fmtPct(m: number, a: number) {
+  return a > 0 ? Math.round(m / a * 100) + "%" : "—";
 }
+
+function pctCls(m: number, a: number) {
+  if (a === 0) return "neutral";
+  const v = Math.round(m / a * 100);
+  if (v >= 50) return "good";
+  if (v >= 35) return "ok";
+  return "bad";
+}
+
+const POSITIONS = ["PG", "SG", "SF", "PF", "C"];
+
+const SCORE_LABELS: Record<string, string> = {
+  pts: "Points", fg3m: "3PT Made", fg2m: "2PT Made",
+  fg2a: "2PT Att", fg3a: "3PT Att", ftm: "FT Made", fta: "FT Att",
+};
+const OTHER_LABELS: Record<string, string> = {
+  reb: "Rebounds", ast: "Assists", stl: "Steals", blk: "Blocks", to: "Turnovers",
+};
+const OPP_STAT_LABELS: Record<string, string> = {
+  reb: "Reb", stl: "Steal", blk: "Block", to: "TO", foul: "Foul",
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function TrackGamePage() {
   const [, navigate] = useLocation();
   const { isSignedIn } = useUser();
   const { data: myProfile } = useGetMyProfile();
-  const { toast } = useToast();
-
-  const [screen, setScreen] = useState<Screen>("setup");
-  const [mode, setMode] = useState<Mode>("full");
-  const [homeTeamId, setHomeTeamId] = useState<number | null>(null);
-  const [awayTeamId, setAwayTeamId] = useState<number | null>(null);
-  const [opponentName, setOpponentName] = useState("");
-  const [gameDate, setGameDate] = useState(todayISO());
-  const [season, setSeason] = useState(deriveSeason(todayISO()));
-  const [locationStr, setLocationStr] = useState("");
-  const [players, setPlayers] = useState<PlayerStat[]>([]);
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [newPlayerName, setNewPlayerName] = useState("");
-  const [newPlayerTeamId, setNewPlayerTeamId] = useState<number | null>(null);
-  const [homeScore, setHomeScore] = useState(0);
-  const [awayScore, setAwayScore] = useState(0);
-
   const submitGame = useSubmitTrackGame();
   const { data: teams } = useListTeams();
   const { data: allPlayers } = useListPlayers();
 
+  // Setup state
+  const [screen, setScreen] = useState<Screen>("setup");
+  const [mode, setMode] = useState<Mode>("myteam");
+  const [homeTeamId, setHomeTeamId] = useState<number | null>(null);
+  const [awayTeamId, setAwayTeamId] = useState<number | null>(null);
+  const [opponentName, setOpponentName] = useState("");
+  const [gameDate, setGameDate] = useState(todayISO());
+  const [locationStr, setLocationStr] = useState("");
+  const [homeSetupPlayers, setHomeSetupPlayers] = useState<SetupPlayer[]>([]);
+  const [awaySetupPlayers, setAwaySetupPlayers] = useState<SetupPlayer[]>([]);
+
+  // Tracker state
+  const [activeTeam, setActiveTeam] = useState<"home" | "away">("home");
+  const [period, setPeriod] = useState(1);
+  const [selPlayer, setSelPlayer] = useState<number | null>(null);
+  const [homePlayerStats, setHomePlayerStats] = useState<TrackerPlayer[]>([]);
+  const [awayPlayerStats, setAwayPlayerStats] = useState<TrackerPlayer[]>([]);
+  const [oppStats, setOppStats] = useState({ score: 0, reb: 0, stl: 0, blk: 0, to: 0, foul: 0 });
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  // Edit modal state
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editVals, setEditVals] = useState<Record<string, number>>({});
+
+  // Toast state
+  const [toastMsg, setToastMsg] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+
   const canAccess =
-    isSignedIn && (myProfile?.role === "admin" || myProfile?.role === "manager");
+    isSignedIn &&
+    (myProfile?.role === "admin" ||
+      myProfile?.role === "manager" ||
+      myProfile?.role === "coach");
 
-  const homePlayers = useMemo(
-    () => (allPlayers ?? []).filter((p) => p.teamId === homeTeamId),
-    [allPlayers, homeTeamId]
-  );
-  const awayPlayers = useMemo(
-    () => (allPlayers ?? []).filter((p) => p.teamId === awayTeamId),
-    [allPlayers, awayTeamId]
-  );
-
-  function buildRoster() {
-    const rows: PlayerStat[] = [];
-    const seen = new Set<number>();
-    for (const p of homePlayers) {
-      if (seen.has(p.id)) continue;
-      seen.add(p.id);
-      rows.push({
-        playerId: p.id,
-        playerName: `${p.firstName} ${p.lastName}`.trim(),
-        teamId: homeTeamId!,
-        pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
-        reb: 0, ast: 0, stl: 0, blk: 0, tov: 0,
-      });
-    }
-    if (mode === "full") {
-      for (const p of awayPlayers) {
-        if (seen.has(p.id)) continue;
-        seen.add(p.id);
-        rows.push({
+  // ── Pre-populate rosters from DB when team changes
+  useEffect(() => {
+    if (!homeTeamId || !allPlayers) { setHomeSetupPlayers([]); return; }
+    setHomeSetupPlayers(
+      allPlayers
+        .filter((p) => p.teamId === homeTeamId)
+        .map((p) => ({
+          uid: uid(),
+          name: `${p.firstName} ${p.lastName}`.trim(),
+          pos: p.position ?? "PG",
           playerId: p.id,
-          playerName: `${p.firstName} ${p.lastName}`.trim(),
-          teamId: awayTeamId!,
-          pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
-          reb: 0, ast: 0, stl: 0, blk: 0, tov: 0,
-        });
-      }
+        }))
+    );
+  }, [homeTeamId, allPlayers]);
+
+  useEffect(() => {
+    if (!awayTeamId || !allPlayers) { setAwaySetupPlayers([]); return; }
+    setAwaySetupPlayers(
+      allPlayers
+        .filter((p) => p.teamId === awayTeamId)
+        .map((p) => ({
+          uid: uid(),
+          name: `${p.firstName} ${p.lastName}`.trim(),
+          pos: p.position ?? "PG",
+          playerId: p.id,
+        }))
+    );
+  }, [awayTeamId, allPlayers]);
+
+  // ── Toast
+  function showToast(msg: string) {
+    setToastMsg(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2500);
+  }
+
+  // ── Setup helpers
+  function addSetupPlayer(team: "home" | "away") {
+    const sp: SetupPlayer = { uid: uid(), name: "", pos: "PG", playerId: null };
+    if (team === "home") setHomeSetupPlayers((p) => [...p, sp]);
+    else setAwaySetupPlayers((p) => [...p, sp]);
+  }
+
+  function updateSetupPlayer(team: "home" | "away", id: string, field: "name" | "pos", val: string) {
+    const upd = (prev: SetupPlayer[]) =>
+      prev.map((p) => (p.uid === id ? { ...p, [field]: val } : p));
+    if (team === "home") setHomeSetupPlayers(upd);
+    else setAwaySetupPlayers(upd);
+  }
+
+  function removeSetupPlayer(team: "home" | "away", id: string) {
+    if (team === "home") setHomeSetupPlayers((p) => p.filter((x) => x.uid !== id));
+    else setAwaySetupPlayers((p) => p.filter((x) => x.uid !== id));
+  }
+
+  // ── Start game
+  function startGame() {
+    if (!homeTeamId) { showToast("Select a home team"); return; }
+    if (mode === "both" && !awayTeamId) { showToast("Select an away team"); return; }
+    if (mode === "myteam" && !opponentName.trim()) { showToast("Enter opponent name"); return; }
+
+    const make = (players: SetupPlayer[], teamId: number) =>
+      players.filter((p) => p.name.trim()).map((p) => mkTracker(p.name.trim(), p.pos, p.playerId, teamId));
+
+    setHomePlayerStats(make(homeSetupPlayers, homeTeamId!));
+    setAwayPlayerStats(mode === "both" ? make(awaySetupPlayers, awayTeamId!) : []);
+    setOppStats({ score: 0, reb: 0, stl: 0, blk: 0, to: 0, foul: 0 });
+    setHistory([]);
+    setActiveTeam("home");
+    setSelPlayer(null);
+    setPeriod(1);
+    setScreen("tracker");
+  }
+
+  // ── Tracker computed values
+  const activePlayers = activeTeam === "home" ? homePlayerStats : awayPlayerStats;
+
+  function getHomeScore() { return homePlayerStats.reduce((s, p) => s + p.pts, 0); }
+  function getAwayScore() {
+    return mode === "myteam"
+      ? oppStats.score
+      : awayPlayerStats.reduce((s, p) => s + p.pts, 0);
+  }
+
+  // ── Tracker actions
+  function switchTeam(t: "home" | "away") {
+    setActiveTeam(t);
+    setSelPlayer(null);
+  }
+
+  function selectPlayer(i: number) {
+    setSelPlayer((prev) => (prev === i ? null : i));
+  }
+
+  function addStat(e: React.MouseEvent, idx: number, stat: string) {
+    e.stopPropagation();
+    const arr = activeTeam === "home" ? homePlayerStats : awayPlayerStats;
+    const p = arr[idx];
+    const prevOppScore = oppStats.score;
+
+    let updated = { ...p };
+    switch (stat) {
+      case "fg2":    updated = { ...updated, pts: p.pts + 2, fgm: p.fgm + 1, fga: p.fga + 1 }; break;
+      case "fg3":    updated = { ...updated, pts: p.pts + 3, fgm: p.fgm + 1, fga: p.fga + 1, fg3m: p.fg3m + 1, fg3a: p.fg3a + 1 }; break;
+      case "ftm":    updated = { ...updated, pts: p.pts + 1, ftm: p.ftm + 1, fta: p.fta + 1 }; break;
+      case "miss2":  updated = { ...updated, fga: p.fga + 1 }; break;
+      case "miss3":  updated = { ...updated, fg3a: p.fg3a + 1, fga: p.fga + 1 }; break;
+      case "ftmiss": updated = { ...updated, fta: p.fta + 1 }; break;
+      case "reb":    updated = { ...updated, reb: p.reb + 1 }; break;
+      case "ast":    updated = { ...updated, ast: p.ast + 1 }; break;
+      case "stl":    updated = { ...updated, stl: p.stl + 1 }; break;
+      case "blk":    updated = { ...updated, blk: p.blk + 1 }; break;
+      case "to":     updated = { ...updated, to: p.to + 1 }; break;
+      case "foul":   updated = { ...updated, fouls: p.fouls + 1 }; break;
     }
-    return rows;
+
+    const set = activeTeam === "home" ? setHomePlayerStats : setAwayPlayerStats;
+    set((prev) => prev.map((pp, i) => (i === idx ? updated : pp)));
+    setHistory((h) => [...h, { team: activeTeam, idx, prevPlayer: { ...p }, prevOppScore }]);
   }
 
-  function startTracking() {
-    if (!homeTeamId) { toast({ title: "Select a home team", variant: "destructive" }); return; }
-    if (mode === "full" && !awayTeamId) { toast({ title: "Select an away team", variant: "destructive" }); return; }
-    if (mode === "my_team_only" && !opponentName.trim()) { toast({ title: "Enter opponent name", variant: "destructive" }); return; }
-    const roster = buildRoster();
-    setPlayers(roster);
-    setHomeScore(0);
-    setAwayScore(0);
-    setNewPlayerTeamId(homeTeamId);
-    setScreen("tracking");
+  function undoLast() {
+    if (!history.length) return;
+    const last = history[history.length - 1];
+    const set = last.team === "home" ? setHomePlayerStats : setAwayPlayerStats;
+    set((prev) => prev.map((p, i) => (i === last.idx ? last.prevPlayer : p)));
+    setOppStats((s) => ({ ...s, score: last.prevOppScore }));
+    setHistory((h) => h.slice(0, -1));
+    showToast("Undone ↩");
   }
 
-  function updatePlayer(idx: number, partial: Partial<PlayerStat>) {
-    setPlayers((prev) => {
-      const next = [...prev];
-      const old = next[idx];
-      next[idx] = { ...old, ...partial };
-      // Recalculate score totals for home/away
-      let hs = 0, as_ = 0;
-      for (const p of next) {
-        const pts = calcPts(p);
-        if (p.teamId === homeTeamId) hs += pts;
-        else as_ += pts;
-      }
-      setHomeScore(hs);
-      if (mode === "full") setAwayScore(as_);
-      return next;
+  function oppScore(delta: number) {
+    setOppStats((s) => ({ ...s, score: Math.max(0, s.score + delta) }));
+  }
+
+  function addOppStat(stat: keyof Omit<typeof oppStats, "score">) {
+    setOppStats((s) => ({ ...s, [stat]: s[stat] + 1 }));
+    showToast(`Opp ${stat.toUpperCase()} +1`);
+  }
+
+  // ── Edit modal
+  function openEdit(e: React.MouseEvent, idx: number) {
+    e.stopPropagation();
+    const p = activePlayers[idx];
+    setEditIdx(idx);
+    setEditVals({
+      pts: p.pts, reb: p.reb, ast: p.ast, stl: p.stl, blk: p.blk, to: p.to,
+      fg2m: p.fgm - p.fg3m, fg2a: p.fga - p.fg3a,
+      fg3m: p.fg3m, fg3a: p.fg3a, ftm: p.ftm, fta: p.fta,
     });
   }
 
-  function quickStat(idx: number, type: "fg2" | "fg3" | "ft" | "miss_fg" | "reb" | "ast" | "stl" | "blk" | "tov") {
-    const p = players[idx];
-    const updates: Partial<PlayerStat> = {};
-    if (type === "fg2") { updates.fgm = p.fgm + 1; updates.fga = p.fga + 1; }
-    else if (type === "fg3") { updates.fgm = p.fgm + 1; updates.fga = p.fga + 1; updates.tpm = p.tpm + 1; updates.tpa = p.tpa + 1; }
-    else if (type === "ft") { updates.ftm = p.ftm + 1; updates.fta = p.fta + 1; }
-    else if (type === "miss_fg") { updates.fga = p.fga + 1; }
-    else if (type === "reb") { updates.reb = p.reb + 1; }
-    else if (type === "ast") { updates.ast = p.ast + 1; }
-    else if (type === "stl") { updates.stl = p.stl + 1; }
-    else if (type === "blk") { updates.blk = p.blk + 1; }
-    else if (type === "tov") { updates.tov = p.tov + 1; }
-    updatePlayer(idx, updates);
+  function stepEdit(field: string, delta: number) {
+    setEditVals((prev) => {
+      const cur = prev[field] ?? 0;
+      const next = Math.max(0, cur + delta);
+      if (next === cur) return prev;
+      const diff = next - cur;
+      const updated = { ...prev, [field]: next };
+      let ptsDiff = 0;
+      if (field === "fg2m") ptsDiff = diff * 2;
+      if (field === "fg3m") ptsDiff = diff * 3;
+      if (field === "ftm")  ptsDiff = diff * 1;
+      if (ptsDiff !== 0) updated.pts = Math.max(0, (prev.pts ?? 0) + ptsDiff);
+      return updated;
+    });
   }
 
-  function addManualPlayer() {
-    if (!newPlayerName.trim()) return;
-    if (!newPlayerTeamId) { toast({ title: "Select player's team", variant: "destructive" }); return; }
-    const newP: PlayerStat = {
-      playerId: null,
-      playerName: newPlayerName.trim(),
-      teamId: newPlayerTeamId,
-      pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
-      reb: 0, ast: 0, stl: 0, blk: 0, tov: 0,
-    };
-    setPlayers((prev) => [...prev, newP]);
-    setNewPlayerName("");
+  function saveEdit() {
+    if (editIdx === null) return;
+    const v = editVals;
+    const set = activeTeam === "home" ? setHomePlayerStats : setAwayPlayerStats;
+    set((prev) =>
+      prev.map((p, i) => {
+        if (i !== editIdx) return p;
+        const fgm = (v.fg2m ?? 0) + (v.fg3m ?? 0);
+        const fga = (v.fg2a ?? 0) + (v.fg3a ?? 0);
+        return {
+          ...p, pts: v.pts ?? 0, reb: v.reb ?? 0, ast: v.ast ?? 0,
+          stl: v.stl ?? 0, blk: v.blk ?? 0, to: v.to ?? 0,
+          fg3m: v.fg3m ?? 0, fg3a: v.fg3a ?? 0,
+          fgm, fga, ftm: v.ftm ?? 0, fta: v.fta ?? 0,
+        };
+      })
+    );
+    setEditIdx(null);
+    showToast("Stats updated ✓");
   }
 
+  // ── Submit
   async function handleSubmit() {
     try {
-      const finalAwayScore = mode === "full" ? awayScore : awayScore;
+      const allStats = [
+        ...homePlayerStats,
+        ...(mode === "both" ? awayPlayerStats : []),
+      ];
       await submitGame.mutateAsync({
         data: {
           homeTeamId: homeTeamId!,
-          awayTeamId: mode === "full" ? awayTeamId : null,
-          opponentName: mode === "my_team_only" ? opponentName : null,
-          homeScore,
-          awayScore: finalAwayScore,
+          awayTeamId: mode === "both" ? awayTeamId : null,
+          opponentName: mode === "myteam" ? opponentName : null,
+          homeScore: getHomeScore(),
+          awayScore: getAwayScore(),
           gameDate,
-          season,
+          season: deriveSeason(gameDate),
           location: locationStr || null,
-          playerStats: players.map((p) => ({
+          playerStats: allStats.map((p) => ({
             playerId: p.playerId,
-            playerName: p.playerName,
+            playerName: p.name,
             teamId: p.teamId,
-            points: calcPts(p),
+            points: p.pts,
             rebounds: p.reb,
             assists: p.ast,
             steals: p.stl,
             blocks: p.blk,
-            turnovers: p.tov,
+            turnovers: p.to,
             fieldGoalsMade: p.fgm,
             fieldGoalsAttempted: p.fga,
-            threePointersMade: p.tpm,
-            threePointersAttempted: p.tpa,
+            threePointersMade: p.fg3m,
+            threePointersAttempted: p.fg3a,
             freeThrowsMade: p.ftm,
             freeThrowsAttempted: p.fta,
           })),
         },
       });
-      const isAdmin = myProfile?.role === "admin";
-      toast({
-        title: isAdmin ? "Game saved!" : "Game submitted for review",
-        description: isAdmin
-          ? "Stats are now live."
-          : "An admin will review and approve your submission.",
-      });
-      navigate("/games");
+      showToast("✓ Uploaded to Homegrown Hoops!");
+      setTimeout(() => navigate("/games"), 2200);
     } catch {
-      toast({ title: "Submission failed", variant: "destructive" });
+      showToast("Upload failed — try again");
     }
   }
 
+  // ── Access guard
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="border-2 border-border p-8 shadow-[6px_6px_0_0_rgba(0,0,0,1)] text-center">
-          <h2 className="font-display text-2xl mb-2">Sign in required</h2>
-          <p className="text-muted-foreground">You must be signed in to track games.</p>
+      <div style={{ minHeight: "100vh", background: "#070c14", color: "#e8f0fc", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 900 }}>Sign In Required</div>
+          <div style={{ color: "#4a6480", marginTop: 8 }}>You must be signed in to track games.</div>
         </div>
       </div>
     );
@@ -231,10 +390,10 @@ export function TrackGamePage() {
 
   if (!canAccess) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="border-2 border-border p-8 shadow-[6px_6px_0_0_rgba(0,0,0,1)] text-center">
-          <h2 className="font-display text-2xl mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">Only managers and admins can track games.</p>
+      <div style={{ minHeight: "100vh", background: "#070c14", color: "#e8f0fc", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 900 }}>Access Denied</div>
+          <div style={{ color: "#4a6480", marginTop: 8 }}>Only managers and admins can track games.</div>
         </div>
       </div>
     );
@@ -242,532 +401,511 @@ export function TrackGamePage() {
 
   const homeTeamName = teams?.find((t) => t.id === homeTeamId)?.name ?? "Home";
   const awayTeamName =
-    mode === "full"
-      ? teams?.find((t) => t.id === awayTeamId)?.name ?? "Away"
+    mode === "both"
+      ? (teams?.find((t) => t.id === awayTeamId)?.name ?? "Away")
       : opponentName || "Opponent";
 
-  // ── SETUP SCREEN ─────────────────────────────────────────────────────────────
-  if (screen === "setup") {
-    return (
-      <div className="min-h-screen bg-background text-foreground p-4 max-w-lg mx-auto">
-        <div className="mb-6">
-          <button
-            onClick={() => navigate("/games")}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            ← Back to Games
-          </button>
-          <h1 className="font-display text-4xl mt-2">Track Game</h1>
-        </div>
+  const homeScore = getHomeScore();
+  const awayScore = getAwayScore();
 
-        {/* Mode toggle */}
-        <div className="mb-6">
-          <label className="block text-xs font-bold uppercase tracking-widest mb-2 text-muted-foreground">
-            Mode
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {(["full", "my_team_only"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`border-2 border-border p-3 text-sm font-bold uppercase tracking-wide transition-all ${
-                  mode === m
-                    ? "bg-primary text-primary-foreground shadow-[3px_3px_0_0_rgba(0,0,0,1)]"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
+  // ── Render all screens inside one hgh-tracker root
+  return (
+    <div className="hgh-tracker">
+
+      {/* ══════════════════════ SETUP SCREEN ══════════════════════ */}
+      {screen === "setup" && (
+        <div className="hgh-setup">
+          <div className="logo">
+            <div className="logo-ball" />
+            <div className="logo-text">
+              Homegrown<span>Hoops</span>
+            </div>
+          </div>
+
+          <div>
+            <div className="setup-title">Track a <em>Game</em></div>
+          </div>
+
+          {/* VS row */}
+          <div className="vs-row">
+            <div>
+              <label>Home Team</label>
+              <select
+                value={homeTeamId ?? ""}
+                onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
               >
-                {m === "full" ? "Full Game" : "My Team Only"}
-              </button>
-            ))}
-          </div>
-          {mode === "my_team_only" && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Track stats for your team only. Enter the opponent's name.
-            </p>
-          )}
-        </div>
-
-        {/* Home team */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">
-            Home Team
-          </label>
-          <select
-            className="w-full border-2 border-border bg-background p-3 text-foreground font-medium focus:outline-none focus:border-primary"
-            value={homeTeamId ?? ""}
-            onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
-          >
-            <option value="">Select home team…</option>
-            {(teams ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Away team or opponent name */}
-        {mode === "full" ? (
-          <div className="mb-4">
-            <label className="block text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">
-              Away Team
-            </label>
-            <select
-              className="w-full border-2 border-border bg-background p-3 text-foreground font-medium focus:outline-none focus:border-primary"
-              value={awayTeamId ?? ""}
-              onChange={(e) => setAwayTeamId(Number(e.target.value) || null)}
-            >
-              <option value="">Select away team…</option>
-              {(teams ?? [])
-                .filter((t) => t.id !== homeTeamId)
-                .map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
+                <option value="">Select team…</option>
+                {(teams ?? []).map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
-            </select>
+              </select>
+            </div>
+            <div className="vs-badge">VS</div>
+            <div>
+              {mode === "both" ? (
+                <>
+                  <label>Away Team</label>
+                  <select
+                    value={awayTeamId ?? ""}
+                    onChange={(e) => setAwayTeamId(Number(e.target.value) || null)}
+                  >
+                    <option value="">Select team…</option>
+                    {(teams ?? [])
+                      .filter((t) => t.id !== homeTeamId)
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+                </>
+              ) : (
+                <>
+                  <label>Opponent</label>
+                  <input
+                    type="text"
+                    placeholder="Team name"
+                    value={opponentName}
+                    onChange={(e) => setOpponentName(e.target.value)}
+                  />
+                </>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="mb-4">
-            <label className="block text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">
-              Opponent Name
-            </label>
+
+          <div>
+            <label>Game Date</label>
             <input
-              type="text"
-              placeholder="e.g. North Side Ballers"
-              className="w-full border-2 border-border bg-background p-3 text-foreground font-medium focus:outline-none focus:border-primary"
-              value={opponentName}
-              onChange={(e) => setOpponentName(e.target.value)}
+              type="date"
+              value={gameDate}
+              onChange={(e) => setGameDate(e.target.value)}
             />
           </div>
-        )}
 
-        {/* Date */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">
-            Date
-          </label>
-          <input
-            type="date"
-            className="w-full border-2 border-border bg-background p-3 text-foreground font-medium focus:outline-none focus:border-primary"
-            value={gameDate}
-            onChange={(e) => {
-              setGameDate(e.target.value);
-              setSeason(deriveSeason(e.target.value));
-            }}
-          />
-        </div>
+          <div>
+            <label>Location (optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. Riverside Court"
+              value={locationStr}
+              onChange={(e) => setLocationStr(e.target.value)}
+            />
+          </div>
 
-        {/* Season */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">
-            Season
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. 2025-26"
-            className="w-full border-2 border-border bg-background p-3 text-foreground font-medium focus:outline-none focus:border-primary"
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
-          />
-        </div>
-
-        {/* Location */}
-        <div className="mb-6">
-          <label className="block text-xs font-bold uppercase tracking-widest mb-1 text-muted-foreground">
-            Location (optional)
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. Riverside Court"
-            className="w-full border-2 border-border bg-background p-3 text-foreground font-medium focus:outline-none focus:border-primary"
-            value={locationStr}
-            onChange={(e) => setLocationStr(e.target.value)}
-          />
-        </div>
-
-        <button
-          onClick={startTracking}
-          className="w-full bg-primary text-primary-foreground border-2 border-border p-4 font-display text-xl uppercase tracking-wide shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-all"
-        >
-          Load Roster & Start Tracking →
-        </button>
-      </div>
-    );
-  }
-
-  // ── TRACKING SCREEN ──────────────────────────────────────────────────────────
-  if (screen === "tracking") {
-    const homePts = players.filter((p) => p.teamId === homeTeamId).reduce((s, p) => s + calcPts(p), 0);
-    const awayPts = mode === "full"
-      ? players.filter((p) => p.teamId !== homeTeamId).reduce((s, p) => s + calcPts(p), 0)
-      : awayScore;
-
-    return (
-      <div className="min-h-screen bg-background text-foreground pb-24">
-        {/* Score header */}
-        <div className="sticky top-0 z-10 bg-background border-b-2 border-border px-4 py-3">
-          <div className="flex items-center justify-between max-w-lg mx-auto">
-            <button
-              onClick={() => setScreen("setup")}
-              className="text-xs text-muted-foreground hover:text-primary"
-            >
-              ← Setup
-            </button>
-            <div className="flex items-center gap-4 font-display text-2xl">
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground uppercase tracking-wide truncate max-w-[100px]">
-                  {homeTeamName}
-                </div>
-                <div className="text-4xl text-primary">{homePts}</div>
+          <div>
+            <label>Tracking Mode</label>
+            <div className="mode-toggle">
+              <div
+                className={`mode-opt${mode === "myteam" ? " active" : ""}`}
+                onClick={() => setMode("myteam")}
+              >
+                My Team Only
+                <span>Opponent tracked as team totals</span>
               </div>
-              <div className="text-muted-foreground text-xl">—</div>
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground uppercase tracking-wide truncate max-w-[100px]">
-                  {awayTeamName}
-                </div>
-                {mode === "full" ? (
-                  <div className="text-4xl">{awayPts}</div>
-                ) : (
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-16 text-4xl text-center bg-transparent border-b-2 border-primary focus:outline-none"
-                    value={awayScore}
-                    onChange={(e) => setAwayScore(Number(e.target.value) || 0)}
-                  />
-                )}
+              <div
+                className={`mode-opt${mode === "both" ? " active" : ""}`}
+                onClick={() => setMode("both")}
+              >
+                Both Teams
+                <span>Full player-by-player for both</span>
               </div>
             </div>
-            <button
-              onClick={() => setScreen("summary")}
-              className="bg-primary text-primary-foreground px-3 py-1 text-xs font-bold uppercase border border-border"
-            >
-              Done →
-            </button>
           </div>
-        </div>
 
-        <div className="max-w-lg mx-auto px-4 pt-4 space-y-3">
-          {/* Home team players */}
-          <div className="text-xs font-bold uppercase tracking-widest text-primary mb-1">
-            {homeTeamName}
-          </div>
-          {players
-            .map((p, i) => ({ p, i }))
-            .filter(({ p }) => p.teamId === homeTeamId)
-            .map(({ p, i }) => (
-              <PlayerCard key={i} player={p} idx={i} onQuick={quickStat} onEdit={setEditIdx} />
-            ))}
+          <div className="divider" />
 
-          {/* Away team players */}
-          {mode === "full" && (
-            <>
-              <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-4 mb-1">
-                {awayTeamName}
-              </div>
-              {players
-                .map((p, i) => ({ p, i }))
-                .filter(({ p }) => p.teamId !== homeTeamId)
-                .map(({ p, i }) => (
-                  <PlayerCard key={i} player={p} idx={i} onQuick={quickStat} onEdit={setEditIdx} />
-                ))}
-            </>
-          )}
-
-          {/* Add manual player */}
-          <div className="border-2 border-dashed border-border p-3 mt-4">
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-              Add Player
+          {/* Home roster */}
+          <div>
+            <div className="section-head">
+              <span className="section-label">Home Roster</span>
             </div>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
+            {homeSetupPlayers.map((sp) => (
+              <div key={sp.uid} className="player-row">
                 <input
                   type="text"
-                  placeholder="Player name or #14 for jersey stub"
-                  className="w-full border-2 border-border bg-background p-2 text-sm focus:outline-none focus:border-primary"
-                  value={newPlayerName}
-                  onChange={(e) => setNewPlayerName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addManualPlayer()}
+                  placeholder="Player name"
+                  value={sp.name}
+                  onChange={(e) => updateSetupPlayer("home", sp.uid, "name", e.target.value)}
                 />
-                {/^#\d+$/.test(newPlayerName.trim()) && (
-                  <div className="absolute -bottom-5 left-0 text-[10px] font-bold uppercase tracking-wider text-primary">
-                    Jersey stub — stats tracked, no profile
-                  </div>
-                )}
-              </div>
-              {mode === "full" && (
                 <select
-                  className="border-2 border-border bg-background p-2 text-sm focus:outline-none focus:border-primary"
-                  value={newPlayerTeamId ?? ""}
-                  onChange={(e) => setNewPlayerTeamId(Number(e.target.value) || null)}
+                  className="pos-select"
+                  value={sp.pos}
+                  onChange={(e) => updateSetupPlayer("home", sp.uid, "pos", e.target.value)}
                 >
-                  <option value={homeTeamId ?? ""}>{homeTeamName}</option>
-                  {awayTeamId && <option value={awayTeamId}>{awayTeamName}</option>}
+                  {POSITIONS.map((p) => <option key={p}>{p}</option>)}
                 </select>
-              )}
-              <button
-                onClick={addManualPlayer}
-                className="bg-primary text-primary-foreground border-2 border-border px-3 py-2 text-sm font-bold hover:opacity-90"
-              >
-                +
-              </button>
-            </div>
-            {/^#\d+$/.test(newPlayerName.trim()) && <div className="h-5" />}
+                <button className="remove-btn" onClick={() => removeSetupPlayer("home", sp.uid)}>×</button>
+              </div>
+            ))}
+            <button className="add-btn" onClick={() => addSetupPlayer("home")}>+ Add Player</button>
           </div>
-        </div>
 
-        {/* Edit modal */}
-        {editIdx !== null && (
-          <EditModal
-            player={players[editIdx]}
-            idx={editIdx}
-            onUpdate={updatePlayer}
-            onClose={() => setEditIdx(null)}
-          />
-        )}
-      </div>
-    );
-  }
+          {/* Away roster (both mode) */}
+          {mode === "both" && (
+            <div>
+              <div className="section-head">
+                <span className="section-label away">Away Roster</span>
+              </div>
+              {awaySetupPlayers.map((sp) => (
+                <div key={sp.uid} className="player-row">
+                  <input
+                    type="text"
+                    placeholder="Player name"
+                    value={sp.name}
+                    onChange={(e) => updateSetupPlayer("away", sp.uid, "name", e.target.value)}
+                  />
+                  <select
+                    className="pos-select"
+                    value={sp.pos}
+                    onChange={(e) => updateSetupPlayer("away", sp.uid, "pos", e.target.value)}
+                  >
+                    {POSITIONS.map((p) => <option key={p}>{p}</option>)}
+                  </select>
+                  <button className="remove-btn" onClick={() => removeSetupPlayer("away", sp.uid)}>×</button>
+                </div>
+              ))}
+              <button className="add-btn" onClick={() => addSetupPlayer("away")}>+ Add Player</button>
+            </div>
+          )}
 
-  // ── SUMMARY SCREEN ───────────────────────────────────────────────────────────
-  const activePlayers = players.filter(
-    (p) => calcPts(p) > 0 || p.reb > 0 || p.ast > 0 || p.stl > 0 || p.blk > 0
-  );
-
-  const homeFinal = players.filter((p) => p.teamId === homeTeamId).reduce((s, p) => s + calcPts(p), 0);
-  const awayFinal =
-    mode === "full"
-      ? players.filter((p) => p.teamId !== homeTeamId).reduce((s, p) => s + calcPts(p), 0)
-      : awayScore;
-
-  const isAdmin = myProfile?.role === "admin";
-
-  return (
-    <div className="min-h-screen bg-background text-foreground p-4 max-w-lg mx-auto">
-      <div className="mb-6">
-        <button
-          onClick={() => setScreen("tracking")}
-          className="text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          ← Back to Tracking
-        </button>
-        <h1 className="font-display text-4xl mt-2">Review & Submit</h1>
-      </div>
-
-      {/* Final score */}
-      <div className="border-2 border-border shadow-[6px_6px_0_0_rgba(0,0,0,1)] p-6 mb-6 text-center">
-        <div className="font-display text-5xl">
-          <span className="text-primary">{homeFinal}</span>
-          <span className="text-muted-foreground mx-4">—</span>
-          <span>{awayFinal}</span>
-        </div>
-        <div className="text-sm text-muted-foreground mt-1">
-          {homeTeamName} vs {awayTeamName}
-        </div>
-        <div className="text-xs text-muted-foreground">{gameDate} · {season}</div>
-      </div>
-
-      {!isAdmin && (
-        <div className="border-2 border-yellow-600 bg-yellow-600/10 p-3 mb-4 text-sm text-yellow-400">
-          Your submission will be reviewed by an admin before going live.
+          <button className="start-btn" onClick={startGame}>Start Tracking</button>
         </div>
       )}
 
-      {/* Box score */}
-      <div className="border-2 border-border mb-6 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b-2 border-border bg-muted">
-              <th className="text-left p-2 font-bold">Player</th>
-              <th className="p-2">PTS</th>
-              <th className="p-2">REB</th>
-              <th className="p-2">AST</th>
-              <th className="p-2">STL</th>
-              <th className="p-2">BLK</th>
-              <th className="p-2">FG</th>
-              <th className="p-2">3P</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              ...activePlayers.filter((p) => p.teamId === homeTeamId),
-              ...(mode === "full" ? activePlayers.filter((p) => p.teamId !== homeTeamId) : []),
-            ].map((p, i) => (
-              <tr key={i} className="border-b border-border last:border-0">
-                <td className="p-2 font-medium text-xs">
-                  {p.playerName}
-                  {mode === "full" && p.teamId !== homeTeamId && (
-                    <span className="ml-1 text-muted-foreground">(away)</span>
-                  )}
-                </td>
-                <td className="p-2 text-center font-bold text-primary">{calcPts(p)}</td>
-                <td className="p-2 text-center">{p.reb}</td>
-                <td className="p-2 text-center">{p.ast}</td>
-                <td className="p-2 text-center">{p.stl}</td>
-                <td className="p-2 text-center">{p.blk}</td>
-                <td className="p-2 text-center text-xs">{p.fgm}/{p.fga}</td>
-                <td className="p-2 text-center text-xs">{p.tpm}/{p.tpa}</td>
-              </tr>
-            ))}
-            {activePlayers.length === 0 && (
-              <tr>
-                <td colSpan={8} className="p-4 text-center text-muted-foreground text-xs">
-                  No stats recorded yet
-                </td>
-              </tr>
+      {/* ══════════════════════ TRACKER SCREEN ══════════════════════ */}
+      {screen === "tracker" && (
+        <div className="hgh-tracker-screen">
+          {/* Sticky header */}
+          <div className="tracker-header">
+            <div className="scoreboard">
+              <div className="team-score">
+                <div className="team-score-name">{homeTeamName}</div>
+                <div className="team-score-pts home">{homeScore}</div>
+              </div>
+              <div className="score-divider">—</div>
+              <div className="team-score">
+                <div className="team-score-name">{awayTeamName}</div>
+                <div className="team-score-pts">{awayScore}</div>
+              </div>
+            </div>
+            <div className="header-controls">
+              <div className="period-btns">
+                {[1, 2, 3, 4].map((q) => (
+                  <button
+                    key={q}
+                    className={`period-btn${period === q ? " active" : ""}`}
+                    onClick={() => setPeriod(q)}
+                  >
+                    Q{q}
+                  </button>
+                ))}
+              </div>
+              <button className="undo-btn" onClick={undoLast}>Undo</button>
+            </div>
+          </div>
+
+          {/* Team tabs */}
+          <div
+            className="teams-tabs"
+            style={mode === "myteam" ? { gridTemplateColumns: "1fr" } : undefined}
+          >
+            <div
+              className={`team-tab${activeTeam === "home" ? " active" : ""}`}
+              onClick={() => switchTeam("home")}
+            >
+              {homeTeamName}
+            </div>
+            {mode === "both" && (
+              <div
+                className={`team-tab${activeTeam === "away" ? " active" : ""}`}
+                onClick={() => switchTeam("away")}
+              >
+                {awayTeamName}
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
 
-      <button
-        onClick={handleSubmit}
-        disabled={submitGame.isPending}
-        className="w-full bg-primary text-primary-foreground border-2 border-border p-4 font-display text-xl uppercase tracking-wide shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-all disabled:opacity-50"
-      >
-        {submitGame.isPending
-          ? "Submitting…"
-          : isAdmin
-          ? "Save Game"
-          : "Submit for Review"}
-      </button>
-    </div>
-  );
-}
+          {/* Opponent bar */}
+          {mode === "myteam" && (
+            <div className="opp-bar visible">
+              <div className="opp-score-row">
+                <span className="opp-score-label">{awayTeamName} Score</span>
+                <div className="opp-score-btns">
+                  <button className="opp-score-btn" onClick={() => oppScore(-1)}>−</button>
+                  <span className="opp-score-val">{oppStats.score}</span>
+                  <button className="opp-score-btn" onClick={() => oppScore(1)}>+</button>
+                </div>
+              </div>
+              <div className="opp-bar-title">Opponent Team Stats</div>
+              <div className="opp-stat-row">
+                {(["reb", "stl", "blk", "to", "foul"] as const).map((stat) => (
+                  <button key={stat} className="opp-btn" onClick={() => addOppStat(stat)}>
+                    <div className="opp-btn-info">
+                      <div className="opp-btn-count">{oppStats[stat]}</div>
+                      <div className="opp-btn-label">{OPP_STAT_LABELS[stat]}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
+          {/* Player cards */}
+          <div className="players-list">
+            {activePlayers.map((p, i) => {
+              const sel = selPlayer === i;
+              const miss2 = p.fga - p.fgm;
+              const miss3 = p.fg3a - p.fg3m;
+              const ftMiss = p.fta - p.ftm;
+              return (
+                <div key={p.uid} className={`player-card${sel ? " selected" : ""}`}>
+                  <div className="player-card-header" onClick={() => selectPlayer(i)}>
+                    <div className="player-info">
+                      <div className="player-avatar">{p.pos}</div>
+                      <div>
+                        <div className="player-name">{p.name}</div>
+                        <span className="player-pos-badge">{p.pos}</span>
+                      </div>
+                    </div>
+                    <div className="player-mini-stats">
+                      <div className="mini-stat">
+                        <div className="mini-stat-val" style={{ color: "var(--orange)" }}>{p.pts}</div>
+                        <div className="mini-stat-lbl">PTS</div>
+                      </div>
+                      <div className="mini-stat">
+                        <div className="mini-stat-val" style={{ color: "var(--blue)" }}>{p.reb}</div>
+                        <div className="mini-stat-lbl">REB</div>
+                      </div>
+                      <div className="mini-stat">
+                        <div className="mini-stat-val" style={{ color: "var(--green)" }}>{p.ast}</div>
+                        <div className="mini-stat-lbl">AST</div>
+                      </div>
+                    </div>
+                  </div>
 
-interface PlayerCardProps {
-  player: PlayerStat;
-  idx: number;
-  onQuick: (idx: number, type: "fg2" | "fg3" | "ft" | "miss_fg" | "reb" | "ast" | "stl" | "blk" | "tov") => void;
-  onEdit: (idx: number) => void;
-}
+                  {sel && (
+                    <div className="stat-panel open">
+                      <div className="stat-section-title">Made</div>
+                      <div className="stat-grid">
+                        <button className="stat-btn pts" onClick={(e) => addStat(e, i, "fg2")}>
+                          <div className="stat-btn-count">{p.fgm - p.fg3m}</div>
+                          <div className="stat-btn-label">2PT Make</div>
+                        </button>
+                        <button className="stat-btn three" onClick={(e) => addStat(e, i, "fg3")}>
+                          <div className="stat-btn-count">{p.fg3m}</div>
+                          <div className="stat-btn-label">3PT Make</div>
+                        </button>
+                        <button className="stat-btn ft-make" onClick={(e) => addStat(e, i, "ftm")}>
+                          <div className="stat-btn-count">{p.ftm}</div>
+                          <div className="stat-btn-label">FT Make</div>
+                        </button>
+                      </div>
 
-function PlayerCard({ player, idx, onQuick, onEdit }: PlayerCardProps) {
-  const pts = calcPts(player);
-  return (
-    <div className="border-2 border-border bg-card shadow-[3px_3px_0_0_rgba(0,0,0,1)]">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        <span className="font-bold text-sm truncate">{player.playerName}</span>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0 ml-2">
-          <span className="text-primary font-bold text-base">{pts}</span>
-          <span>{player.reb}r</span>
-          <span>{player.ast}a</span>
-          <button
-            onClick={() => onEdit(idx)}
-            className="border border-border px-2 py-1 hover:bg-muted text-xs"
-            title="Edit all stats"
-          >
-            ✏️
-          </button>
+                      <div className="stat-section-title">Missed</div>
+                      <div className="stat-grid">
+                        <button className="stat-btn miss2" onClick={(e) => addStat(e, i, "miss2")}>
+                          <div className="stat-btn-count">{miss2}</div>
+                          <div className="stat-btn-label">2PT Miss</div>
+                        </button>
+                        <button className="stat-btn miss3" onClick={(e) => addStat(e, i, "miss3")}>
+                          <div className="stat-btn-count">{miss3}</div>
+                          <div className="stat-btn-label">3PT Miss</div>
+                        </button>
+                        <button className="stat-btn ft-miss" onClick={(e) => addStat(e, i, "ftmiss")}>
+                          <div className="stat-btn-count">{ftMiss}</div>
+                          <div className="stat-btn-label">FT Miss</div>
+                        </button>
+                      </div>
+
+                      <div className="stat-section-title">Other</div>
+                      <div className="stat-grid">
+                        <button className="stat-btn reb" onClick={(e) => addStat(e, i, "reb")}>
+                          <div className="stat-btn-count">{p.reb}</div>
+                          <div className="stat-btn-label">Rebound</div>
+                        </button>
+                        <button className="stat-btn ast" onClick={(e) => addStat(e, i, "ast")}>
+                          <div className="stat-btn-count">{p.ast}</div>
+                          <div className="stat-btn-label">Assist</div>
+                        </button>
+                        <button className="stat-btn stl" onClick={(e) => addStat(e, i, "stl")}>
+                          <div className="stat-btn-count">{p.stl}</div>
+                          <div className="stat-btn-label">Steal</div>
+                        </button>
+                        <button className="stat-btn blk" onClick={(e) => addStat(e, i, "blk")}>
+                          <div className="stat-btn-count">{p.blk}</div>
+                          <div className="stat-btn-label">Block</div>
+                        </button>
+                        <button className="stat-btn to" onClick={(e) => addStat(e, i, "to")}>
+                          <div className="stat-btn-count">{p.to}</div>
+                          <div className="stat-btn-label">Turnover</div>
+                        </button>
+                        <button className="stat-btn foul" onClick={(e) => addStat(e, i, "foul")}>
+                          <div className="stat-btn-count">{p.fouls}</div>
+                          <div className="stat-btn-label">Foul</div>
+                        </button>
+                      </div>
+
+                      <div className="pct-strip">
+                        <div className="pct-item">
+                          <div className={`pct-val ${pctCls(p.fgm, p.fga)}`}>{fmtPct(p.fgm, p.fga)}</div>
+                          <div className="pct-lbl">FG%</div>
+                          <div className="pct-sub">{p.fgm}/{p.fga}</div>
+                        </div>
+                        <div className="pct-item">
+                          <div className={`pct-val ${pctCls(p.fg3m, p.fg3a)}`}>{fmtPct(p.fg3m, p.fg3a)}</div>
+                          <div className="pct-lbl">3P%</div>
+                          <div className="pct-sub">{p.fg3m}/{p.fg3a}</div>
+                        </div>
+                        <div className="pct-item">
+                          <div className={`pct-val ${pctCls(p.ftm, p.fta)}`}>{fmtPct(p.ftm, p.fta)}</div>
+                          <div className="pct-lbl">FT%</div>
+                          <div className="pct-sub">{p.ftm}/{p.fta}</div>
+                        </div>
+                      </div>
+
+                      <button className="edit-btn" onClick={(e) => openEdit(e, i)}>
+                        ✎ Edit Stats
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* End game bar */}
+          <div className="end-game-bar">
+            <button className="end-game-btn" onClick={() => setScreen("summary")}>
+              End Game &amp; Upload Stats
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-7 divide-x divide-border text-center">
-        {(
-          [
-            { label: "+2", type: "fg2" as const, color: "text-primary" },
-            { label: "+3", type: "fg3" as const, color: "text-yellow-400" },
-            { label: "FT", type: "ft" as const, color: "text-blue-400" },
-            { label: "×", type: "miss_fg" as const, color: "text-muted-foreground" },
-            { label: "+R", type: "reb" as const, color: "text-green-400" },
-            { label: "+A", type: "ast" as const, color: "text-cyan-400" },
-            { label: "+S", type: "stl" as const, color: "text-purple-400" },
-          ] as const
-        ).map(({ label, type, color }) => (
-          <button
-            key={type}
-            onClick={() => onQuick(idx, type)}
-            className={`py-2 text-xs font-bold hover:bg-muted active:bg-muted/80 ${color}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+      )}
 
-interface EditModalProps {
-  player: PlayerStat;
-  idx: number;
-  onUpdate: (idx: number, partial: Partial<PlayerStat>) => void;
-  onClose: () => void;
-}
+      {/* ══════════════════════ SUMMARY SCREEN ══════════════════════ */}
+      {screen === "summary" && (
+        <div className="hgh-summary">
+          <div>
+            <div className="summary-title">Game Complete <span>✓</span></div>
+            <div className="summary-sub">Review box score before uploading to Homegrown Hoops</div>
+          </div>
 
-function EditModal({ player, idx, onUpdate, onClose }: EditModalProps) {
-  const [local, setLocal] = useState<PlayerStat>({ ...player });
+          <div className="final-score">
+            <div>
+              <div className="final-team-name">{homeTeamName}</div>
+              <div className="final-pts home">{homeScore}</div>
+            </div>
+            <div className="final-divider">—</div>
+            <div>
+              <div className="final-team-name">{awayTeamName}</div>
+              <div className="final-pts">{awayScore}</div>
+            </div>
+          </div>
 
-  function set(key: keyof PlayerStat, val: number) {
-    setLocal((prev) => ({ ...prev, [key]: Math.max(0, val) }));
-  }
-
-  function save() {
-    onUpdate(idx, local);
-    onClose();
-  }
-
-  const pts = calcPts(local);
-
-  const fields: { key: keyof PlayerStat; label: string }[] = [
-    { key: "fgm", label: "FGM" },
-    { key: "fga", label: "FGA" },
-    { key: "tpm", label: "3PM" },
-    { key: "tpa", label: "3PA" },
-    { key: "ftm", label: "FTM" },
-    { key: "fta", label: "FTA" },
-    { key: "reb", label: "REB" },
-    { key: "ast", label: "AST" },
-    { key: "stl", label: "STL" },
-    { key: "blk", label: "BLK" },
-    { key: "tov", label: "TOV" },
-  ];
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center">
-      <div className="bg-background border-t-2 border-l-2 border-r-2 border-border w-full max-w-lg p-4 max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-xl">{player.playerName}</h3>
-          <div className="text-2xl font-bold text-primary">{pts} PTS</div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {fields.map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between border-2 border-border p-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase">{label}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => set(key, (local[key] as number) - 1)}
-                  className="w-7 h-7 border border-border hover:bg-muted font-bold"
-                >
-                  −
-                </button>
-                <span className="w-6 text-center font-bold">{local[key] as number}</span>
-                <button
-                  onClick={() => set(key, (local[key] as number) + 1)}
-                  className="w-7 h-7 border border-border hover:bg-muted font-bold"
-                >
-                  +
-                </button>
+          {/* Box score */}
+          {[
+            { label: homeTeamName, players: homePlayerStats, isHome: true },
+            ...(mode === "both"
+              ? [{ label: awayTeamName, players: awayPlayerStats, isHome: false }]
+              : []),
+          ].map(({ label, players: ps, isHome }) => (
+            <div key={label} className="box-section" style={{ marginBottom: 14 }}>
+              <div className={`box-team-label${isHome ? "" : " away"}`}>{label}</div>
+              <div className="box-table">
+                <div className="box-row header">
+                  <div className="box-name">Player</div>
+                  <div className="box-val">PTS</div>
+                  <div className="box-val">REB</div>
+                  <div className="box-val">AST</div>
+                  <div className="box-val">STL</div>
+                  <div className="box-val">BLK</div>
+                  <div className="box-val">TO</div>
+                  <div className="box-pct">FG%</div>
+                  <div className="box-pct">3P%</div>
+                  <div className="box-pct">FT%</div>
+                </div>
+                {ps.map((p) => (
+                  <div key={p.uid} className="box-row">
+                    <div className="box-name">{p.name}</div>
+                    <div className="box-val pts">{p.pts}</div>
+                    <div className="box-val">{p.reb}</div>
+                    <div className="box-val">{p.ast}</div>
+                    <div className="box-val">{p.stl}</div>
+                    <div className="box-val">{p.blk}</div>
+                    <div className="box-val" style={{ color: "var(--red)" }}>{p.to}</div>
+                    <div className={`box-pct ${pctCls(p.fgm, p.fga)}`}>{fmtPct(p.fgm, p.fga)}</div>
+                    <div className={`box-pct ${pctCls(p.fg3m, p.fg3a)}`}>{fmtPct(p.fg3m, p.fg3a)}</div>
+                    <div className={`box-pct ${pctCls(p.ftm, p.fta)}`}>{fmtPct(p.ftm, p.fta)}</div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2">
+
           <button
-            onClick={onClose}
-            className="border-2 border-border p-3 font-bold text-sm hover:bg-muted"
+            className="confirm-btn"
+            onClick={handleSubmit}
+            disabled={submitGame.isPending}
           >
-            Cancel
-          </button>
-          <button
-            onClick={save}
-            className="bg-primary text-primary-foreground border-2 border-border p-3 font-bold text-sm"
-          >
-            Save
+            {submitGame.isPending ? "Uploading…" : "✓  Upload to Homegrown Hoops"}
           </button>
         </div>
-      </div>
+      )}
+
+      {/* ══════════════════════ EDIT MODAL ══════════════════════ */}
+      {editIdx !== null && (
+        <div
+          className="modal-overlay open"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditIdx(null); }}
+        >
+          <div className="modal">
+            <div className="modal-handle" />
+            <div className="modal-header">
+              <div className="modal-title">
+                Edit — <span className="modal-player-name">{activePlayers[editIdx]?.name}</span>
+              </div>
+              <button className="modal-close" onClick={() => setEditIdx(null)}>✕</button>
+            </div>
+
+            <div className="modal-section">
+              <div className="modal-section-title">Scoring</div>
+              <div className="edit-grid">
+                {(["pts", "fg3m", "fg2m", "fg2a", "fg3a", "ftm", "fta"] as const).map((field) => (
+                  <div key={field} className="edit-field">
+                    <div className="edit-field-label">{SCORE_LABELS[field]}</div>
+                    <div className="edit-stepper">
+                      <button className="step-btn" onClick={() => stepEdit(field, -1)}>−</button>
+                      <div className="step-val">{editVals[field] ?? 0}</div>
+                      <button className="step-btn" onClick={() => stepEdit(field, 1)}>+</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-section">
+              <div className="modal-section-title">Other Stats</div>
+              <div className="edit-grid">
+                {(["reb", "ast", "stl", "blk", "to"] as const).map((field) => (
+                  <div key={field} className="edit-field">
+                    <div className="edit-field-label">{OTHER_LABELS[field]}</div>
+                    <div className="edit-stepper">
+                      <button className="step-btn" onClick={() => stepEdit(field, -1)}>−</button>
+                      <div className="step-val">{editVals[field] ?? 0}</div>
+                      <button className="step-btn" onClick={() => stepEdit(field, 1)}>+</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="modal-save" onClick={saveEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════ TOAST ══════════════════════ */}
+      <div className={`toast${toastVisible ? " show" : ""}`}>{toastMsg}</div>
     </div>
   );
 }
