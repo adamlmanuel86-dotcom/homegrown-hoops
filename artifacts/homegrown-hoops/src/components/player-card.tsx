@@ -592,13 +592,13 @@ function AvatarThumb({ config }: { config: AvatarConfig }) {
     off.width = 88;
     off.height = 128;
     renderAvatarToCanvas(off, config, { scale: 2 });
-    // Scale baller to fill circle width; position so head sits ~2px from top
-    // Head top in 88×128 canvas is ~6.4px (headY=12, headR=8.8, scale=2)
+    // Scale baller to fill circle width; head top sits ~2px from circle top
+    // Head top in 88×128 offscreen is ~6.4px (headY=12, headR=8.8, scale=2)
     const scaleX = 90 / off.width;
     const dw = off.width * scaleX;
     const dh = off.height * scaleX;
-    const dx = (90 - dw) / 2 - 3;
-    const dy = 7 - 6.4 * scaleX;
+    const dx = (90 - dw) / 2 + 6;   // +6 centers then nudges right
+    const dy = 2 - 6.4 * scaleX;    // head at ~2px from circle top
     ctx.clearRect(0, 0, 90, 90);
     ctx.drawImage(off, dx, dy, dw, dh);
   }, [config]);
