@@ -13,9 +13,11 @@ import {
   useUpdateTeam,
   useDeleteTeam,
   useListGames,
+  useListJerseyStubs,
+  useClaimJerseyNumber,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain } from "lucide-react";
+import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain, Hash } from "lucide-react";
 import { TIDES } from "@/components/recognition";
 
 import { apiBase } from "@/lib/api";
@@ -277,6 +279,24 @@ export function AdminPage() {
   const [seasonDeleteConfirmKey, setSeasonDeleteConfirmKey] = useState<string | null>(null);
   const [seasonDeletePending, setSeasonDeletePending] = useState(false);
   const [seasonDeleteError, setSeasonDeleteError] = useState<string | null>(null);
+
+  const [claimJerseyUserId, setClaimJerseyUserId] = useState<string | null>(null);
+  const [claimJerseyForm, setClaimJerseyForm] = useState<{ jerseyNumber: string; teamId: string; season: string }>({ jerseyNumber: "", teamId: "", season: "" });
+  const [claimJerseyError, setClaimJerseyError] = useState<string | null>(null);
+  const { data: jerseyStubs } = useListJerseyStubs();
+  const claimJersey = useClaimJerseyNumber({
+    mutation: {
+      onSuccess: () => {
+        setClaimJerseyUserId(null);
+        setClaimJerseyError(null);
+        qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+        qc.invalidateQueries({ queryKey: ["/api/admin/jersey-stubs"] });
+      },
+      onError: (err: Error) => {
+        setClaimJerseyError(err.message ?? "Failed to claim jersey");
+      },
+    },
+  });
 
   const [confirmingResetIsoBallId, setConfirmingResetIsoBallId] = useState<string | null>(null);
   const resetIsoBall = useMutation({
@@ -1144,6 +1164,21 @@ export function AdminPage() {
                             </button>
                             <button onClick={() => startEditProfile(u.clerkUserId, profile?.teamId, profile?.verified ?? false)} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors touch-manipulation">Edit</button>
                             <button
+                              onClick={() => {
+                                if (claimJerseyUserId === u.clerkUserId) {
+                                  setClaimJerseyUserId(null);
+                                } else {
+                                  setClaimJerseyUserId(u.clerkUserId);
+                                  setClaimJerseyForm({ jerseyNumber: "", teamId: "", season: "" });
+                                  setClaimJerseyError(null);
+                                }
+                              }}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all touch-manipulation ${claimJerseyUserId === u.clerkUserId ? "border-orange-500/40 bg-orange-500/10 text-orange-300" : "border-border hover:border-orange-500/30 hover:bg-orange-500/5 text-muted-foreground hover:text-orange-300"}`}
+                            >
+                              <Hash className="h-3.5 w-3.5" />
+                              Claim #
+                            </button>
+                            <button
                               onClick={() => setConfirmingResetIsoBallId(isResettingIsoBall ? null : u.clerkUserId)}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all touch-manipulation ${isResettingIsoBall ? "border-purple-500/40 bg-purple-500/10 text-purple-300" : "border-border hover:border-purple-500/30 hover:bg-purple-500/5 text-muted-foreground hover:text-purple-300"}`}
                             >
@@ -1182,6 +1217,102 @@ export function AdminPage() {
                           </button>
                           <button
                             onClick={() => setConfirmingResetIsoBallId(null)}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold border border-border hover:bg-muted active:scale-95 transition-all touch-manipulation"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Claim Jersey Drawer ── */}
+                  {claimJerseyUserId === u.clerkUserId && !isEditing && !isConfirming && (
+                    <div className="mx-4 mb-4 rounded-xl overflow-hidden border border-orange-500/20 bg-orange-950/10">
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 border-b border-orange-500/20">
+                        <Hash className="h-3.5 w-3.5 text-orange-400 flex-shrink-0" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-orange-400">Claim Jersey Number</span>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <p className="text-xs text-orange-200/70 leading-relaxed">
+                          Link a jersey stub to <strong className="text-orange-200">{u.firstName} {u.lastName}</strong>. All accumulated stats, stamps and tides will apply instantly. Select from an existing unclaimed stub or type a number manually.
+                        </p>
+                        {jerseyStubs && jerseyStubs.filter((s) => !s.claimedByClerkUserId).length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Unclaimed stubs</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {jerseyStubs.filter((s) => !s.claimedByClerkUserId).map((s) => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => setClaimJerseyForm({ jerseyNumber: String(s.jerseyNumber), teamId: String(s.teamId), season: s.season })}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${claimJerseyForm.jerseyNumber === String(s.jerseyNumber) && claimJerseyForm.teamId === String(s.teamId) && claimJerseyForm.season === s.season ? "border-orange-500 bg-orange-500/20 text-orange-300" : "border-border hover:border-orange-500/40 text-muted-foreground hover:text-orange-300"}`}
+                                >
+                                  #{s.jerseyNumber} · {s.teamName ?? `Team ${s.teamId}`} · {s.season}
+                                  <span className="ml-1 opacity-60">{s.gamesPlayed}G {s.totalPoints}PTS</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Jersey #</label>
+                            <input
+                              type="number"
+                              placeholder="14"
+                              className="w-full mt-0.5 border border-border bg-background px-2 py-1.5 text-xs rounded-lg focus:outline-none focus:border-orange-500"
+                              value={claimJerseyForm.jerseyNumber}
+                              onChange={(e) => setClaimJerseyForm((f) => ({ ...f, jerseyNumber: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Team</label>
+                            <select
+                              className="w-full mt-0.5 border border-border bg-background px-2 py-1.5 text-xs rounded-lg focus:outline-none focus:border-orange-500"
+                              value={claimJerseyForm.teamId}
+                              onChange={(e) => setClaimJerseyForm((f) => ({ ...f, teamId: e.target.value }))}
+                            >
+                              <option value="">Select…</option>
+                              {teams?.map((t) => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Season</label>
+                            <input
+                              type="text"
+                              placeholder="2025-26"
+                              className="w-full mt-0.5 border border-border bg-background px-2 py-1.5 text-xs rounded-lg focus:outline-none focus:border-orange-500"
+                              value={claimJerseyForm.season}
+                              onChange={(e) => setClaimJerseyForm((f) => ({ ...f, season: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                        {claimJerseyError && (
+                          <p className="text-xs text-red-400">{claimJerseyError}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            disabled={claimJersey.isPending || !claimJerseyForm.jerseyNumber || !claimJerseyForm.teamId || !claimJerseyForm.season}
+                            onClick={() => {
+                              setClaimJerseyError(null);
+                              claimJersey.mutate({
+                                clerkUserId: u.clerkUserId,
+                                data: {
+                                  jerseyNumber: parseInt(claimJerseyForm.jerseyNumber, 10),
+                                  teamId: parseInt(claimJerseyForm.teamId, 10),
+                                  season: claimJerseyForm.season,
+                                },
+                              });
+                            }}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-500 active:scale-95 text-white transition-all touch-manipulation disabled:opacity-50"
+                          >
+                            <Hash className="h-3.5 w-3.5" />
+                            {claimJersey.isPending ? "Claiming…" : "Claim Jersey"}
+                          </button>
+                          <button
+                            onClick={() => setClaimJerseyUserId(null)}
                             className="px-4 py-2 rounded-lg text-xs font-semibold border border-border hover:bg-muted active:scale-95 transition-all touch-manipulation"
                           >
                             Cancel

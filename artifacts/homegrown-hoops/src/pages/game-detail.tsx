@@ -1225,12 +1225,19 @@ export function GameDetailPage() {
                         return (
                           <tr key={player.id} className="group border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                             <td className="px-4 py-3">
-                              <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
-                                {player.number != null && (
-                                  <span className="text-primary font-black mr-1">#{player.number}</span>
-                                )}
-                                {player.firstName} {player.lastName}
-                              </Link>
+                              {player.isJerseyStub ? (
+                                <span className="font-semibold text-muted-foreground flex items-center gap-1.5">
+                                  <span className="text-primary font-black">#{player.number ?? player.firstName.replace("#", "")}</span>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 border border-border px-1 py-0.5">Unregistered</span>
+                                </span>
+                              ) : (
+                                <Link href={`/players/${player.id}`} className="font-semibold text-secondary hover:text-primary transition-colors">
+                                  {player.number != null && (
+                                    <span className="text-primary font-black mr-1">#{player.number}</span>
+                                  )}
+                                  {player.firstName} {player.lastName}
+                                </Link>
+                              )}
                             </td>
                             <td className="px-3 py-3 text-center font-bold text-primary">
                               {hasStats && statsRow!.points !== null ? statsRow!.points : <span className="text-muted-foreground font-normal">—</span>}

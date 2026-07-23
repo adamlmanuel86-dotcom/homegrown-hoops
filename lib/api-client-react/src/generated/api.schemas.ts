@@ -72,6 +72,7 @@ export interface Player {
   avatarUrl?: string | null;
   /** @nullable */
   bio?: string | null;
+  isJerseyStub: boolean;
   createdAt: string;
 }
 
@@ -689,6 +690,29 @@ export interface PendingGameReview {
 
 export interface RejectPendingGameBody {
   note: string;
+}
+
+export interface JerseyStub {
+  id: number;
+  jerseyNumber: number;
+  teamId: number;
+  /** @nullable */
+  teamName?: string | null;
+  season: string;
+  playerId: number;
+  /** @nullable */
+  claimedByClerkUserId?: string | null;
+  gamesPlayed: number;
+  totalPoints: number;
+  totalRebounds: number;
+  totalAssists: number;
+  createdAt: string;
+}
+
+export interface ClaimJerseyBody {
+  jerseyNumber: number;
+  teamId: number;
+  season: string;
 }
 
 export type ListPlayersParams = {

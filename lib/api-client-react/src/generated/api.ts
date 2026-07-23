@@ -22,6 +22,7 @@ import type {
   AdminUserListItem,
   ArcadeRank,
   ArcadeSession,
+  ClaimJerseyBody,
   CreateGameBody,
   CreatePlayerBody,
   CreateTeamBody,
@@ -31,6 +32,7 @@ import type {
   GameVideo,
   GetMyArcadeRankParams,
   HealthStatus,
+  JerseyStub,
   ListGamesParams,
   ListPlayersParams,
   MyArcadeStats,
@@ -1896,6 +1898,168 @@ export const useUpdateUserRole = <
   TContext
 > => {
   return useMutation(getUpdateUserRoleMutationOptions(options));
+};
+
+/**
+ * @summary List all unclaimed jersey stubs with accumulated stats (admin only)
+ */
+export const getListJerseyStubsUrl = () => {
+  return `/api/admin/jersey-stubs`;
+};
+
+export const listJerseyStubs = async (
+  options?: RequestInit,
+): Promise<JerseyStub[]> => {
+  return customFetch<JerseyStub[]>(getListJerseyStubsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListJerseyStubsQueryKey = () => {
+  return [`/api/admin/jersey-stubs`] as const;
+};
+
+export const getListJerseyStubsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listJerseyStubs>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listJerseyStubs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListJerseyStubsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listJerseyStubs>>> = ({
+    signal,
+  }) => listJerseyStubs({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listJerseyStubs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListJerseyStubsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listJerseyStubs>>
+>;
+export type ListJerseyStubsQueryError = ErrorType<void>;
+
+/**
+ * @summary List all unclaimed jersey stubs with accumulated stats (admin only)
+ */
+
+export function useListJerseyStubs<
+  TData = Awaited<ReturnType<typeof listJerseyStubs>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listJerseyStubs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListJerseyStubsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Assign a jersey stub to a registered user (admin only)
+ */
+export const getClaimJerseyNumberUrl = (clerkUserId: string) => {
+  return `/api/admin/users/${clerkUserId}/claim-jersey`;
+};
+
+export const claimJerseyNumber = async (
+  clerkUserId: string,
+  claimJerseyBody: ClaimJerseyBody,
+  options?: RequestInit,
+): Promise<UserProfile> => {
+  return customFetch<UserProfile>(getClaimJerseyNumberUrl(clerkUserId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(claimJerseyBody),
+  });
+};
+
+export const getClaimJerseyNumberMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimJerseyNumber>>,
+    TError,
+    { clerkUserId: string; data: BodyType<ClaimJerseyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof claimJerseyNumber>>,
+  TError,
+  { clerkUserId: string; data: BodyType<ClaimJerseyBody> },
+  TContext
+> => {
+  const mutationKey = ["claimJerseyNumber"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof claimJerseyNumber>>,
+    { clerkUserId: string; data: BodyType<ClaimJerseyBody> }
+  > = (props) => {
+    const { clerkUserId, data } = props ?? {};
+
+    return claimJerseyNumber(clerkUserId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClaimJerseyNumberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof claimJerseyNumber>>
+>;
+export type ClaimJerseyNumberMutationBody = BodyType<ClaimJerseyBody>;
+export type ClaimJerseyNumberMutationError = ErrorType<void>;
+
+/**
+ * @summary Assign a jersey stub to a registered user (admin only)
+ */
+export const useClaimJerseyNumber = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimJerseyNumber>>,
+    TError,
+    { clerkUserId: string; data: BodyType<ClaimJerseyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof claimJerseyNumber>>,
+  TError,
+  { clerkUserId: string; data: BodyType<ClaimJerseyBody> },
+  TContext
+> => {
+  return useMutation(getClaimJerseyNumberMutationOptions(options));
 };
 
 /**

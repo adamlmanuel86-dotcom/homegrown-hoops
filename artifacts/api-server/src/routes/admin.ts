@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ne, isNull, or, inArray, desc } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable, teamsTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable, teamsTable, jerseyStubsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
-import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason, getTeamCurrentSeason } from "../recognition";
+import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason, getTeamCurrentSeason, recalculateStampsForPlayer } from "../recognition";
 import type { TideEntry, ArchetypeHistoryEntry } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -614,6 +614,96 @@ router.post("/admin/pending-games/:id/reject", async (req, res): Promise<void> =
   await db.delete(gamesTable).where(eq(gamesTable.id, gameId));
 
   res.json({ success: true, note, deletedGameId: gameId });
+});
+
+// ─── Claim Jersey Number ──────────────────────────────────────────────────────
+// POST /admin/users/:clerkUserId/claim-jersey
+// Links a jersey stub player to a registered user: updates the player record
+// with the user's real name, runs recognition so stamps/tides/archetype calculate.
+router.post("/admin/users/:clerkUserId/claim-jersey", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const { clerkUserId } = req.params;
+  const { jerseyNumber, teamId, season } = req.body as {
+    jerseyNumber?: unknown;
+    teamId?: unknown;
+    season?: unknown;
+  };
+
+  if (
+    typeof jerseyNumber !== "number" ||
+    typeof teamId !== "number" ||
+    typeof season !== "string" ||
+    !season
+  ) {
+    res.status(400).json({ error: "jerseyNumber (int), teamId (int), and season (string) are required" });
+    return;
+  }
+
+  // Fetch the target user's profile
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
+  if (!profile) {
+    res.status(404).json({ error: "User profile not found" });
+    return;
+  }
+
+  // Find the unclaimed stub
+  const [stub] = await db
+    .select()
+    .from(jerseyStubsTable)
+    .where(
+      and(
+        eq(jerseyStubsTable.jerseyNumber, jerseyNumber),
+        eq(jerseyStubsTable.teamId, teamId),
+        eq(jerseyStubsTable.season, season)
+      )
+    );
+
+  if (!stub) {
+    res.status(404).json({ error: "Jersey stub not found for that number/team/season" });
+    return;
+  }
+
+  if (stub.claimedByClerkUserId) {
+    res.status(400).json({ error: "This jersey stub is already claimed" });
+    return;
+  }
+
+  const firstName = profile.firstName ?? "";
+  const lastName = profile.lastName ?? "";
+
+  // Update the stub player's name to match the real user → recognition will link them
+  await db
+    .update(playersTable)
+    .set({
+      firstName,
+      lastName,
+      number: String(jerseyNumber),
+      isJerseyStub: false,
+    })
+    .where(eq(playersTable.id, stub.playerId));
+
+  // Mark the stub as claimed
+  await db
+    .update(jerseyStubsTable)
+    .set({ claimedByClerkUserId: clerkUserId })
+    .where(eq(jerseyStubsTable.id, stub.id));
+
+  // Run recognition so stamps/tides/archetype are immediately recalculated
+  await recalculateStampsForPlayer(stub.playerId);
+
+  // Return fresh profile
+  const [fresh] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
+  res.json(serializeRow(fresh));
 });
 
 export default router;

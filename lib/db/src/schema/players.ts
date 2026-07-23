@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { teamsTable } from "./teams";
@@ -15,6 +15,7 @@ export const playersTable = pgTable("players", {
   weightLbs: integer("weight_lbs"),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
+  isJerseyStub: boolean("is_jersey_stub").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

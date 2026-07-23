@@ -235,6 +235,24 @@ export async function runMigrations(): Promise<void> {
     await addCol("arcade_sessions",  "tpm",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "tpa",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "dunks",             "integer NOT NULL DEFAULT 0");
+
+    // ── Jersey stubs (unregistered player tracking) ───────────────────────────
+    await addCol("players", "is_jersey_stub", "boolean NOT NULL DEFAULT FALSE");
+    await addCol("games", "opponent_name", "text");
+    await addCol("games", "pending_note", "text");
+    await addCol("games", "submitted_by", "text");
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS jersey_stubs (
+        id            SERIAL PRIMARY KEY,
+        jersey_number INTEGER NOT NULL,
+        team_id       INTEGER NOT NULL REFERENCES teams(id),
+        season        TEXT NOT NULL,
+        player_id     INTEGER NOT NULL REFERENCES players(id),
+        claimed_by_clerk_user_id TEXT,
+        created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(jersey_number, team_id, season)
+      );
+    `);
     console.log("[migrate] Column additions OK");
 
     // ── Verify tables exist ───────────────────────────────────────────────────

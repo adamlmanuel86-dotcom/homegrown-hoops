@@ -26,5 +26,6 @@ export interface Player {
   avatarUrl?: string | null;
   /** @nullable */
   bio?: string | null;
+  isJerseyStub: boolean;
   createdAt: string;
 }

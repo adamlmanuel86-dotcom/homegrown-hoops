@@ -135,6 +135,7 @@ export const ListPlayersResponseItem = zod.object({
   weightLbs: zod.number().nullish(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string().nullish(),
+  isJerseyStub: zod.boolean(),
   createdAt: zod.string(),
 });
 export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
@@ -174,6 +175,7 @@ export const GetPlayerResponse = zod.object({
   weightLbs: zod.number().nullish(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string().nullish(),
+  isJerseyStub: zod.boolean(),
   createdAt: zod.string(),
 });
 
@@ -209,6 +211,7 @@ export const UpdatePlayerResponse = zod.object({
   weightLbs: zod.number().nullish(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string().nullish(),
+  isJerseyStub: zod.boolean(),
   createdAt: zod.string(),
 });
 
@@ -625,6 +628,138 @@ export const UpdateUserRoleResponse = zod.object({
   role: zod.enum(["admin", "manager", "coach", "player"]),
   isAdmin: zod.boolean(),
   createdAt: zod.string(),
+});
+
+/**
+ * @summary List all unclaimed jersey stubs with accumulated stats (admin only)
+ */
+export const ListJerseyStubsResponseItem = zod.object({
+  id: zod.number(),
+  jerseyNumber: zod.number(),
+  teamId: zod.number(),
+  teamName: zod.string().nullish(),
+  season: zod.string(),
+  playerId: zod.number(),
+  claimedByClerkUserId: zod.string().nullish(),
+  gamesPlayed: zod.number(),
+  totalPoints: zod.number(),
+  totalRebounds: zod.number(),
+  totalAssists: zod.number(),
+  createdAt: zod.string(),
+});
+export const ListJerseyStubsResponse = zod.array(ListJerseyStubsResponseItem);
+
+/**
+ * @summary Assign a jersey stub to a registered user (admin only)
+ */
+export const ClaimJerseyNumberParams = zod.object({
+  clerkUserId: zod.coerce.string(),
+});
+
+export const ClaimJerseyNumberBody = zod.object({
+  jerseyNumber: zod.number(),
+  teamId: zod.number(),
+  season: zod.string(),
+});
+
+export const ClaimJerseyNumberResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  school: zod.string().nullish(),
+  position: zod.string().nullish(),
+  graduationYear: zod.number().nullish(),
+  bio: zod.string().nullish(),
+  teamId: zod.number().nullish(),
+  verified: zod.boolean(),
+  isAdmin: zod.boolean(),
+  role: zod.enum(["admin", "manager", "coach", "player"]),
+  avatarUrl: zod.string().nullish(),
+  avatarConfig: zod
+    .object({
+      skin: zod.number(),
+      build: zod.enum(["standard", "stocky", "lanky"]),
+      hairStyle: zod.enum([
+        "fade",
+        "curls",
+        "bald",
+        "long",
+        "afro",
+        "mohawk",
+        "flattop",
+      ]),
+      hairColor: zod.number(),
+      jersey: zod.number(),
+      jerseyStyle: zod.enum(["solid", "pinstripe"]),
+      secondaryColor: zod.number(),
+      shorts: zod.number(),
+      accessories: zod.object({
+        headband: zod.boolean(),
+        wristbands: zod.boolean(),
+        kneepads: zod.boolean(),
+      }),
+      accessoryColor: zod.number(),
+      eyebrows: zod.enum(["none", "angry", "raised"]),
+      mouth: zod.enum(["neutral", "smile", "smirk", "frown"]),
+      glasses: zod
+        .enum(["none", "clear", "tinted", "shades", "goggles"])
+        .optional(),
+    })
+    .nullish(),
+  number: zod.string().nullish().describe("Player jersey number"),
+  stamps: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
+    }),
+  ),
+  tides: zod.array(
+    zod.object({
+      id: zod.string(),
+      earnedAt: zod.string(),
+      season: zod
+        .string()
+        .optional()
+        .describe(
+          'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+        ),
+    }),
+  ),
+  milestones: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        earnedAt: zod.string(),
+        season: zod
+          .string()
+          .optional()
+          .describe(
+            'Season this recognition was earned in, e.g. \"2025-26\". Present on tides awarded from the 2025-26 season onward.',
+          ),
+      }),
+    )
+    .describe(
+      "Career milestone achievements. Each entry is awarded once when a career stat threshold is crossed.",
+    ),
+  archetype: zod.string().nullish(),
+  archetypeHistory: zod
+    .array(
+      zod.object({
+        season: zod.string(),
+        archetype: zod.string(),
+      }),
+    )
+    .nullish()
+    .describe("Per-season archetype history, archived at season end."),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
 });
 
 /**

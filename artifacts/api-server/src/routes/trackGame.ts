@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, gamesTable, gamePlayerStatsTable, playersTable, userProfilesTable } from "@workspace/db";
+import { db, gamesTable, gamePlayerStatsTable, playersTable, userProfilesTable, jerseyStubsTable } from "@workspace/db";
 import { serializeRow } from "../lib/serialize";
 import { runFullRecognition } from "../recognition";
 
@@ -92,30 +92,69 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     let resolvedPlayerId = stat.playerId ?? null;
 
     if (!resolvedPlayerId && stat.playerName && stat.teamId) {
-      const nameParts = stat.playerName.trim().split(/\s+/);
-      const firstName = nameParts[0] ?? "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      if (firstName) {
-        const [existing] = await db
-          .select({ id: playersTable.id })
-          .from(playersTable)
+      const jerseyMatch = stat.playerName.trim().match(/^#(\d+)$/);
+      if (jerseyMatch) {
+        // ── Jersey stub flow ─────────────────────────────────────────────────
+        const jerseyNumber = parseInt(jerseyMatch[1], 10);
+        const [existingStub] = await db
+          .select({ playerId: jerseyStubsTable.playerId })
+          .from(jerseyStubsTable)
           .where(
             and(
-              eq(playersTable.firstName, firstName),
-              eq(playersTable.lastName, lastName),
-              eq(playersTable.teamId, stat.teamId)
+              eq(jerseyStubsTable.jerseyNumber, jerseyNumber),
+              eq(jerseyStubsTable.teamId, stat.teamId),
+              eq(jerseyStubsTable.season, body.season)
             )
           );
 
-        if (existing) {
-          resolvedPlayerId = existing.id;
+        if (existingStub) {
+          resolvedPlayerId = existingStub.playerId;
         } else {
-          const [created] = await db
+          const [stubPlayer] = await db
             .insert(playersTable)
-            .values({ firstName, lastName, teamId: stat.teamId })
+            .values({
+              firstName: `#${jerseyNumber}`,
+              lastName: "",
+              teamId: stat.teamId,
+              number: String(jerseyNumber),
+              isJerseyStub: true,
+            })
             .returning({ id: playersTable.id });
-          resolvedPlayerId = created.id;
+          await db.insert(jerseyStubsTable).values({
+            jerseyNumber,
+            teamId: stat.teamId,
+            season: body.season,
+            playerId: stubPlayer.id,
+          });
+          resolvedPlayerId = stubPlayer.id;
+        }
+      } else {
+        // ── Name-based player resolution ─────────────────────────────────────
+        const nameParts = stat.playerName.trim().split(/\s+/);
+        const firstName = nameParts[0] ?? "";
+        const lastName = nameParts.slice(1).join(" ") || "";
+
+        if (firstName) {
+          const [existing] = await db
+            .select({ id: playersTable.id })
+            .from(playersTable)
+            .where(
+              and(
+                eq(playersTable.firstName, firstName),
+                eq(playersTable.lastName, lastName),
+                eq(playersTable.teamId, stat.teamId)
+              )
+            );
+
+          if (existing) {
+            resolvedPlayerId = existing.id;
+          } else {
+            const [created] = await db
+              .insert(playersTable)
+              .values({ firstName, lastName, teamId: stat.teamId })
+              .returning({ id: playersTable.id });
+            resolvedPlayerId = created.id;
+          }
         }
       }
     }

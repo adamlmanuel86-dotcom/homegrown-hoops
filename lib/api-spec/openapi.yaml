@@ -467,6 +467,58 @@ paths:
         "404":
           description: User not found
 
+  /admin/jersey-stubs:
+    get:
+      operationId: listJerseyStubs
+      tags: [admin]
+      summary: List all unclaimed jersey stubs with accumulated stats (admin only)
+      responses:
+        "200":
+          description: List of jersey stubs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JerseyStub"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /admin/users/{clerkUserId}/claim-jersey:
+    post:
+      operationId: claimJerseyNumber
+      tags: [admin]
+      summary: Assign a jersey stub to a registered user (admin only)
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimJerseyBody"
+      responses:
+        "200":
+          description: Jersey claimed; recognition triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "400":
+          description: Invalid request or stub already claimed
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: User or stub not found
+
   /track-game/submit:
     post:
       operationId: submitTrackGame
@@ -1007,12 +1059,15 @@ components:
           type: ["string", "null"]
         bio:
           type: ["string", "null"]
+        isJerseyStub:
+          type: boolean
         createdAt:
           type: string
       required:
         - id
         - firstName
         - lastName
+        - isJerseyStub
         - createdAt
 
     CreatePlayerBody:
@@ -2008,3 +2063,56 @@ components:
           type: string
       required:
         - note
+
+    JerseyStub:
+      type: object
+      properties:
+        id:
+          type: integer
+        jerseyNumber:
+          type: integer
+        teamId:
+          type: integer
+        teamName:
+          type: ["string", "null"]
+        season:
+          type: string
+        playerId:
+          type: integer
+        claimedByClerkUserId:
+          type: ["string", "null"]
+        gamesPlayed:
+          type: integer
+        totalPoints:
+          type: integer
+        totalRebounds:
+          type: integer
+        totalAssists:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - jerseyNumber
+        - teamId
+        - season
+        - playerId
+        - gamesPlayed
+        - totalPoints
+        - totalRebounds
+        - totalAssists
+        - createdAt
+
+    ClaimJerseyBody:
+      type: object
+      properties:
+        jerseyNumber:
+          type: integer
+        teamId:
+          type: integer
+        season:
+          type: string
+      required:
+        - jerseyNumber
+        - teamId
+        - season

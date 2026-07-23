@@ -12,6 +12,7 @@ import cloudinaryRouter from "./cloudinary";
 import isoBallRouter from "./iso-ball";
 import arcadeRouter from "./arcade";
 import trackGameRouter from "./trackGame";
+import jerseyStubsRouter from "./jerseyStubs";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(cloudinaryRouter);
 router.use(isoBallRouter);
 router.use(arcadeRouter);
 router.use(trackGameRouter);
+router.use(jerseyStubsRouter);
 
 export default router;

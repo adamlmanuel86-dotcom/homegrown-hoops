@@ -481,14 +481,21 @@ export function TrackGamePage() {
               Add Player
             </div>
             <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Player name"
-                className="flex-1 border-2 border-border bg-background p-2 text-sm focus:outline-none focus:border-primary"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addManualPlayer()}
-              />
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Player name or #14 for jersey stub"
+                  className="w-full border-2 border-border bg-background p-2 text-sm focus:outline-none focus:border-primary"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addManualPlayer()}
+                />
+                {/^#\d+$/.test(newPlayerName.trim()) && (
+                  <div className="absolute -bottom-5 left-0 text-[10px] font-bold uppercase tracking-wider text-primary">
+                    Jersey stub — stats tracked, no profile
+                  </div>
+                )}
+              </div>
               {mode === "full" && (
                 <select
                   className="border-2 border-border bg-background p-2 text-sm focus:outline-none focus:border-primary"
@@ -506,6 +513,7 @@ export function TrackGamePage() {
                 +
               </button>
             </div>
+            {/^#\d+$/.test(newPlayerName.trim()) && <div className="h-5" />}
           </div>
         </div>
 
