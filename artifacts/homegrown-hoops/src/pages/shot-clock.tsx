@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/react";
 import { apiBase } from "@/lib/api";
 import { Link } from "wouter";
@@ -6,9 +6,14 @@ import { ArrowLeft } from "lucide-react";
 
 export function ShotClockPage() {
   const { getToken, isSignedIn } = useAuth();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    const expectedOrigin = window.location.origin;
     async function handleMessage(e: MessageEvent) {
+      // Only accept messages from the same origin (our own iframe)
+      if (e.origin !== expectedOrigin) return;
+      if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return;
       if (e.data?.type === "GAME_OVER" && isSignedIn) {
         try {
           const token = await getToken();
@@ -17,9 +22,9 @@ export function ShotClockPage() {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
               game: "shot-clock",
-              score: e.data.score ?? 0,
-              bestStreak: e.data.bestStreak ?? 0,
-              roundsPlayed: e.data.roundsPlayed ?? 0,
+              score: typeof e.data.score === "number" ? e.data.score : 0,
+              bestStreak: typeof e.data.bestStreak === "number" ? e.data.bestStreak : 0,
+              roundsPlayed: typeof e.data.roundsPlayed === "number" ? e.data.roundsPlayed : 0,
             }),
           });
         } catch {
@@ -39,6 +44,7 @@ export function ShotClockPage() {
         </Link>
       </div>
       <iframe
+        ref={iframeRef}
         src="/games/shot-clock.html"
         className="flex-1 w-full border-0"
         title="Shot Clock"

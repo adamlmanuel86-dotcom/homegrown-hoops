@@ -9,7 +9,11 @@ export function FastBreakPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    const expectedOrigin = window.location.origin;
     async function handleMessage(e: MessageEvent) {
+      // Only accept messages from the same origin (our own iframe)
+      if (e.origin !== expectedOrigin) return;
+      if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return;
       if (e.data?.type === "GAME_OVER" && isSignedIn) {
         try {
           const token = await getToken();
@@ -18,9 +22,9 @@ export function FastBreakPage() {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
               game: "fast-break",
-              score: e.data.score ?? 0,
-              bestStreak: e.data.bestStreak ?? 0,
-              roundsPlayed: e.data.roundsPlayed ?? 0,
+              score: typeof e.data.score === "number" ? e.data.score : 0,
+              bestStreak: typeof e.data.bestStreak === "number" ? e.data.bestStreak : 0,
+              roundsPlayed: typeof e.data.roundsPlayed === "number" ? e.data.roundsPlayed : 0,
             }),
           });
         } catch {
