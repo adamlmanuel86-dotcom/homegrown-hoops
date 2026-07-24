@@ -10,7 +10,7 @@ type GameTile = {
   description: string;
   href: string;
   color: string;
-  statKey: "fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble" | "chainGame" | null;
+  statKey: "fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble" | null;
 };
 
 const GAMES: GameTile[] = [
@@ -49,15 +49,6 @@ const GAMES: GameTile[] = [
     href: "/arcade/shot-clock-scramble",
     color: "border-red-500",
     statKey: "shotClockScramble",
-  },
-  {
-    id: "chain-game",
-    title: "Chain Game",
-    emoji: "🔗",
-    description: "Link NBA players together. Each next player's first name must start with the last letter of the previous player's last name.",
-    href: "/arcade/chain-game",
-    color: "border-blue-500",
-    statKey: "chainGame",
   },
   {
     id: "iso-ball",
@@ -150,7 +141,6 @@ export function ArcadePage() {
   const { data: wygBoard } = useGetArcadeLeaderboard({ game: "who-ya-got" });
   const { data: scBoard } = useGetArcadeLeaderboard({ game: "meter-master" });
   const { data: scsBoard } = useGetArcadeLeaderboard({ game: "shot-clock-scramble" });
-  const { data: cgBoard } = useGetArcadeLeaderboard({ game: "chain-game" });
   const { data: ibBoard } = useGetIsoBallLeaderboard();
 
   function getBest(key: GameTile["statKey"]): ArcadeGameStats | null {
@@ -209,7 +199,6 @@ export function ArcadePage() {
           <LeaderboardTable title="Who Ya Got" emoji="🏆" color="bg-purple-800" data={wygBoard} />
           <LeaderboardTable title="Meter Master" emoji="⏱" color="bg-green-800" data={scBoard} />
           <LeaderboardTable title="Shot Clock Scramble" emoji="🧠" color="bg-red-800" data={scsBoard} />
-          <LeaderboardTable title="Chain Game" emoji="🔗" color="bg-blue-800" data={cgBoard} />
           <IsoBallLeaderboardTable data={ibBoard} />
         </div>
       </div>

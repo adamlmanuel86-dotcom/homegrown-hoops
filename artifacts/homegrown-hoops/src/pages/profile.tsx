@@ -31,7 +31,7 @@ export function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [arcadeModal, setArcadeModal] = useState<"fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble" | "chainGame" | null>(null);
+  const [arcadeModal, setArcadeModal] = useState<"fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble" | null>(null);
 
   async function handleShare() {
     const url = `${window.location.origin}${BASE_URL}/p/${clerkUserId}`;
@@ -344,10 +344,6 @@ export function ProfilePage() {
   );
   const { data: scsRank } = useGetMyArcadeRank(
     { game: "shot-clock-scramble" },
-    { query: { enabled: isOwner } },
-  );
-  const { data: cgRank } = useGetMyArcadeRank(
-    { game: "chain-game" },
     { query: { enabled: isOwner } },
   );
   const { data: ibRank } = useGetIsoBallRank({ query: { enabled: isOwner } });
@@ -1375,73 +1371,6 @@ export function ProfilePage() {
             );
           })()}
 
-          {/* ── CHAIN GAME ──────────────────────────────────────────────── */}
-          {(() => {
-            const cg = arcadeStats?.chainGame ?? null;
-            return (
-              <Link href="/arcade/chain-game">
-                <div
-                  className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
-                  style={{ background: "linear-gradient(135deg, #0a0f1a 0%, #101828 100%)" }}
-                >
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.15) 0%, transparent 60%)" }} />
-                  <div className="flex items-center justify-between px-4 pt-4">
-                    <div className="flex items-center gap-2">
-                      <span style={{ fontSize: 18 }}>🔗</span>
-                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Chain Game</span>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-blue-500/60" style={{ color: "#3b82f6", background: "rgba(59,130,246,0.1)" }}>
-                      Chain
-                    </span>
-                  </div>
-                  {cg ? (
-                    <>
-                      <div className="flex items-center gap-4 px-4 py-3">
-                        <div>
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-white/35 mb-0.5">Best Chain</p>
-                          <p className="font-display leading-none" style={{ fontSize: "clamp(52px,12vw,72px)", color: "#3b82f6" }}>{cg.bestScore}</p>
-                        </div>
-                        <div className="flex-1 flex justify-end items-center pr-2">
-                          <div className="relative w-16 h-16">
-                            <div className="absolute inset-0 rounded-full border-2 border-blue-800/50" />
-                            <div className="absolute inset-1 rounded-full border-2 border-blue-600/40" style={{ animation: "ping 1.8s cubic-bezier(0,0,0.2,1) infinite" }} />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="font-display text-xl text-blue-500">{cg.bestStreak}</span>
-                            </div>
-                            <p className="absolute -bottom-4 left-0 right-0 text-center text-[8px] uppercase tracking-wider text-white/30">streak</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex border-t border-white/8" style={{ background: "rgba(0,0,0,0.35)" }}>
-                        {[
-                          { label: "Best Streak", val: cg.bestStreak, highlight: true },
-                          { label: "Games Played", val: cg.gamesPlayed, highlight: false },
-                        ].map((s, i) => (
-                          <div key={s.label} className={`flex-1 py-3 text-center ${i < 1 ? "border-r border-white/8" : ""}`}>
-                            <p className={`font-black text-xl leading-none ${s.highlight ? "text-blue-400" : "text-white"}`}>{s.val}</p>
-                            <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">{s.label}</p>
-                          </div>
-                        ))}
-                        {cgRank?.rank != null && (
-                          <div className="py-3 text-center px-3 border-r border-white/8">
-                            <p className="font-black text-xl text-blue-400 leading-none">#{cgRank.rank}</p>
-                            <p className="text-[9px] uppercase tracking-wider text-white/30 mt-0.5">of {cgRank.total}</p>
-                          </div>
-                        )}
-                        <div className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-blue-400 group-hover:text-blue-300 transition-colors border-l border-white/8">Play →</div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="px-4 pb-4 flex items-center justify-between">
-                      <p className="text-sm text-white/30 italic">No games yet</p>
-                      <span className="text-[11px] font-black uppercase tracking-widest text-blue-400 group-hover:text-blue-300 transition-colors">Play Now →</span>
-                    </div>
-                  )}
-                </div>
-              </Link>
-            );
-          })()}
-
           {/* ── ISO BALL ────────────────────────────────────────────────── */}
           {(() => {
             const ib = isoBallData && isoBallData.sessionCount > 0 ? isoBallData : null;
@@ -1506,8 +1435,7 @@ export function ProfilePage() {
             arcadeModal === "fastBreak" ? arcadeStats.fastBreak :
             arcadeModal === "whoYaGot" ? arcadeStats.whoYaGot :
             arcadeModal === "meterMaster" ? arcadeStats.meterMaster :
-            arcadeModal === "shotClockScramble" ? arcadeStats.shotClockScramble :
-            arcadeStats.chainGame
+            arcadeStats.shotClockScramble
           }
           onClose={() => setArcadeModal(null)}
         />
@@ -1518,28 +1446,25 @@ export function ProfilePage() {
 
 // ── Arcade stat modal ────────────────────────────────────────────────────────
 
-type ArcadeGameKey = "fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble" | "chainGame";
+type ArcadeGameKey = "fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble";
 
 const GAME_LABEL: Record<ArcadeGameKey, string> = {
   fastBreak:        "FAST BREAK",
   whoYaGot:         "WHO YA GOT",
   meterMaster:      "METER MASTER",
   shotClockScramble: "SHOT CLOCK SCRAMBLE",
-  chainGame:        "CHAIN GAME",
 };
-const GAME_SLUG: Record<ArcadeGameKey, "fast-break" | "who-ya-got" | "meter-master" | "shot-clock-scramble" | "chain-game"> = {
+const GAME_SLUG: Record<ArcadeGameKey, "fast-break" | "who-ya-got" | "meter-master" | "shot-clock-scramble"> = {
   fastBreak:        "fast-break",
   whoYaGot:         "who-ya-got",
   meterMaster:      "meter-master",
   shotClockScramble: "shot-clock-scramble",
-  chainGame:        "chain-game",
 };
 const GAME_EMOJI: Record<ArcadeGameKey, string> = {
   fastBreak:        "🏀",
   whoYaGot:         "🎯",
   meterMaster:      "⏱️",
   shotClockScramble: "⏰",
-  chainGame:        "🔗",
 };
 
 function fmtArcadePct(made: number, att: number): string {
