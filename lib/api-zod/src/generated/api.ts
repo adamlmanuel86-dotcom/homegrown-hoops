@@ -959,6 +959,7 @@ export const ListManagerDelegationsResponseItem = zod.object({
   delegateeClerkUserId: zod.string(),
   teamId: zod.number(),
   used: zod.boolean(),
+  expiresAfterOneGame: zod.boolean(),
   createdAt: zod.string(),
 });
 export const ListManagerDelegationsResponse = zod.array(

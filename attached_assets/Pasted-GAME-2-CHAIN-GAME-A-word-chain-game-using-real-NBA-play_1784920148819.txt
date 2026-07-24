@@ -1,0 +1,39 @@
+GAME 2 — CHAIN GAME
+
+A word chain game using real NBA player names.
+
+Rules:
+
+	•	Game starts with a displayed NBA player name
+	•	Player must type a real NBA player whose first name starts with the last letter of the previous player’s last name
+	•	Example: Michael Jordan → last name Jordan ends in N → next player must start with N → Nikola Jokic → last name Jokic ends in C → next must start with C → Carmelo Anthony
+	•	30 second timer per entry
+	•	App validates entries against a database of real NBA players — invalid names or wrong starting letter end the game
+	•	Score = length of chain before error or timeout
+	•	Solo mode tracks personal best and global leaderboard
+	•	Multiplayer mode — pass the device, player who breaks the chain loses
+
+NBA Player validation database — include at minimum these players so the game works well:
+Kareem Abdul-Jabbar, Ray Allen, Carmelo Anthony, Giannis Antetokounmpo, Charles Barkley, Larry Bird, Kobe Bryant, Vince Carter, Stephen Curry, Tim Duncan, Kevin Durant, Kevin Garnett, Draymond Green, James Harden, Allen Iverson, LeBron James, Magic Johnson, Michael Jordan, Jason Kidd, Kawhi Leonard, Damian Lillard, Karl Malone, Shaquille O’Neal, Chris Paul, Scottie Pippen, Dennis Rodman, Bill Russell, Derrick Rose, Wilt Chamberlain, John Stockton, Isiah Thomas, Nikola Jokic, Luka Doncic, Jayson Tatum, Joel Embiid, Ja Morant, Zion Williamson, Anthony Davis, Russell Westbrook, Paul George, Jimmy Butler, Bam Adebayo, Trae Young, Devin Booker, Donovan Mitchell, Shai Gilgeous-Alexander, Tyrese Haliburton, Victor Wembanyama, Chet Holmgren, Paolo Banchero, Franz Wagner, Jalen Brunson, Anthony Edwards, Scottie Barnes, Evan Mobley, Franz Wagner, Jaren Jackson Jr, Darius Garland, Tyrese Maxey, Jordan Poole, Tyler Herro, Duncan Robinson, Kyle Lowry, Pascal Siakam, Fred VanVleet, OG Anunoby, Gary Trent Jr, Precious Achiuwa, Malachi Flynn, Khem Birch, Chris Boucher, Sviatoslav Mykhailiuk, Yuta Watanabe, David Robinson, Hakeem Olajuwon, Patrick Ewing, Alonzo Mourning, Dikembe Mutombo, Reggie Miller, Clyde Drexler, Dominique Wilkins, Patrick Ewing, Gary Payton, John Paxton, Pete Maravich, Oscar Robertson, Elgin Baylor, Jerry West, Bob Cousy, John Havlicek, Dave Cowens, Bob McAdoo, Moses Malone, Julius Erving, George Gervin, Isiah Thomas, Joe Dumars, Dennis Rodman, Dan Majerle, Kevin Johnson, Dan Issel, Alex English, Walter Davis, Paul Westphal, Gail Goodrich, James Worthy, Byron Scott, AC Green, Michael Cooper, Kurt Rambis, Mychal Thompson, Norm Nixon, Maurice Lucas, Bobby Jones, Andrew Toney, Maurice Cheeks, Julius Erving, Darryl Dawkins, Lloyd Free, World B Free
+
+VISUAL DESIGN FOR BOTH GAMES:
+Both games must match the Homegrown Hoops visual style exactly:
+
+	•	Dark background — #070c14
+	•	Orange accents — #f97316
+	•	Barlow Condensed font for scores and headings
+	•	Inter font for body text
+	•	Shot clock displayed as a prominent orange countdown ring
+	•	Correct answers flash green, wrong answers flash red
+	•	Clean card based layout matching the rest of the platform
+	•	Leaderboard accessible from the game end screen and from the player profile page
+	•	Each game shows personal best score and global top 10 on the player profile
+
+LEADERBOARDS:
+
+	•	Each game has its own global leaderboard
+	•	Leaderboard shows player name, score and date
+	•	Personal best score shows on the player profile page under a Games section
+	•	Top 10 global scores visible to all users
+
+Push all changes to GitHub when complete.”

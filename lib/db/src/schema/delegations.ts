@@ -9,6 +9,7 @@ export const gameTrackingDelegationsTable = pgTable("game_tracking_delegations",
   delegateeClerkUserId: text("delegatee_clerk_user_id").notNull(),
   teamId: integer("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
   used: boolean("used").notNull().default(false),
+  expiresAfterOneGame: boolean("expires_after_one_game").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

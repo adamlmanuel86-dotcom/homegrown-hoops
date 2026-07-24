@@ -255,6 +255,7 @@ export async function runMigrations(): Promise<void> {
       );
     `);
     console.log("[migrate] game_tracking_delegations OK");
+    await addCol("game_tracking_delegations", "expires_after_one_game", "boolean NOT NULL DEFAULT TRUE");
 
     // ── Jersey stubs (unregistered player tracking) ───────────────────────────
     await addCol("players", "is_jersey_stub", "boolean NOT NULL DEFAULT FALSE");

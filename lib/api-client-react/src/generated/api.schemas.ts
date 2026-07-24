@@ -866,6 +866,7 @@ export interface ManagerDelegation {
   delegateeClerkUserId: string;
   teamId: number;
   used: boolean;
+  expiresAfterOneGame: boolean;
   createdAt: string;
 }
 

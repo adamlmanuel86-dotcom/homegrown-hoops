@@ -2643,6 +2643,8 @@ components:
           type: integer
         used:
           type: boolean
+        expiresAfterOneGame:
+          type: boolean
         createdAt:
           type: string
       required:
@@ -2651,6 +2653,7 @@ components:
         - delegateeClerkUserId
         - teamId
         - used
+        - expiresAfterOneGame
         - createdAt
 
     CreateDelegationBody:

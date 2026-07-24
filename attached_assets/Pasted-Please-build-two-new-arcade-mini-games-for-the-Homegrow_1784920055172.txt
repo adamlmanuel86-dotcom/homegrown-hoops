@@ -1,0 +1,106 @@
+Please build two new arcade mini games for the Homegrown Hoops platform and push all changes to GitHub.
+
+GAME 1 — SHOT CLOCK SCRAMBLE
+
+A basketball trivia game where players answer questions before a 24 second shot clock expires.
+
+Rules:
+
+	•	24 second shot clock counts down visibly on screen
+	•	Multiple choice format with 4 options per question
+	•	Three difficulty tiers — Rookie, Varsity, Elite
+	•	Correct answer before time expires — clock resets to 24, next question loads
+	•	Wrong answer OR time expires — game over, score recorded
+	•	Score = total correct answers in a row before game ends
+	•	Questions use real NBA player names and career statistics
+
+Use these questions organized by tier:
+
+ROOKIE TIER:
+
+	1.	How many points is a shot worth from behind the three point line? A) 1 B) 2 C) 3 D) 4 — Answer: C
+	2.	How many players are on the court per team at one time? A) 4 B) 5 C) 6 D) 7 — Answer: B
+	3.	How many championships did Michael Jordan win? A) 4 B) 5 C) 6 D) 7 — Answer: C
+	4.	Who is known as The Greek Freak? A) Luka Doncic B) Nikola Jokic C) Giannis Antetokounmpo D) Joel Embiid — Answer: C
+	5.	How many seconds is the shot clock in NBA basketball? A) 20 B) 24 C) 30 D) 35 — Answer: B
+	6.	Who holds the NBA record for most points scored in a single game? A) Kobe Bryant B) Michael Jordan C) Wilt Chamberlain D) LeBron James — Answer: C
+	7.	What number did Kobe Bryant wear for most of his career? A) 8 B) 23 C) 24 D) 33 — Answer: C
+	8.	How many fouls does a player need to foul out in the NBA? A) 4 B) 5 C) 6 D) 7 — Answer: C
+	9.	Who holds the record for most career points in NBA history as of 2024? A) Kareem Abdul-Jabbar B) Karl Malone C) Kobe Bryant D) LeBron James — Answer: D
+	10.	What country is Steve Nash from? A) USA B) Australia C) Canada D) UK — Answer: C
+	11.	How many timeouts does each team get per game in the NBA? A) 5 B) 6 C) 7 D) 8 — Answer: C
+	12.	What team did Kevin Durant win his first championship with? A) Oklahoma City Thunder B) Brooklyn Nets C) Golden State Warriors D) Phoenix Suns — Answer: C
+	13.	Who holds the record for most three pointers made in NBA history? A) Ray Allen B) Reggie Miller C) Stephen Curry D) Klay Thompson — Answer: C
+	14.	How many quarters are in an NBA game? A) 2 B) 3 C) 4 D) 5 — Answer: C
+	15.	How long is each quarter in the NBA? A) 10 minutes B) 12 minutes C) 15 minutes D) 20 minutes — Answer: B
+	16.	What number did Magic Johnson wear? A) 23 B) 32 C) 33 D) 34 — Answer: B
+	17.	Who is known as The Admiral? A) Tim Duncan B) David Robinson C) Shaquille O’Neal D) Patrick Ewing — Answer: B
+	18.	How many seconds does a player have to inbound the ball? A) 3 B) 4 C) 5 D) 8 — Answer: C
+	19.	What number did Larry Bird wear? A) 7 B) 22 C) 33 D) 44 — Answer: C
+	20.	How long is NBA overtime? A) 3 minutes B) 4 minutes C) 5 minutes D) 6 minutes — Answer: C
+	21.	Who is known as The Big Fundamental? A) Shaquille O’Neal B) Tim Duncan C) David Robinson D) Karl Malone — Answer: B
+	22.	What country is Luka Doncic from? A) Croatia B) Serbia C) Slovenia D) Greece — Answer: C
+	23.	Who is known as The Point God? A) Magic Johnson B) John Stockton C) Chris Paul D) Steve Nash — Answer: C
+	24.	What number did Allen Iverson wear? A) 1 B) 3 C) 11 D) 21 — Answer: B
+	25.	What city do the Raptors play in? A) Vancouver B) Montreal C) Calgary D) Toronto — Answer: D
+	26.	Who is known as Black Mamba? A) Michael Jordan B) LeBron James C) Kobe Bryant D) Allen Iverson — Answer: C
+	27.	What team did Dirk Nowitzki play his entire career with? A) San Antonio Spurs B) Houston Rockets C) Dallas Mavericks D) Phoenix Suns — Answer: C
+	28.	How many championship rings does Scottie Pippen have? A) 4 B) 5 C) 6 D) 7 — Answer: C
+	29.	What country is Shai Gilgeous-Alexander from? A) USA B) Jamaica C) Canada D) Bahamas — Answer: C
+	30.	Who won the 2021 NBA championship? A) Brooklyn Nets B) Phoenix Suns C) Milwaukee Bucks D) Los Angeles Lakers — Answer: C
+
+VARSITY TIER:
+
+	1.	What was Wilt Chamberlain’s scoring average in the season he scored 100 points in a game? A) 44.8 B) 48.5 C) 50.4 D) 53.1 — Answer: C
+	2.	How many consecutive seasons did Michael Jordan lead the league in scoring? A) 7 B) 8 C) 9 D) 10 — Answer: D
+	3.	How many assists did Scott Skiles record in his record breaking single game? A) 25 B) 27 C) 29 D) 30 — Answer: D
+	4.	What was Kobe Bryant’s scoring average in the 2005-06 season? A) 33.2 B) 34.5 C) 35.4 D) 36.1 — Answer: C
+	5.	How many three pointers did Stephen Curry make in the 2015-16 season? A) 324 B) 365 C) 386 D) 402 — Answer: D
+	6.	Who holds the record for most career blocked shots? A) Dikembe Mutombo B) David Robinson C) Hakeem Olajuwon D) Mark Eaton — Answer: C
+	7.	How many MVP awards did Kareem Abdul-Jabbar win? A) 4 B) 5 C) 6 D) 7 — Answer: C
+	8.	Who scored 81 points in a single game — the second highest ever? A) Michael Jordan B) Kobe Bryant C) LeBron James D) Allen Iverson — Answer: B
+	9.	What year did Michael Jordan retire for the first time? A) 1992 B) 1993 C) 1994 D) 1995 — Answer: B
+	10.	How many times did the Chicago Bulls win 60 or more games during the Jordan era? A) 2 B) 3 C) 4 D) 5 — Answer: C
+	11.	Who was the first player to win Finals MVP without winning the championship? A) Elgin Baylor B) Jerry West C) Oscar Robertson D) Bob Pettit — Answer: B
+	12.	How many rebounds did Dennis Rodman average during his best rebounding season? A) 16.4 B) 17.3 C) 18.7 D) 19.2 — Answer: C
+	13.	What was Allen Iverson’s scoring average in 2001 when he won MVP? A) 28.4 B) 29.6 C) 30.4 D) 31.1 — Answer: D
+	14.	Who was the first player to win MVP unanimously? A) Michael Jordan B) LeBron James C) Stephen Curry D) Shaquille O’Neal — Answer: C
+	15.	How many points did Tracy McGrady score in 35 seconds to complete a comeback? A) 10 B) 11 C) 13 D) 15 — Answer: C
+	16.	What was Kevin Durant’s scoring average in his 2013-14 MVP season? A) 30.1 B) 31.0 C) 32.0 D) 33.2 — Answer: C
+	17.	How many games did the 1995-96 Chicago Bulls win? A) 69 B) 70 C) 71 D) 72 — Answer: D
+	18.	Who holds the record for most points in a single quarter? A) Kobe Bryant B) Carmelo Anthony C) Kevin Durant D) Klay Thompson — Answer: D
+	19.	How many assists did John Stockton record per game in his record season? A) 13.3 B) 14.5 C) 15.2 D) 16.1 — Answer: B
+	20.	What was Dennis Rodman’s rebounding average in the 1991-92 season? A) 16.2 B) 17.5 C) 18.7 D) 19.1 — Answer: C
+	21.	How many rebounds did Wilt Chamberlain average in the 1960-61 season? A) 24.3 B) 25.7 C) 27.2 D) 28.4 — Answer: C
+	22.	What was Hakeem Olajuwon’s block average in his best defensive season? A) 3.7 B) 4.0 C) 4.6 D) 5.0 — Answer: C
+	23.	How many seasons did John Stockton lead the league in assists? A) 7 B) 8 C) 9 D) 10 — Answer: C
+	24.	Who holds the record for most career assists? A) Magic Johnson B) Oscar Robertson C) John Stockton D) Jason Kidd — Answer: C
+	25.	What was Larry Bird’s scoring average in the 1987-88 season? A) 27.4 B) 28.6 C) 29.9 D) 31.2 — Answer: C
+	26.	How many championships did the Showtime Lakers win? A) 3 B) 4 C) 5 D) 6 — Answer: C
+	27.	What was Oscar Robertson’s points average when he averaged a triple double? A) 28.3 B) 29.4 C) 30.8 D) 32.1 — Answer: C
+	28.	How many points did Michael Jordan score in his famous Flu Game in 1997? A) 32 B) 35 C) 38 D) 41 — Answer: C
+	29.	Who was the first player to win three consecutive Finals MVPs? A) Michael Jordan B) LeBron James C) Shaquille O’Neal D) Magic Johnson — Answer: C
+	30.	What was Stephen Curry’s three point percentage in the 2015-16 season? A) 42.1 B) 43.8 C) 44.3 D) 45.4 — Answer: D
+
+ELITE TIER:
+
+	1.	What was Wilt Chamberlain’s free throw percentage in the season he scored 100 points? A) 61.3 B) 68.4 C) 72.1 D) 75.9 — Answer: A
+	2.	How many rebounds did Wilt Chamberlain grab in a single game — an NBA record? A) 43 B) 49 C) 55 D) 62 — Answer: C
+	3.	What was Jerry West’s scoring average in the 1965 playoffs — still a record? A) 38.4 B) 39.7 C) 40.6 D) 42.1 — Answer: C
+	4.	How many consecutive free throws did Michael Williams make — an NBA record? A) 84 B) 91 C) 97 D) 103 — Answer: C
+	5.	What was Pete Maravich’s scoring average in college? A) 40.3 B) 42.1 C) 44.2 D) 46.5 — Answer: C
+	6.	How many games did the 1971-72 Los Angeles Lakers win — an NBA record at the time? A) 65 B) 67 C) 69 D) 71 — Answer: C
+	7.	What was Rick Barry’s free throw percentage using his underhand technique in his best season? A) 89.4 B) 90.7 C) 92.4 D) 94.1 — Answer: C
+	8.	How many points did George Gervin score to win the scoring title on the final day of the 1977-78 season? A) 58 B) 60 C) 63 D) 67 — Answer: C
+	9.	How many rebounds did Bill Russell average in the 1963-64 season? A) 22.3 B) 23.6 C) 24.7 D) 26.1 — Answer: C
+	10.	What was Kareem Abdul-Jabbar’s scoring average in his MVP year of 1971-72? A) 31.7 B) 33.4 C) 34.8 D) 36.2 — Answer: C
+	11.	How many consecutive games did Stephen Curry make at least one three pointer — an NBA record? A) 196 B) 222 C) 244 D) 268 — Answer: D
+	12.	How many points did Kobe Bryant score in his final NBA game? A) 50 B) 55 C) 60 D) 65 — Answer: C
+	13.	What was Michael Jordan’s career playoff scoring average? A) 31.2 B) 32.4 C) 33.4 D) 34.7 — Answer: C
+	14.	How many seasons did Wilt Chamberlain lead the league in rebounding? A) 8 B) 9 C) 10 D) 11 — Answer: D
+	15.	What was Bob Cousy’s assists average in the 1959-60 season? A) 8.1 B) 8.8 C) 9.5 D) 10.2 — Answer: C
+	16.	How many All Star games did John Havlicek play in? A) 10 B) 11 C) 12 D) 13 — Answer: D
+	17.	What was Dominique Wilkins scoring average in his best season? A) 28.1 B) 29.4 C) 30.3 D) 31.7 — Answer: C
+	18.	How many points did Michael Jordan score in his first ever playoff game? A) 42 B) 45 C) 49 D) 52 — Answer: C
+	19.	What was Patrick Ewing’s scoring average in his best season? A) 26.4 B) 27.5 C) 28.6 D) 29.8 — Answer: C
+	20.	How many games did the 1985-86 Boston Celtics win? A) 63 B) 65 C) 67 D) 69 — Answer: C

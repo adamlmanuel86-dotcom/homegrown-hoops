@@ -549,7 +549,7 @@ export function TrackGamePage() {
                     onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
                   >
                     <option value="">Select team…</option>
-                    {(teams ?? []).map((t) => (
+                    {myTeamsForPicker.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
@@ -562,7 +562,7 @@ export function TrackGamePage() {
                     onChange={(e) => setAwayTeamId(Number(e.target.value) || null)}
                   >
                     <option value="">Select team…</option>
-                    {(teams ?? [])
+                    {myTeamsForPicker
                       .filter((t) => t.id !== homeTeamId)
                       .map((t) => (
                         <option key={t.id} value={t.id}>{t.name}</option>
