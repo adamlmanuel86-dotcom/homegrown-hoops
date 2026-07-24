@@ -18,6 +18,7 @@ import {
   useListPendingAccounts,
   useApprovePendingAccount,
   useRejectPendingAccount,
+  customFetch,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain, Hash, Clock } from "lucide-react";
@@ -152,7 +153,7 @@ export function AdminPage() {
     query: { enabled: isAdmin === true },
   });
 
-  const { data: games, isLoading: gamesLoading } = useListGames({
+  const { data: games, isLoading: gamesLoading } = useListGames(undefined, {
     query: { enabled: isAdmin === true },
   });
 
@@ -165,8 +166,7 @@ export function AdminPage() {
 
   const deleteGame = useMutation({
     mutationFn: async (gameId: number) => {
-      const res = await fetch(`${apiBase}/api/games/${gameId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete game");
+      await customFetch(`${apiBase}/api/games/${gameId}`, { method: "DELETE" });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
   });
@@ -174,7 +174,7 @@ export function AdminPage() {
   // Run the canonical roster sync + load tide profiles once when admin is confirmed.
   useEffect(() => {
     if (!isAdmin) return;
-    fetch(`${apiBase}/api/admin/sync-all-players`, { method: "POST" })
+    customFetch(`${apiBase}/api/admin/sync-all-players`, { method: "POST" })
       .then(() => qc.invalidateQueries({ queryKey: ["/api/players"] }))
       .catch(() => { /* non-critical, silent */ });
     loadTideProfiles();
@@ -190,15 +190,11 @@ export function AdminPage() {
   async function loadTideProfiles() {
     setTideProfilesLoading(true);
     try {
-      const res = await fetch(`${apiBase}/api/admin/profiles-tides`);
-      if (res.ok) {
-        const data = await res.json();
-        setTideProfiles(data.map((p: { id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] | null }) => ({
-          ...p,
-          tides: p.tides ?? [],
-        })));
-        setTideProfilesLoaded(true);
-      }
+      const data = await customFetch<{ id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] | null }[]>(`${apiBase}/api/admin/profiles-tides`);
+      setTideProfiles(data.map((p) => ({ ...p, tides: p.tides ?? [] })));
+      setTideProfilesLoaded(true);
+    } catch {
+      // silently ignore — UI handles empty state
     } finally {
       setTideProfilesLoading(false);
     }
@@ -206,12 +202,7 @@ export function AdminPage() {
 
   const calculateSeasonTides = useMutation({
     mutationFn: async (season: string) => {
-      const res = await fetch(`${apiBase}/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to calculate tides");
-      }
-      return res.json();
+      return customFetch(`${apiBase}/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
     },
     onSuccess: () => {
       setTidesSeasonMsg({ ok: true, text: "Season tides calculated and awarded successfully." });
@@ -225,16 +216,11 @@ export function AdminPage() {
 
   const awardTide = useMutation({
     mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
-      const res = await fetch(`${apiBase}/api/admin/profiles/${profileId}/tides`, {
+      return customFetch(`${apiBase}/api/admin/profiles/${profileId}/tides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tideId }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to award tide");
-      }
-      return res.json();
     },
     onSuccess: () => {
       loadTideProfiles();
@@ -244,14 +230,9 @@ export function AdminPage() {
 
   const removeTide = useMutation({
     mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
-      const res = await fetch(`${apiBase}/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
+      return customFetch(`${apiBase}/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
         method: "DELETE",
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to remove tide");
-      }
-      return res.json();
     },
     onSuccess: () => {
       loadTideProfiles();
@@ -309,11 +290,9 @@ export function AdminPage() {
   const [confirmingResetIsoBallId, setConfirmingResetIsoBallId] = useState<string | null>(null);
   const resetIsoBall = useMutation({
     mutationFn: async (clerkUserId: string) => {
-      const res = await fetch(`${apiBase}/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
+      await customFetch(`${apiBase}/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
         method: "DELETE",
-        credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to reset");
     },
     onSuccess: (_data, clerkUserId) => {
       setConfirmingResetIsoBallId(null);
@@ -425,13 +404,11 @@ export function AdminPage() {
     setEndOfSeasonPending(true);
     setEndOfSeasonError(null);
     try {
-      const res = await fetch(`${apiBase}/api/admin/teams/${teamId}/season-tides`, {
+      const data = await customFetch<{ season: string; winners: TideWinner[] }>(`${apiBase}/api/admin/teams/${teamId}/season-tides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json() as { season: string; winners: TideWinner[] };
       setEndOfSeasonResults({ season: data.season, winners: data.winners });
       loadTideProfiles();
       await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
@@ -447,12 +424,11 @@ export function AdminPage() {
     setNewSeasonResetError(null);
     setNewSeasonResetDone(false);
     try {
-      const res = await fetch(`${apiBase}/api/admin/teams/${teamId}/new-season-reset`, {
+      await customFetch(`${apiBase}/api/admin/teams/${teamId}/new-season-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newSeasonName: newSeasonName.trim() }),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
       setNewSeasonResetDone(true);
       loadTideProfiles();
       await qc.invalidateQueries({ queryKey: ["/api/profiles"] });
@@ -468,9 +444,7 @@ export function AdminPage() {
 
   async function loadTeamSeasons(teamId: number) {
     try {
-      const res = await fetch(`${apiBase}/api/admin/teams/${teamId}/seasons`);
-      if (!res.ok) throw new Error("Failed to load seasons");
-      const data = await res.json() as { seasons: string[]; currentSeason: string | null };
+      const data = await customFetch<{ seasons: string[]; currentSeason: string | null }>(`${apiBase}/api/admin/teams/${teamId}/seasons`);
       setTeamSeasonsMap((prev) => new Map(prev).set(teamId, data));
     } catch {
       // silently ignore — UI handles empty state
@@ -481,14 +455,10 @@ export function AdminPage() {
     setSeasonDeletePending(true);
     setSeasonDeleteError(null);
     try {
-      const res = await fetch(
+      await customFetch(
         `${apiBase}/api/admin/teams/${teamId}/seasons/${encodeURIComponent(season)}`,
         { method: "DELETE" }
       );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(body.error ?? `Server error: ${res.status}`);
-      }
       setSeasonDeleteConfirmKey(null);
       await loadTeamSeasons(teamId);
       await qc.invalidateQueries({ queryKey: ["/api/games"] });
