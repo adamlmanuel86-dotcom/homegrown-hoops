@@ -303,9 +303,20 @@ function nextQuestion() {
 
   // Pick question from current tier (cycle if exhausted)
   const pool = shuffledQ[currentTier];
-  const idx = qIdx[currentTier] % pool.length;
-  currentQ = pool[idx];
+  const rawQ = pool[qIdx[currentTier] % pool.length];
   qIdx[currentTier]++;
+
+  // Shuffle options so the correct answer isn't always in the same position
+  const order = [0, 1, 2, 3];
+  for (let i = 3; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  currentQ = {
+    q: rawQ.q,
+    opts: order.map(i => rawQ.opts[i]),
+    ans: order.indexOf(rawQ.ans),
+  };
 
   els.questionText.textContent = currentQ.q;
   els.buttons.forEach((btn, i) => {

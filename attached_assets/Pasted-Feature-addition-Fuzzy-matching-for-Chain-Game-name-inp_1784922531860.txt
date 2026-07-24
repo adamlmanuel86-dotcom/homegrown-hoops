@@ -1,0 +1,21 @@
+Feature addition: Fuzzy matching for Chain Game name input
+
+The Chain Game requires users to type full player names from memory with no autocomplete. However, exact-match validation is too strict — small typos should not fail a correct guess. Please add fuzzy matching so the game rewards knowledge, not perfect spelling.
+
+Requirements:
+
+	1.	Add a fuzzy string matching library (e.g., fastest-levenshtein or leven — lightweight, no backend dependency needed) to compute edit distance between the user’s input and the correct player name.
+	2.	Normalize both strings before comparing:
+	•	Convert to lowercase
+	•	Trim leading/trailing whitespace and collapse multiple spaces
+	•	Strip accents/diacritics (e.g., “Jokic” should match “Jokić”)
+	•	Strip punctuation (periods, apostrophes, hyphens — e.g., “PJ Tucker” should match “P.J. Tucker”)
+	3.	Accept the guess if edit distance is within a small threshold, scaled to name length so we don’t accept wildly wrong guesses:
+	•	Short names (≤5 characters): allow 1 edit
+	•	Longer names (6+ characters): allow 2 edits
+	•	Suggested formula: threshold = correctName.length <= 5 ? 1 : 2
+	4.	Optional fallback: if a last-name-only match is submitted (and it exists uniquely in the player dataset), accept it under the same fuzzy tolerance — since many users think of players by last name only.
+	5.	Validation should still only run after the user submits/hits enter — this does not change the “no autocomplete, no hints while typing” requirement from the earlier fix. This is purely about how the submitted guess is scored, not about revealing anything during typing.
+	6.	Please test edge cases: very short names, hyphenated names, names with suffixes (Jr., III), and names that are close to each other in the dataset (e.g., “Jalen Green” vs “Jalen Brown”) to make sure the threshold doesn’t create false positives between two different real players.
+
+Goal: small typos should be forgiven, but the game should still require knowing the correct player — not become a spelling bee, and not accept guesses close enough to overlap with a different real player’s name.

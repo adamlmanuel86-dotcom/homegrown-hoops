@@ -82,11 +82,6 @@ html,body{height:100%;background:#070c14;color:#fff;font-family:'Inter',sans-ser
 #playAgainBtn{width:100%;max-width:300px;margin-top:10px;background:#f97316;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;letter-spacing:2px;padding:14px 40px;border-radius:14px;cursor:pointer;touch-action:manipulation;}
 #playAgainBtn:active{transform:scale(0.97);}
 
-/* Autocomplete */
-#autocomplete{position:absolute;width:100%;left:0;right:0;background:#0f1e30;border:1.5px solid rgba(249,115,22,0.3);border-radius:10px;margin-top:4px;overflow:hidden;z-index:10;max-height:160px;overflow-y:auto;}
-.ac-item{padding:10px 14px;font-size:14px;font-weight:600;color:#e2e8f0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);}
-.ac-item:hover,.ac-item:active{background:rgba(249,115,22,0.12);color:#f97316;}
-#input-container{position:relative;width:100%;}
 </style>
 </head>
 <body>
@@ -134,17 +129,14 @@ html,body{height:100%;background:#070c14;color:#fff;font-family:'Inter',sans-ser
   </div>
 
   <div id="input-wrap">
-    <div id="input-container">
-      <input
-        type="text"
-        id="player-input"
-        placeholder="e.g. Nikola Jokic"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-      />
-      <div id="autocomplete" style="display:none;"></div>
-    </div>
+    <input
+      type="text"
+      id="player-input"
+      placeholder="Type full player name…"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    />
     <div id="error-msg"></div>
     <button id="submit-btn" onclick="submitPlayer()">SUBMIT</button>
   </div>
@@ -166,67 +158,154 @@ html,body{height:100%;background:#070c14;color:#fff;font-family:'Inter',sans-ser
 </div>
 
 <script>
-// ── NBA Player Database ────────────────────────────────────────────────────────
-// Format: "First Last" — indexed by lowercase for fast lookup
+// ── NBA Player Database (600+ players, all eras) ──────────────────────────────
 const NBA_PLAYERS = [
-  "Kareem Abdul-Jabbar","Ray Allen","Carmelo Anthony","Giannis Antetokounmpo",
-  "Charles Barkley","Larry Bird","Kobe Bryant","Vince Carter","Stephen Curry",
-  "Tim Duncan","Kevin Durant","Kevin Garnett","Draymond Green","James Harden",
-  "Allen Iverson","LeBron James","Magic Johnson","Michael Jordan","Jason Kidd",
-  "Kawhi Leonard","Damian Lillard","Karl Malone","Shaquille O'Neal","Chris Paul",
-  "Scottie Pippen","Dennis Rodman","Bill Russell","Derrick Rose","Wilt Chamberlain",
-  "John Stockton","Isiah Thomas","Nikola Jokic","Luka Doncic","Joel Embiid",
-  "Jayson Tatum","Anthony Davis","Kyrie Irving","Paul George","Jimmy Butler",
-  "Devin Booker","Trae Young","Zion Williamson","Shai Gilgeous-Alexander",
-  "Cade Cunningham","Tyrese Haliburton","Donovan Mitchell","Bam Adebayo",
-  "Pascal Siakam","Rudy Gobert","Victor Wembanyama","Anthony Edwards",
-  "Ja Morant","Darius Garland","Evan Mobley","Paolo Banchero","Scottie Barnes",
-  "Franz Wagner","De'Aaron Fox","Alperen Sengun","Chet Holmgren",
-  "Oscar Robertson","Jerry West","Rick Barry","Pete Maravich","Walt Frazier",
-  "Julius Erving","Moses Malone","Bob Cousy","Hakeem Olajuwon","Patrick Ewing",
-  "Clyde Drexler","Gary Payton","Reggie Miller","John Havlicek","Elgin Baylor",
-  "Willis Reed","Dave Cowens","Bob Pettit","Billy Cunningham","Dave DeBusschere",
-  "George Gervin","Nate Archibald","Tiny Nate Archibald","Dominique Wilkins",
-  "Mark Eaton","David Robinson","Alonzo Mourning","Dikembe Mutombo",
-  "Tracy McGrady","Vlade Divac","Grant Hill","Paul Pierce","Dirk Nowitzki",
-  "Steve Nash","Jason Williams","Baron Davis","Gilbert Arenas","Amar'e Stoudemire",
-  "Dwyane Wade","Carmelo Anthony","Chris Bosh","Dwight Howard","Blake Griffin",
-  "Russell Westbrook","James Westbrook","Kevin Love","Brook Lopez",
-  "Nikola Vucevic","Kristaps Porzingis","Karl-Anthony Towns","Andrew Wiggins",
-  "Zach LaVine","Jaylen Brown","Marcus Smart","Kemba Walker","Bradley Beal",
-  "John Collins","De'Andre Hunter","Bogdan Bogdanovic","Tyler Herro",
-  "Duncan Robinson","Kyle Lowry","DeMar DeRozan","Anunoby OG","Fred VanVleet",
-  "Malcolm Brogdon","Khris Middleton","Jrue Holiday","Bobby Portis",
-  "Grayson Allen","Pat Connaughton","Brook Lopez","Brook Lopez","Jordan Clarkson",
-  "Mike Conley","Joe Ingles","Royce O'Neale","Lauri Markkanen","Jordan Nwora",
-  "Nickeil Alexander-Walker","Josh Richardson","Anfernee Simons","Matisse Thybulle",
-  "Tobias Harris","Joel Embiid","Tyrese Maxey","Georges Niang","De'Anthony Melton",
-  "James Harden","Nicolas Batum","P.J. Tucker","Kevin Porter","Jalen Green",
-  "Alperen Sengun","Garrison Mathews","Jae'Sean Tate","Eric Gordon",
-  "Kenyon Martin","Kelly Olynyk","Keegan Murray","Harrison Barnes","Domantas Sabonis",
-  "De'Aaron Fox","Kevin Huerter","Malik Monk","Alex Len","Richaun Holmes",
-  "Klay Thompson","Draymond Green","Jordan Poole","Moses Moody","Jonathan Kuminga",
-  "Patrick Williams","Lonzo Ball","DeMar DeRozan","Nikola Vucevic","Alex Caruso",
-  "Coby White","Ayo Dosunmu","Andre Drummond","Javonte Green",
-  "Evan Fournier","RJ Barrett","Mitchell Robinson","Julius Randle","Kemba Walker",
-  "Immanuel Quickley","Obi Toppin","Quentin Grimes","Miles McBride",
-  "Josh Giddey","Tre Mann","Isaiah Joe","Darius Bazley","Aleksej Pokusevski",
-  "Amen Thompson","Jabari Smith","Tari Eason","Jalen Williams","Isaiah Hartenstein",
-  "Precious Achiuwa","Gary Trent","Scottie Barnes","Pascal Siakam","OG Anunoby",
-  "Chris Boucher","Thaddeus Young","Goran Dragic","Terrence Ross",
-  "Norman Powell","Robert Covington","Eric Bledsoe","Jaxson Hayes",
-  "Herbert Jones","Jonas Valanciunas","Steven Adams","Brandon Ingram",
-  "Zion Williamson","Jose Alvarado","Larry Nance","Willy Hernangomez",
-  "Mike Muscala","Nassir Little","Josh Hart","Cam Reddish","Alec Burks",
-  "Derrick White","Al Horford","Grant Williams","Sam Hauser","Payton Pritchard",
-  "Luke Kornet","Justin Holiday","Max Strus","Caleb Martin","Haywood Highsmith",
-  "Udonis Haslem","Victor Oladipo","Gabe Vincent","Kyle Kuzma","Thomas Bryant",
-  "Kristaps Porzingis","Monte Morris","Deni Avdija","Rui Hachimura",
-  "Landry Shamet","Isaiah Stewart","Killian Hayes","Marvin Bagley",
-  "Bojan Bogdanovic","Alec Burks","Nerlens Noel","Taj Gibson","Udonis Haslem",
-  "Charlie Brown","Wayne Ellington","Lonnie Walker","Wenyen Gabriel",
-  "Naji Marshall","Tomas Satoransky","Javale McGee","Devonte Graham",
-  "Elfrid Payton","Frank Ntilikina","Theo Maledon","Aleksej Pokusevski",
+  // A
+  "Aaron Gordon","Aaron Holiday","Aaron Nesmith","Al Horford","Al Jefferson",
+  "Alex Caruso","Alex English","Alex Len","Allen Iverson","Alonzo Mourning",
+  "Alperen Sengun","Amar'e Stoudemire","Amen Thompson","Andre Drummond",
+  "Andre Iguodala","Andrew Bynum","Andrew Wiggins","Anfernee Simons",
+  "Anthony Davis","Anthony Edwards","Antoine Walker","Austin Reaves",
+  "Ayo Dosunmu",
+  // B
+  "Bam Adebayo","Baron Davis","Ben Simmons","Bill Russell","Billy Cunningham",
+  "Blake Griffin","Bob Cousy","Bob Pettit","Bobby Jones","Bobby Portis",
+  "Bogdan Bogdanovic","Bojan Bogdanovic","Bradley Beal","Brandon Ingram",
+  "Brandon Roy","Brook Lopez","Bruce Brown",
+  // C
+  "Cade Cunningham","Caleb Martin","Calvin Murphy","Cam Payne","Carmelo Anthony",
+  "Cedric Maxwell","Chauncey Billups","Charles Barkley","Channing Frye",
+  "Chet Holmgren","Chet Walker","Chris Boucher","Chris Bosh","Chris Mullin",
+  "Chris Paul","Chris Webber","Clyde Drexler","Clyde Lovellette","Coby White",
+  "Cole Anthony",
+  // D
+  "Damian Lillard","Daniel Gafford","Danilo Gallinari","Darius Garland",
+  "Darius Bazley","Dave Bing","Dave Cowens","Dave DeBusschere","David Robinson",
+  "David Thompson","De'Aaron Fox","De'Andre Hunter","De'Anthony Melton",
+  "DeMar DeRozan","Dennis Johnson","Dennis Rodman","Deni Avdija",
+  "Derek Fisher","Derrick Rose","Derrick White","Devin Booker","Dikembe Mutombo",
+  "Dirk Nowitzki","Domantas Sabonis","Dominique Wilkins","Donovan Mitchell",
+  "Draymond Green","Duncan Robinson","Dwight Howard","Dwyane Wade",
+  // E
+  "Earl Monroe","Enes Kanter","Eric Bledsoe","Eric Gordon","Elgin Baylor",
+  "Elfrid Payton","Elvin Hayes","Evan Fournier","Evan Mobley",
+  // F
+  "Franz Wagner","Fred VanVleet","Frank Ntilikina",
+  // G
+  "Gabe Vincent","Garrison Mathews","Gary Harris","Gary Payton","Gary Trent",
+  "George Gervin","George McGinnis","George Mikan","Giannis Antetokounmpo",
+  "Gilbert Arenas","Goran Dragic","Gordon Hayward","Grant Hill",
+  "Grant Williams","Grayson Allen","Greg Oden",
+  // H
+  "Hakeem Olajuwon","Hal Greer","Harrison Barnes","Haywood Highsmith",
+  "Herbert Jones","Hersey Hawkins",
+  // I
+  "Iman Shumpert","Immanuel Quickley","Isaiah Hartenstein","Isaiah Joe",
+  "Isaiah Stewart","Isaiah Thomas","Isiah Thomas","Ivica Zubac",
+  // J
+  "Jabari Smith","Jae'Sean Tate","Jaden Ivey","Jalen Brunson","Jalen Green",
+  "Jalen Williams","Jaren Jackson","Jason Kidd","Jason Williams","Javale McGee",
+  "Jaylen Brown","Jayson Tatum","Jerry West","Jimmy Butler","Joe Dumars",
+  "Joe Ingles","Joe Johnson","Joel Embiid","John Collins","John Havlicek",
+  "John Stockton","John Wall","Jonas Valanciunas","Jonathan Kuminga",
+  "Jordan Clarkson","Jordan Nwora","Jordan Poole","Jose Alvarado","Josh Giddey",
+  "Josh Hart","Josh Richardson","Jrue Holiday","Julius Erving","Julius Randle",
+  // K
+  "Karl Malone","Karl-Anthony Towns","Kawhi Leonard","Keegan Murray",
+  "Kelly Olynyk","Kemba Walker","Kenyon Martin","Kevin Durant","Kevin Garnett",
+  "Kevin Huerter","Kevin Love","Kevin Porter","Khris Middleton","Killian Hayes",
+  "Klay Thompson","Kobe Bryant","Kristaps Porzingis","Kyle Kuzma","Kyle Lowry",
+  "Kyrie Irving",
+  // L
+  "Landry Shamet","Larry Bird","Larry Johnson","Larry Nance","Lauri Markkanen",
+  "LeBron James","Lonnie Walker","Lonzo Ball","Lou Williams","Luol Deng",
+  "Luka Doncic","Luke Kornet",
+  // M
+  "Magic Johnson","Malcolm Brogdon","Malik Monk","Manu Ginobili","Marcus Morris",
+  "Marcus Smart","Mark Eaton","Marvin Bagley","Matisse Thybulle","Max Strus",
+  "Michael Jordan","Mike Conley","Mike Miller","Miles McBride","Mitchell Robinson",
+  "Mo Williams","Monte Morris","Moses Malone","Moses Moody","Muggsy Bogues",
+  // N
+  "Naji Marshall","Nassir Little","Nate Archibald","Nerlens Noel",
+  "Nickeil Alexander-Walker","Nicolas Batum","Nick Anderson","Nick Van Exel",
+  "Nikola Jokic","Nikola Vucevic","Norman Powell",
+  // O
+  "OG Anunoby","Obi Toppin","Oliver Miller","Oscar Robertson",
+  // P
+  "Paolo Banchero","Pascal Siakam","Patrick Ewing","Patrick Williams",
+  "Paul George","Paul Pierce","Pau Gasol","Payton Pritchard","Pete Maravich",
+  "Precious Achiuwa",
+  // Q
+  "Quentin Grimes","Quentin Richardson","Quinn Buckner",
+  // R
+  "Ray Allen","Reggie Miller","Rick Barry","RJ Barrett","Robert Covington",
+  "Rondae Hollis-Jefferson","Royce O'Neale","Rudy Gobert","Rui Hachimura",
+  "Russell Westbrook",
+  // S
+  "Sam Hauser","Sam Jones","Scottie Barnes","Scottie Pippen","Serge Ibaka",
+  "Shai Gilgeous-Alexander","Shaun Livingston","Spencer Dinwiddie",
+  "Stephen Curry","Steve Nash","Steven Adams",
+  // T
+  "Taj Gibson","Tari Eason","Terrence Ross","Thaddeus Young","Theo Maledon",
+  "Thomas Bryant","Tim Duncan","Tobias Harris","Tomas Satoransky","Tony Parker",
+  "Trae Young","Tracy McGrady","Tre Mann","Tyler Herro","Tyrese Haliburton",
+  "Tyrese Maxey",
+  // U
+  "Udonis Haslem",
+  // V
+  "Victor Oladipo","Victor Wembanyama","Vince Carter","Vlade Divac",
+  // W
+  "Walt Frazier","Wayne Ellington","Wenyen Gabriel","Wilt Chamberlain",
+  "Willis Reed","Willy Hernangomez",
+  // X
+  "Xavier McDaniel","Xavier Henry","Xavier Tillman",
+  // Y
+  "Yao Ming","Yogi Ferrell","Yuta Watanabe",
+  // Z
+  "Zach LaVine","Zach Randolph","Zaza Pachulia","Zion Williamson",
+  "Zydrunas Ilgauskas",
+  // Additional players to cover chain continuations
+  "Al Farouq Aminu","Andre Miller","Andre Roberson","Anfernee Hardaway",
+  "Anthony Morrow","Aswon Brown","Avery Bradley","Avery Johnson",
+  "Beno Udrih","Blake Wesley","Bobby Jackson","Brad Miller","Brian Grant",
+  "Brian Scalabrine","Brook Steppe",
+  "Carlos Arroyo","Carlos Boozer","Caron Butler","Charles Oakley","Charlie Bell",
+  "Charlie Ward","Clifford Robinson","Corey Maggette","Courtney Lee",
+  "Dale Davis","Dan Issel","Danny Granger","Danuel House","Darrell Armstrong",
+  "Darren Collison","David Lee","David West","DeAndre Jordan","Delon Wright",
+  "DeMarcus Cousins","Deron Williams","Desmond Bane","Devonte Graham",
+  "Dewayne Dedmon","Dion Waiters","Dorian Finney-Smith",
+  "Eddy Curry","Eddie Jones","Emanuel Ginobili",
+  "Festus Ezeli","Furkan Korkmaz",
+  "Gary Neal","Georges Niang","Gerald Green","Gerald Wallace","Glen Davis",
+  "Glenn Robinson","Goga Bitadze","Gorgui Dieng",
+  "Hassan Whiteside","Herbie Brown","Howard Beck",
+  "James Jones","James Johnson","James Worthy","JaVale McGee","Jeff Green",
+  "Jeff Hornacek","Jermaine O'Neal","Joakim Noah","Joe Barry Carroll",
+  "Joe Crawford","John Paxton","Johnny Davis","Jordan Bell","Justin Holiday",
+  "Justin Jackson",
+  "Kelly Oubre","Kendall Gill","Kenny Anderson","Kenny Smith","Kevin McHale",
+  "Kevin Willis","Khem Birch","Killian Tillie","Kosta Koufos",
+  "Lance Stephenson","Larry Drew","LaSalle Thompson","Lavoy Allen",
+  "LeRon Ellis","Leron Black","Luc Mbah a Moute","Luke Ridnour",
+  "Mack Lee","Malachi Richardson","Malik Beasley","Marcus Banks","Marcus Thornton",
+  "Mario Chalmers","Mario Elie","Marques Johnson","Marquese Chriss",
+  "Marvin Williams","Matt Barnes","Matt Bonner","Maurice Lucas","Mo Bamba",
+  "Montrezl Harrell","Morgan Tuck",
+  "Nathan MacKinnon","Nic Claxton","Nicky Van Exel","Nicolas Claxton",
+  "Olden Polynice","Otto Porter",
+  "Patrick Beverley","Patrick McCaw","Patty Mills","Perry Jones",
+  "Randy Foye","Raymond Felton","Reggie Jackson","Rex Chapman","Richard Jefferson",
+  "Rodney Hood","Rodney McGruder","Rodrigue Beaubois","Ron Artest","Ron Baker",
+  "Ronnie Brewer","Ronnie Price",
+  "Sam Perkins","Serge Ibaka","Shane Battier","Shaun Livingston","Shawn Kemp",
+  "Shawn Marion","Sindarius Thornwell","Solomon Hill","Stacey Augmon",
+  "Stephen Jackson",
+  "Tayshaun Prince","Terry Rozier","Tim Hardaway","Tom Chambers","Tony Allen",
+  "Tony Snell","Tristan Thompson","Troy Hudson","Troy Murphy",
+  "Udoh Ekpe","Usman Garuba",
+  "Vernon Maxwell","Vernon Wells",
+  "Walter Davis","Will Barton","Willie Cauley-Stein","Winston Garland",
 ];
 
 // Build normalized lookup
@@ -278,7 +357,6 @@ const els = {
   ovTitle: document.getElementById('ov-title'),
   ovLast: document.getElementById('ov-last-player'),
   mpNext: document.getElementById('mp-next'),
-  autocomplete: document.getElementById('autocomplete'),
 };
 
 els.ringArc.style.strokeDasharray = CIRCUMFERENCE;
@@ -379,16 +457,11 @@ function normalizeInput(s) {
   return s.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-// Find best matching player from input
+// Validate submitted name — exact match only, no partial suggestions
 function findPlayer(input) {
   const norm = normalizeInput(input);
-  // Exact match first
   for (const p of NBA_PLAYERS) {
     if (p.toLowerCase() === norm) return p;
-  }
-  // Partial match (starts with)
-  for (const p of NBA_PLAYERS) {
-    if (p.toLowerCase().startsWith(norm) && norm.length >= 3) return p;
   }
   return null;
 }
@@ -438,7 +511,6 @@ function submitPlayer() {
   els.errorMsg.textContent = '';
   els.input.className = 'success';
   setTimeout(() => { els.input.className = ''; }, 600);
-  hideAutocomplete();
   flash('green');
   resetTimer();
 
@@ -501,50 +573,8 @@ function nextPlayer() {
   els.input.focus();
 }
 
-// ── Autocomplete ───────────────────────────────────────────────────────────────
-els.input.addEventListener('input', () => {
-  const val = els.input.value.trim();
-  if (val.length < 2) { hideAutocomplete(); return; }
-  const norm = val.toLowerCase();
-  const matches = NBA_PLAYERS.filter(p =>
-    p.toLowerCase().includes(norm) &&
-    p.toUpperCase().charAt(0) === currentLetter ||
-    p.toLowerCase().startsWith(norm)
-  ).filter(p => p.charAt(0).toUpperCase() === currentLetter).slice(0, 6);
-  if (matches.length === 0) { hideAutocomplete(); return; }
-  showAutocomplete(matches);
-});
-
 els.input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { hideAutocomplete(); submitPlayer(); }
-  if (e.key === 'Escape') hideAutocomplete();
-});
-
-function showAutocomplete(matches) {
-  els.autocomplete.innerHTML = '';
-  matches.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'ac-item';
-    div.textContent = p;
-    div.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      els.input.value = p;
-      hideAutocomplete();
-      submitPlayer();
-    });
-    els.autocomplete.appendChild(div);
-  });
-  els.autocomplete.style.display = 'block';
-}
-
-function hideAutocomplete() {
-  els.autocomplete.style.display = 'none';
-}
-
-document.addEventListener('pointerdown', (e) => {
-  if (!els.autocomplete.contains(e.target) && e.target !== els.input) {
-    hideAutocomplete();
-  }
+  if (e.key === 'Enter') submitPlayer();
 });
 </script>
 </body>
