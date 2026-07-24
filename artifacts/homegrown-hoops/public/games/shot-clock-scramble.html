@@ -226,6 +226,7 @@ const LETTERS = ['A','B','C','D'];
 
 let score = 0, bestScore = 0, currentTier = 'ROOKIE', timerVal = 24, timerInterval = null, currentQ = null, answering = false, gameActive = false;
 let shuffledQ = {ROOKIE:[], VARSITY:[], ELITE:[]}, qIdx = {ROOKIE:0, VARSITY:0, ELITE:0};
+let pendingEnd = null;
 
 const els = {
   wrap: document.getElementById('wrap'),
@@ -272,6 +273,8 @@ function startGame(tier) {
     ELITE: shuffle(QUESTIONS.ELITE),
   };
   qIdx = {ROOKIE:0, VARSITY:0, ELITE:0};
+  // Cancel any in-flight end-game timer from a previous round
+  if (pendingEnd) { clearTimeout(pendingEnd); pendingEnd = null; }
   els.startScreen.style.display = 'none';
   els.overlay.style.display = 'none';
   els.wrap.style.display = 'flex';
@@ -360,9 +363,10 @@ function answer(idx) {
     if (currentTier === 'ROOKIE' && score >= 10) currentTier = 'VARSITY';
     else if (currentTier === 'VARSITY' && score >= 20) currentTier = 'ELITE';
     updateHUD();
-    setTimeout(nextQuestion, 1000);
+    pendingEnd = setTimeout(nextQuestion, 1000);
   } else {
-    setTimeout(endGame, 1200);
+    // Shorter delay so red highlight is brief; endGame clears it before overlay opens
+    pendingEnd = setTimeout(endGame, 600);
   }
 }
 
@@ -373,7 +377,7 @@ function timeout() {
   els.buttons[correct].classList.add('correct');
   els.buttons.forEach(b => b.classList.add('disabled'));
   flash('red');
-  setTimeout(endGame, 1200);
+  pendingEnd = setTimeout(endGame, 1200);
 }
 
 function flash(color) {
@@ -383,7 +387,10 @@ function flash(color) {
 
 function endGame() {
   gameActive = false;
+  pendingEnd = null;
   clearInterval(timerInterval);
+  // Clear all button highlight classes before the overlay opens
+  els.buttons.forEach(b => b.classList.remove('correct', 'wrong', 'disabled'));
   if (score > bestScore) bestScore = score;
   els.ovScore.textContent = score;
   els.ovBest.textContent = bestScore;
