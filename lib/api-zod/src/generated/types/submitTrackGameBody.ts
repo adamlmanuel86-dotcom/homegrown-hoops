@@ -8,7 +8,8 @@
 import type { SubmitPlayerStatRow } from "./submitPlayerStatRow";
 
 export interface SubmitTrackGameBody {
-  homeTeamId: number;
+  /** @nullable */
+  homeTeamId?: number | null;
   /** @nullable */
   awayTeamId?: number | null;
   /** @nullable */

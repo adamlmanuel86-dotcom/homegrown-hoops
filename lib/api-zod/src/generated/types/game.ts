@@ -10,7 +10,8 @@ import type { GameStatus } from "./gameStatus";
 
 export interface Game {
   id: number;
-  homeTeamId: number;
+  /** @nullable */
+  homeTeamId?: number | null;
   /** @nullable */
   awayTeamId?: number | null;
   /** @nullable */
