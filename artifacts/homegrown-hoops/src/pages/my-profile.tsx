@@ -17,7 +17,7 @@ type FormData = {
   position: string;
   graduationYear: string;
   bio: string;
-  teamId: string;
+  teamIds: string[];
   number: string;
 };
 
@@ -28,7 +28,7 @@ const empty: FormData = {
   position: "",
   graduationYear: "",
   bio: "",
-  teamId: "",
+  teamIds: [],
   number: "",
 };
 
@@ -92,6 +92,12 @@ export function MyProfilePage() {
 
   useEffect(() => {
     if (profile) {
+      const existingTeamIds: string[] =
+        profile.teamIds && profile.teamIds.length > 0
+          ? profile.teamIds.map(String)
+          : profile.teamId
+          ? [profile.teamId.toString()]
+          : [];
       setForm({
         firstName: profile.firstName,
         lastName: profile.lastName,
@@ -99,7 +105,7 @@ export function MyProfilePage() {
         position: profile.position ?? "",
         graduationYear: profile.graduationYear?.toString() ?? "",
         bio: profile.bio ?? "",
-        teamId: profile.teamId?.toString() ?? "",
+        teamIds: existingTeamIds,
         number: profile.number ?? "",
       });
     }
@@ -120,6 +126,15 @@ export function MyProfilePage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  function handleTeamToggle(teamId: string) {
+    setForm((f) => ({
+      ...f,
+      teamIds: f.teamIds.includes(teamId)
+        ? f.teamIds.filter((id) => id !== teamId)
+        : [...f.teamIds, teamId],
+    }));
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -223,6 +238,7 @@ export function MyProfilePage() {
     e.preventDefault();
     setPhotoError(null);
 
+    const teamIds = form.teamIds.map(Number);
     const payload: Record<string, unknown> = {
       firstName: form.firstName,
       lastName: form.lastName,
@@ -230,7 +246,8 @@ export function MyProfilePage() {
       position: form.position || null,
       graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
       bio: form.bio || null,
-      teamId: form.teamId ? parseInt(form.teamId) : null,
+      teamIds,
+      teamId: teamIds[0] ?? null,
       number: form.number || null,
     };
 
@@ -251,9 +268,9 @@ export function MyProfilePage() {
     }
 
     if (isNew) {
-      await create.mutateAsync({ data: payload as Parameters<typeof create.mutateAsync>[0]["data"] });
+      await create.mutateAsync({ data: payload as unknown as Parameters<typeof create.mutateAsync>[0]["data"] });
     } else {
-      await update.mutateAsync({ data: payload as Parameters<typeof update.mutateAsync>[0]["data"] });
+      await update.mutateAsync({ data: payload as unknown as Parameters<typeof update.mutateAsync>[0]["data"] });
     }
 
     setAvatarFile(null);
@@ -513,24 +530,45 @@ export function MyProfilePage() {
             </div>
           </div>
 
-          {/* Team selection */}
+          {/* Team selection — multi-select */}
           <div>
-            <label className="label-upper block mb-1.5">Team</label>
-            <select
-              name="teamId"
-              value={form.teamId}
-              onChange={handleChange}
-              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-card"
-            >
-              <option value="">No team / select later</option>
-              {teams?.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} — {t.city}
-                </option>
-              ))}
-            </select>
+            <label className="label-upper block mb-1.5">Teams</label>
+            <div className="space-y-1.5">
+              {teams && teams.length > 0 ? (
+                teams.map((t) => {
+                  const checked = form.teamIds.includes(t.id.toString());
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleTeamToggle(t.id.toString())}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                        checked
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          checked ? "border-primary bg-primary" : "border-border"
+                        }`}
+                      >
+                        {checked && (
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                            <path d="M1.5 5.5L4 8L8.5 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold">{t.name} — {t.city}</span>
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground py-2">Loading teams…</p>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1.5">
-              Not sure? An admin can assign or correct your team at any time.
+              Select all teams you play for. Stats from every team count toward your Legacy Score.
             </p>
           </div>
 

@@ -458,6 +458,8 @@ export interface UserProfile {
   requestedRole?: string | null;
   /** Player IDs linked as My Ballers (parent accounts only) */
   myBallers: number[];
+  /** All team IDs this player belongs to (multi-team support) */
+  teamIds: number[];
 }
 
 export interface BallerPlayer {
@@ -517,6 +519,8 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** All team IDs this player belongs to */
+  teamIds?: number[];
   /** @nullable */
   avatarUrl?: string | null;
   /**
@@ -546,6 +550,8 @@ export interface UpdateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** All team IDs this player belongs to */
+  teamIds?: number[];
 }
 
 export interface AdminUpdateProfileBody {

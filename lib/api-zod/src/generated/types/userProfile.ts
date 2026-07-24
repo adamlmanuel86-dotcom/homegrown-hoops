@@ -55,4 +55,6 @@ export interface UserProfile {
   requestedRole?: string | null;
   /** Player IDs linked as My Ballers (parent accounts only) */
   myBallers: number[];
+  /** All team IDs this player belongs to (multi-team support) */
+  teamIds: number[];
 }

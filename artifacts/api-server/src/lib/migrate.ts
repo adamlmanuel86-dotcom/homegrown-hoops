@@ -238,6 +238,7 @@ export async function runMigrations(): Promise<void> {
     await addCol("user_profiles",    "is_pending",        "boolean NOT NULL DEFAULT FALSE");
     await addCol("user_profiles",    "requested_role",    "text DEFAULT NULL");
     await addCol("user_profiles",    "my_ballers",        "json NOT NULL DEFAULT '[]'");
+    await addCol("user_profiles",    "team_ids",          "json NOT NULL DEFAULT '[]'");
 
     // ── Jersey stubs (unregistered player tracking) ───────────────────────────
     await addCol("players", "is_jersey_stub", "boolean NOT NULL DEFAULT FALSE");

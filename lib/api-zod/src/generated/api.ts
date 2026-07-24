@@ -772,6 +772,9 @@ export const ClaimJerseyNumberResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**
@@ -1085,6 +1088,9 @@ export const ListProfilesResponseItem = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 export const ListProfilesResponse = zod.array(ListProfilesResponseItem);
 
@@ -1201,6 +1207,9 @@ export const GetMyProfileResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**
@@ -1214,6 +1223,10 @@ export const CreateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
+  teamIds: zod
+    .array(zod.number())
+    .optional()
+    .describe("All team IDs this player belongs to"),
   avatarUrl: zod.string().nullish(),
   number: zod.string().nullish().describe("Player jersey number"),
   requestedRole: zod
@@ -1239,6 +1252,10 @@ export const UpdateMyProfileBody = zod.object({
   graduationYear: zod.number().nullish(),
   bio: zod.string().nullish(),
   teamId: zod.number().nullish(),
+  teamIds: zod
+    .array(zod.number())
+    .optional()
+    .describe("All team IDs this player belongs to"),
 });
 
 export const UpdateMyProfileResponse = zod.object({
@@ -1351,6 +1368,9 @@ export const UpdateMyProfileResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**
@@ -1470,6 +1490,9 @@ export const GetProfileResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**
@@ -1594,6 +1617,9 @@ export const UpdateProfileResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**
@@ -1780,6 +1806,9 @@ export const UpdateMyBallersResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**
@@ -1948,6 +1977,9 @@ export const SaveAvatarConfigResponse = zod.object({
   myBallers: zod
     .array(zod.number())
     .describe("Player IDs linked as My Ballers (parent accounts only)"),
+  teamIds: zod
+    .array(zod.number())
+    .describe("All team IDs this player belongs to (multi-team support)"),
 });
 
 /**

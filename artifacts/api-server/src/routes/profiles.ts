@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count, and, isNull, ne, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable, teamsTable, arcadeSessionsTable, isoBallSessionsTable, isoBallDailyQuestionsTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, teamsTable, arcadeSessionsTable, isoBallSessionsTable, isoBallDailyQuestionsTable, gamePlayerStatsTable, gamesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
@@ -10,14 +10,85 @@ import { isProtectedAdmin } from "../lib/adminGuard";
 const MAX_DATA_URI_BYTES = 800_000;
 
 /**
- * Full roster sync when a profile is created or updated.
- * - Removes any player row for the OLD name+team combination.
- * - Removes any player rows for the NEW name that belong to a DIFFERENT team
- *   (handles name changes where an old row would otherwise linger).
- * - If a newTeamId is provided, upserts the player row for new name+team.
- * - If newTeamId is null/undefined, the player is left with no roster entry
- *   (they will not appear on any team page).
+ * Multi-team roster sync when a profile is created or updated.
+ * - Removes player rows for any teams that were removed from teamIds.
+ * - If the player's name changed, removes old-name rows on all new teams.
+ * - Upserts one player row per team in newTeamIds so the player appears on all rosters.
  */
+export async function syncPlayersForTeams(
+  oldFirstName: string | null,
+  oldLastName: string | null,
+  oldTeamIds: number[],
+  newFirstName: string,
+  newLastName: string,
+  newTeamIds: number[],
+  number?: string | null,
+) {
+  // 1. Teams that were removed — delete their player rows
+  const removedTeamIds = oldTeamIds.filter((id) => !newTeamIds.includes(id));
+  if (oldFirstName && oldLastName && removedTeamIds.length > 0) {
+    await db
+      .delete(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, oldFirstName),
+          eq(playersTable.lastName, oldLastName),
+          inArray(playersTable.teamId, removedTeamIds)
+        )
+      );
+  }
+
+  // 2. If the name changed, remove old-name rows on all new teams too
+  if (
+    oldFirstName && oldLastName &&
+    (oldFirstName !== newFirstName || oldLastName !== newLastName) &&
+    newTeamIds.length > 0
+  ) {
+    await db
+      .delete(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, oldFirstName),
+          eq(playersTable.lastName, oldLastName),
+          inArray(playersTable.teamId, newTeamIds)
+        )
+      );
+  }
+
+  // 3. Nothing more to do if no teams selected
+  if (newTeamIds.length === 0 || !newFirstName || !newLastName) return;
+
+  // 4. Upsert one player row per team in newTeamIds
+  for (const teamId of newTeamIds) {
+    const [existing] = await db
+      .select({ id: playersTable.id })
+      .from(playersTable)
+      .where(
+        and(
+          eq(playersTable.firstName, newFirstName),
+          eq(playersTable.lastName, newLastName),
+          eq(playersTable.teamId, teamId)
+        )
+      );
+
+    if (existing) {
+      if (number !== undefined) {
+        await db.update(playersTable)
+          .set({ number: number ?? null })
+          .where(eq(playersTable.id, existing.id));
+      }
+    } else {
+      await db.insert(playersTable).values({
+        firstName: newFirstName,
+        lastName: newLastName,
+        teamId,
+        number: number ?? null,
+      });
+    }
+  }
+}
+
+/** Backward-compatible single-team wrapper around syncPlayersForTeams. */
 export async function syncPlayerForTeamChange(
   oldFirstName: string | null,
   oldLastName: string | null,
@@ -27,78 +98,30 @@ export async function syncPlayerForTeamChange(
   newTeamId: number | null | undefined,
   number?: string | null,
 ) {
-  // 1. Remove the old team's player row (if the old team existed and is now different)
-  if (oldFirstName && oldLastName && oldTeamId && oldTeamId !== newTeamId) {
-    await db
-      .delete(playersTable)
-      .where(
-        and(
-          eq(playersTable.firstName, oldFirstName),
-          eq(playersTable.lastName, oldLastName),
-          eq(playersTable.teamId, oldTeamId)
-        )
-      );
-  }
+  await syncPlayersForTeams(
+    oldFirstName,
+    oldLastName,
+    oldTeamId ? [oldTeamId] : [],
+    newFirstName,
+    newLastName,
+    newTeamId ? [newTeamId] : [],
+    number,
+  );
+}
 
-  // 2. If the name changed, remove any old-name row on the new team too
-  if (
-    oldFirstName && oldLastName &&
-    (oldFirstName !== newFirstName || oldLastName !== newLastName) &&
-    newTeamId
-  ) {
-    await db
-      .delete(playersTable)
-      .where(
-        and(
-          eq(playersTable.firstName, oldFirstName),
-          eq(playersTable.lastName, oldLastName),
-          eq(playersTable.teamId, newTeamId)
-        )
-      );
-  }
-
-  // 3. If no new team — nothing more to do; player won't appear on any roster
-  if (!newTeamId || !newFirstName || !newLastName) return;
-
-  // 4. Remove any stale rows for new name on a DIFFERENT team (prevents duplicates)
-  await db
-    .delete(playersTable)
-    .where(
-      and(
-        eq(playersTable.firstName, newFirstName),
-        eq(playersTable.lastName, newLastName),
-        ne(playersTable.teamId, newTeamId)
-      )
-    );
-
-  // 5. Upsert the correct player row for new name + new team
-  const [existing] = await db
-    .select({ id: playersTable.id })
-    .from(playersTable)
-    .where(
-      and(
-        eq(playersTable.firstName, newFirstName),
-        eq(playersTable.lastName, newLastName),
-        eq(playersTable.teamId, newTeamId)
-      )
-    );
-
-  if (existing) {
-    // Row already exists — just keep the jersey number in sync if provided
-    if (number !== undefined) {
-      await db.update(playersTable)
-        .set({ number: number ?? null })
-        .where(eq(playersTable.id, existing.id));
-    }
-  } else {
-    // No row yet — create the player so they appear on the team roster
-    await db.insert(playersTable).values({
-      firstName: newFirstName,
-      lastName: newLastName,
-      teamId: newTeamId,
-      number: number ?? null,
-    });
-  }
+/** Returns a zeroed-out stats object for when no game data exists. */
+function emptyAggregateStats() {
+  return {
+    gamesPlayed: 0, wins: 0,
+    totalPoints: 0, totalRebounds: 0, totalAssists: 0,
+    totalSteals: 0, totalBlocks: 0, totalTurnovers: 0,
+    totalThreesMade: 0, totalThreesAttempted: 0,
+    totalFieldGoalsMade: 0, totalFieldGoalsAttempted: 0,
+    totalFreeThrowsMade: 0, totalFreeThrowsAttempted: 0,
+    avgPoints: 0, avgRebounds: 0, avgAssists: 0, avgThreesMade: 0,
+    avgSteals: 0, avgBlocks: 0, avgTurnovers: 0, avgMinutes: 0,
+    fieldGoalPct: 0, threePointPct: 0, freeThrowPct: 0,
+  };
 }
 
 import {
@@ -228,7 +251,11 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
 
   // Skip roster entry for pending accounts — they're not active players yet
   if (!isPending) {
-    await syncPlayerForTeamChange(null, null, null, profile.firstName, profile.lastName, profile.teamId ?? undefined, profile.number ?? null);
+    const profileTeamIds = (profile.teamIds as number[] | null) ?? [];
+    const effectiveNewTeamIds = profileTeamIds.length > 0
+      ? profileTeamIds
+      : (profile.teamId ? [profile.teamId] : []);
+    await syncPlayersForTeams(null, null, [], profile.firstName, profile.lastName, effectiveNewTeamIds, profile.number ?? null);
   }
 
   res.status(201).json(GetMyProfileResponse.parse(serializeRow(profile)));
@@ -250,9 +277,18 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
+  // Normalize teamId/teamIds: if teamIds is provided, derive teamId from it
+  const incomingTeamIds = (parsed.data as typeof parsed.data & { teamIds?: number[] }).teamIds;
+  const effectiveTeamIds = incomingTeamIds !== undefined
+    ? incomingTeamIds
+    : ((oldProfile?.teamIds as number[] | null) ?? []);
+  const primaryTeamId = effectiveTeamIds[0] ?? null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [profile] = await db
     .update(userProfilesTable)
-    .set({ ...parsed.data, updatedAt: new Date() })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .set({ ...(parsed.data as any), teamIds: effectiveTeamIds, teamId: primaryTeamId, updatedAt: new Date() })
     .where(eq(userProfilesTable.clerkUserId, userId))
     .returning();
 
@@ -263,13 +299,14 @@ router.put("/profiles/me", async (req, res): Promise<void> => {
 
   // Skip roster sync for parents
   if (profile.role !== "parent") {
-    await syncPlayerForTeamChange(
+    const oldTeamIds = (oldProfile?.teamIds as number[] | null) ?? (oldProfile?.teamId ? [oldProfile.teamId] : []);
+    await syncPlayersForTeams(
       oldProfile?.firstName ?? null,
       oldProfile?.lastName ?? null,
-      oldProfile?.teamId ?? undefined,
+      oldTeamIds,
       profile.firstName,
       profile.lastName,
-      profile.teamId ?? undefined,
+      effectiveTeamIds,
       profile.number ?? null,
     );
   }
@@ -332,16 +369,24 @@ router.put("/profiles/:clerkUserId", async (req, res): Promise<void> => {
     return;
   }
 
-  // Sync roster: removes old team entry, adds new one (or removes entirely if no team)
-  await syncPlayerForTeamChange(
+  // Sync roster: admin sets a single teamId, keep teamIds in sync with it
+  const adminOldTeamIds = (oldProfile?.teamIds as number[] | null) ?? (oldProfile?.teamId ? [oldProfile.teamId] : []);
+  const adminNewTeamIds = profile.teamId ? [profile.teamId] : [];
+  await syncPlayersForTeams(
     oldProfile?.firstName ?? null,
     oldProfile?.lastName ?? null,
-    oldProfile?.teamId ?? undefined,
+    adminOldTeamIds,
     profile.firstName,
     profile.lastName,
-    profile.teamId ?? undefined,
+    adminNewTeamIds,
     profile.number ?? null,
   );
+
+  // Persist the updated teamIds to match the new teamId
+  await db
+    .update(userProfilesTable)
+    .set({ teamIds: adminNewTeamIds })
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
 
   res.json(GetProfileResponse.parse(serializeRow(profile)));
 });
@@ -480,23 +525,20 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
     return;
   }
 
-  // Remove the matching player entry (and cascade-delete all their game stats).
-  // Match on name + team — the same key used by syncPlayerEntry — so we remove
-  // exactly the players row that was auto-created for this profile.
-  // If teamId is null the player was never assigned a team and no player row exists.
-  if (deleted.teamId) {
+  // Remove all player rows for this profile across all teams.
+  const deletedTeamIds = (deleted.teamIds as number[] | null) ?? (deleted.teamId ? [deleted.teamId] : []);
+  if (deletedTeamIds.length > 0) {
     await db
       .delete(playersTable)
       .where(
         and(
           eq(playersTable.firstName, deleted.firstName),
           eq(playersTable.lastName, deleted.lastName),
-          eq(playersTable.teamId, deleted.teamId)
+          inArray(playersTable.teamId, deletedTeamIds)
         )
       );
   } else {
-    // No team: still try to clean up any orphan player rows with this name
-    // that have a null teamId (edge case where player was synced without a team).
+    // No team assigned: clean up any orphan null-team rows (edge case)
     await db
       .delete(playersTable)
       .where(
@@ -516,6 +558,147 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
   ]);
 
   res.status(204).send();
+});
+
+// GET /profiles/:clerkUserId/aggregate-stats — career stats across all teams
+router.get("/profiles/:clerkUserId/aggregate-stats", async (req, res): Promise<void> => {
+  const { clerkUserId } = req.params;
+
+  const [profile] = await db
+    .select({
+      firstName: userProfilesTable.firstName,
+      lastName: userProfilesTable.lastName,
+      teamId: userProfilesTable.teamId,
+      teamIds: userProfilesTable.teamIds,
+    })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
+  if (!profile) {
+    res.status(404).json({ error: "Profile not found" });
+    return;
+  }
+
+  // Effective teamIds: prefer teamIds array, fall back to teamId for legacy profiles
+  const rawTeamIds = (profile.teamIds as number[] | null) ?? [];
+  const effectiveTeamIds = rawTeamIds.length > 0
+    ? rawTeamIds
+    : (profile.teamId ? [profile.teamId] : []);
+
+  if (!profile.firstName || !profile.lastName || effectiveTeamIds.length === 0) {
+    res.json(emptyAggregateStats());
+    return;
+  }
+
+  // Find all player rows matching this profile's name across all their teams
+  const playerRows = await db
+    .select({ id: playersTable.id, teamId: playersTable.teamId })
+    .from(playersTable)
+    .where(
+      and(
+        eq(playersTable.firstName, profile.firstName),
+        eq(playersTable.lastName, profile.lastName),
+        inArray(playersTable.teamId, effectiveTeamIds)
+      )
+    );
+
+  const playerIds = playerRows.map((p) => p.id);
+  if (playerIds.length === 0) {
+    res.json(emptyAggregateStats());
+    return;
+  }
+
+  // Fetch all game stats for all player IDs joined with game data for win calc
+  const rows = await db
+    .select({
+      playerId:              gamePlayerStatsTable.playerId,
+      points:               gamePlayerStatsTable.points,
+      rebounds:             gamePlayerStatsTable.rebounds,
+      assists:              gamePlayerStatsTable.assists,
+      steals:               gamePlayerStatsTable.steals,
+      blocks:               gamePlayerStatsTable.blocks,
+      turnovers:            gamePlayerStatsTable.turnovers,
+      threesMade:           gamePlayerStatsTable.threesMade,
+      threesAttempted:      gamePlayerStatsTable.threesAttempted,
+      fieldGoalsMade:       gamePlayerStatsTable.fieldGoalsMade,
+      fieldGoalsAttempted:  gamePlayerStatsTable.fieldGoalsAttempted,
+      freeThrowsMade:       gamePlayerStatsTable.freeThrowsMade,
+      freeThrowsAttempted:  gamePlayerStatsTable.freeThrowsAttempted,
+      minutes:              gamePlayerStatsTable.minutesPlayed,
+      homeTeamId:           gamesTable.homeTeamId,
+      awayTeamId:           gamesTable.awayTeamId,
+      homeScore:            gamesTable.homeScore,
+      awayScore:            gamesTable.awayScore,
+    })
+    .from(gamePlayerStatsTable)
+    .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
+    .where(inArray(gamePlayerStatsTable.playerId, playerIds));
+
+  if (rows.length === 0) {
+    res.json(emptyAggregateStats());
+    return;
+  }
+
+  // Build a playerId → teamId map for win calculation
+  const playerTeamMap = new Map<number, number | null>();
+  for (const p of playerRows) playerTeamMap.set(p.id, p.teamId);
+
+  let gamesPlayed = 0, wins = 0;
+  let totalPoints = 0, totalRebounds = 0, totalAssists = 0;
+  let totalSteals = 0, totalBlocks = 0, totalTurnovers = 0;
+  let totalThreesMade = 0, totalThreesAttempted = 0;
+  let totalFieldGoalsMade = 0, totalFieldGoalsAttempted = 0;
+  let totalFreeThrowsMade = 0, totalFreeThrowsAttempted = 0;
+  let totalMinutes = 0;
+
+  for (const row of rows) {
+    gamesPlayed++;
+    totalPoints    += row.points    ?? 0;
+    totalRebounds  += row.rebounds  ?? 0;
+    totalAssists   += row.assists   ?? 0;
+    totalSteals    += row.steals    ?? 0;
+    totalBlocks    += row.blocks    ?? 0;
+    totalTurnovers += row.turnovers ?? 0;
+    totalThreesMade          += row.threesMade          ?? 0;
+    totalThreesAttempted     += row.threesAttempted     ?? 0;
+    totalFieldGoalsMade      += row.fieldGoalsMade      ?? 0;
+    totalFieldGoalsAttempted += row.fieldGoalsAttempted ?? 0;
+    totalFreeThrowsMade      += row.freeThrowsMade      ?? 0;
+    totalFreeThrowsAttempted += row.freeThrowsAttempted ?? 0;
+    totalMinutes += row.minutes ?? 0;
+
+    // Count a win if the player's team won this game
+    const teamId = playerTeamMap.get(row.playerId);
+    if (teamId != null && row.homeScore != null && row.awayScore != null) {
+      if (row.homeTeamId === teamId && row.homeScore > row.awayScore) wins++;
+      else if (row.awayTeamId === teamId && row.awayScore > row.homeScore) wins++;
+    }
+  }
+
+  const fgPct = totalFieldGoalsAttempted > 0 ? totalFieldGoalsMade / totalFieldGoalsAttempted : 0;
+  const tpPct = totalThreesAttempted     > 0 ? totalThreesMade     / totalThreesAttempted     : 0;
+  const ftPct = totalFreeThrowsAttempted > 0 ? totalFreeThrowsMade / totalFreeThrowsAttempted : 0;
+
+  res.json({
+    gamesPlayed,
+    wins,
+    totalPoints,    totalRebounds,    totalAssists,
+    totalSteals,    totalBlocks,      totalTurnovers,
+    totalThreesMade, totalThreesAttempted,
+    totalFieldGoalsMade, totalFieldGoalsAttempted,
+    totalFreeThrowsMade, totalFreeThrowsAttempted,
+    avgPoints:     gamesPlayed > 0 ? totalPoints    / gamesPlayed : 0,
+    avgRebounds:   gamesPlayed > 0 ? totalRebounds  / gamesPlayed : 0,
+    avgAssists:    gamesPlayed > 0 ? totalAssists   / gamesPlayed : 0,
+    avgThreesMade: gamesPlayed > 0 ? totalThreesMade / gamesPlayed : 0,
+    avgSteals:     gamesPlayed > 0 ? totalSteals    / gamesPlayed : 0,
+    avgBlocks:     gamesPlayed > 0 ? totalBlocks    / gamesPlayed : 0,
+    avgTurnovers:  gamesPlayed > 0 ? totalTurnovers / gamesPlayed : 0,
+    avgMinutes:    gamesPlayed > 0 ? totalMinutes   / gamesPlayed : 0,
+    fieldGoalPct:  fgPct,
+    threePointPct: tpPct,
+    freeThrowPct:  ftPct,
+  });
 });
 
 // PUT /profiles/me/ballers — replace the current user's My Ballers list

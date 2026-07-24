@@ -19,6 +19,8 @@ export interface CreateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** All team IDs this player belongs to */
+  teamIds?: number[];
   /** @nullable */
   avatarUrl?: string | null;
   /**

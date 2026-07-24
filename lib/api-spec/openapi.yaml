@@ -1785,6 +1785,11 @@ components:
           items:
             type: integer
           description: "Player IDs linked as My Ballers (parent accounts only)"
+        teamIds:
+          type: array
+          items:
+            type: integer
+          description: "All team IDs this player belongs to (multi-team support)"
       required:
         - id
         - clerkUserId
@@ -1798,6 +1803,7 @@ components:
         - tides
         - milestones
         - myBallers
+        - teamIds
         - createdAt
         - updatedAt
 
@@ -1908,6 +1914,11 @@ components:
           type: ["string", "null"]
         teamId:
           type: ["integer", "null"]
+        teamIds:
+          type: array
+          items:
+            type: integer
+          description: "All team IDs this player belongs to"
         avatarUrl:
           type: ["string", "null"]
         number:
@@ -1942,6 +1953,11 @@ components:
           type: ["string", "null"]
         teamId:
           type: ["integer", "null"]
+        teamIds:
+          type: array
+          items:
+            type: integer
+          description: "All team IDs this player belongs to"
 
     AdminUpdateProfileBody:
       type: object

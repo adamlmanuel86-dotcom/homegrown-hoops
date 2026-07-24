@@ -15,7 +15,7 @@ import {
   useGetIsoBallRank,
   useGetProfileBallers,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award, Gamepad2 } from "lucide-react";
 import { RecognitionBlock } from "@/components/recognition";
 import { PlayerCard } from "@/components/player-card";
@@ -83,9 +83,32 @@ export function ProfilePage() {
 
   const playerId = matchedPlayer?.id ?? 0;
 
-  // All-season stats (used for career Legacy Score on top of the careerStats snapshot)
+  // All-season stats for a single player (used for season-specific display stats)
   const { data: allSeasonStats, refetch: refetchStats } = useGetPlayerStats(playerId, {
     query: { enabled: !!playerId, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
+  });
+
+  // Aggregate stats across ALL teams this profile belongs to — used for Legacy Score
+  const { data: aggregateStats } = useQuery({
+    queryKey: ["profile-aggregate-stats", clerkUserId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/aggregate-stats`);
+      if (!res.ok) return null;
+      return res.json() as Promise<{
+        gamesPlayed: number; wins: number;
+        totalPoints: number; totalRebounds: number; totalAssists: number;
+        totalSteals: number; totalBlocks: number; totalTurnovers: number;
+        totalThreesMade: number; totalThreesAttempted: number;
+        totalFieldGoalsMade: number; totalFieldGoalsAttempted: number;
+        totalFreeThrowsMade: number; totalFreeThrowsAttempted: number;
+        avgPoints: number; avgRebounds: number; avgAssists: number;
+        fieldGoalPct: number; threePointPct: number; freeThrowPct: number;
+      }>;
+    },
+    enabled: !!clerkUserId,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Available seasons for this player
@@ -326,37 +349,37 @@ export function ProfilePage() {
   }
 
   // ── Career totals for Legacy Score ─────────────────────────────────────────
-  // All game stats are permanently in the DB — allSeasonStats (no season filter)
-  // already covers every season a player has ever played.
-  const careerGames = allSeasonStats?.gamesPlayed ?? 0;
-  const careerPoints = allSeasonStats?.totalPoints ?? 0;
-  const careerRebounds = allSeasonStats?.totalRebounds ?? 0;
-  const careerAssists = allSeasonStats?.totalAssists ?? 0;
-
-  const careerSteals    = allSeasonStats?.totalSteals    ?? 0;
-  const careerBlocks    = allSeasonStats?.totalBlocks    ?? 0;
-  const careerTurnovers = allSeasonStats?.totalTurnovers ?? 0;
+  // Use aggregateStats (all teams combined) so the Legacy Score reflects every
+  // team the player belongs to. Falls back to single-player allSeasonStats.
+  const src = aggregateStats ?? allSeasonStats;
+  const careerGames = src?.gamesPlayed ?? 0;
+  const careerPoints    = src?.totalPoints    ?? 0;
+  const careerRebounds  = src?.totalRebounds  ?? 0;
+  const careerAssists   = src?.totalAssists   ?? 0;
+  const careerSteals    = src?.totalSteals    ?? 0;
+  const careerBlocks    = src?.totalBlocks    ?? 0;
+  const careerTurnovers = src?.totalTurnovers ?? 0;
 
   const careerTotalsForCard =
     careerGames > 0
       ? {
           gamesPlayed:    careerGames,
-          wins:           allSeasonStats?.wins ?? 0,
+          wins:           src?.wins ?? 0,
           totalPoints:    careerPoints,
           totalRebounds:  careerRebounds,
           totalAssists:   careerAssists,
           totalSteals:    careerSteals,
           totalBlocks:    careerBlocks,
           totalTurnovers: careerTurnovers,
-          totalFieldGoalsMade:      allSeasonStats?.totalFieldGoalsMade      ?? 0,
-          totalFieldGoalsAttempted: allSeasonStats?.totalFieldGoalsAttempted ?? 0,
-          totalThreesMade:          allSeasonStats?.totalThreesMade          ?? 0,
-          totalThreesAttempted:     allSeasonStats?.totalThreesAttempted     ?? 0,
-          totalFreeThrowsMade:      allSeasonStats?.totalFreeThrowsMade      ?? 0,
-          totalFreeThrowsAttempted: allSeasonStats?.totalFreeThrowsAttempted ?? 0,
-          fieldGoalPct:  allSeasonStats?.fieldGoalPct  ?? 0,
-          threePointPct: allSeasonStats?.threePointPct ?? 0,
-          freeThrowPct:  allSeasonStats?.freeThrowPct  ?? 0,
+          totalFieldGoalsMade:      src?.totalFieldGoalsMade      ?? 0,
+          totalFieldGoalsAttempted: src?.totalFieldGoalsAttempted ?? 0,
+          totalThreesMade:          src?.totalThreesMade          ?? 0,
+          totalThreesAttempted:     src?.totalThreesAttempted     ?? 0,
+          totalFreeThrowsMade:      src?.totalFreeThrowsMade      ?? 0,
+          totalFreeThrowsAttempted: src?.totalFreeThrowsAttempted ?? 0,
+          fieldGoalPct:  src?.fieldGoalPct  ?? 0,
+          threePointPct: src?.threePointPct ?? 0,
+          freeThrowPct:  src?.freeThrowPct  ?? 0,
           avgPoints:    careerPoints    / careerGames,
           avgRebounds:  careerRebounds  / careerGames,
           avgAssists:   careerAssists   / careerGames,

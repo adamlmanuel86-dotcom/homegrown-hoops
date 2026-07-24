@@ -72,7 +72,7 @@ export function OnboardingPage() {
     firstName: "",
     lastName: "",
     school: "",
-    teamId: "",
+    teamIds: [] as string[],
     position: "",
     jerseyNumber: "",
     graduationYear: "",
@@ -204,7 +204,8 @@ export function OnboardingPage() {
             firstName: form.firstName,
             lastName: form.lastName,
             school: form.school || null,
-            teamId: form.teamId ? parseInt(form.teamId) : null,
+            teamId: form.teamIds[0] ? parseInt(form.teamIds[0]) : null,
+            teamIds: form.teamIds.map(Number),
             position: form.position || null,
             graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
             avatarUrl: finalAvatarUrl || null,
@@ -415,7 +416,7 @@ export function OnboardingPage() {
       tides: [] as { id: string; earnedAt: string }[],
       number: form.jerseyNumber || null,
     };
-    const teamData = teams?.find((t) => t.id.toString() === form.teamId);
+    const teamData = teams?.find((t) => t.id.toString() === form.teamIds[0]);
 
     return (
       <div
@@ -1553,19 +1554,43 @@ export function OnboardingPage() {
                   placeholder="School name (e.g. Citadel High)"
                   className="onboarding-input"
                 />
-                <select
-                  name="teamId"
-                  value={form.teamId}
-                  onChange={handleChange}
-                  className="onboarding-input"
-                >
-                  <option value="">Select your team (optional)</option>
-                  {teams?.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} — {t.city}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  {teams?.map((t) => {
+                    const checked = form.teamIds.includes(t.id.toString());
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            teamIds: f.teamIds.includes(t.id.toString())
+                              ? f.teamIds.filter((id) => id !== t.id.toString())
+                              : [...f.teamIds, t.id.toString()],
+                          }))
+                        }
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                          checked
+                            ? "border-primary bg-primary/15 text-white"
+                            : "border-white/20 bg-white/5 text-white/60 hover:border-white/40"
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                            checked ? "border-primary bg-primary" : "border-white/30"
+                          }`}
+                        >
+                          {checked && (
+                            <svg className="w-3 h-3 text-white" viewBox="0 0 10 10" fill="none">
+                              <path d="M1.5 5.5L4 8L8.5 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="font-semibold text-sm">{t.name} — {t.city}</span>
+                      </button>
+                    );
+                  })}
+                </div>
                 <p className="text-xs text-white/30 font-medium leading-relaxed">
                   Not sure? An admin can assign your team after you join.
                 </p>

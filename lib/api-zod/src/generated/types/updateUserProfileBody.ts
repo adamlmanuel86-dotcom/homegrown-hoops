@@ -19,4 +19,6 @@ export interface UpdateUserProfileBody {
   bio?: string | null;
   /** @nullable */
   teamId?: number | null;
+  /** All team IDs this player belongs to */
+  teamIds?: number[];
 }
