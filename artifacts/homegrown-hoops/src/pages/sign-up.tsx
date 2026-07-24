@@ -81,8 +81,10 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const created = await signUp.create({ emailAddress: email, password });
-      await created.prepareEmailAddressVerification({ strategy: "email_code" });
+      await signUp.create({ emailAddress: email, password });
+      // Clerk v6.12+ new signals API: prepareEmailAddressVerification is gone;
+      // email code is sent via signUp.verifications.sendEmailCode()
+      await (signUp as any).verifications.sendEmailCode();
       saveState(email);
       setStep("verify");
     } catch (err: unknown) {
@@ -103,7 +105,8 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      await signUp.attemptEmailAddressVerification({ code });
+      // Clerk v6.12+ new signals API: verifyEmailCode instead of attemptEmailAddressVerification
+      await (signUp as any).verifications.verifyEmailCode({ code });
       if (signUp.status === "complete") {
         clearState();
         if (setActive && signUp.createdSessionId) {
@@ -125,7 +128,8 @@ export function CustomSignUpPage() {
     if (!signUp || loading) return;
     setError("");
     try {
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      // Clerk v6.12+ new signals API
+      await (signUp as any).verifications.sendEmailCode();
       saveState(email);
     } catch {
       setError("Could not resend — please try again.");
@@ -137,17 +141,18 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const { startEmailLinkFlow } = signUp.createEmailLinkFlow();
+      // Clerk v6.12+ new signals API: sendEmailLink + waitForEmailLinkVerification
+      await (signUp as any).verifications.sendEmailLink({
+        redirectUrl: `${window.location.origin}${basePath}/sign-in/sso-callback`,
+      });
       saveState(email);
       setStep("link-sent");
       setLoading(false);
-      // startEmailLinkFlow polls until the user clicks the link in their email
-      const result = await startEmailLinkFlow({
-        redirectUrl: `${window.location.origin}${basePath}/sign-in/sso-callback`,
-      });
-      if (result.status === "complete" && result.createdSessionId) {
+      const result = await (signUp as any).verifications.waitForEmailLinkVerification();
+      if (signUp.status === "complete" || result?.status === "complete") {
         clearState();
-        await setActive({ session: result.createdSessionId });
+        const sessionId = signUp.createdSessionId ?? result?.createdSessionId;
+        if (sessionId) await setActive({ session: sessionId });
         setLocation("/onboarding");
       }
     } catch (err: unknown) {
