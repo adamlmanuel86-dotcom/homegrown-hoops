@@ -30,6 +30,7 @@ type Step =
   | "submitting"
   | "avatar"
   | "reveal"
+  | "parentReveal"
   | "pendingReveal"
   | "ballers"
   | "walkthrough";
@@ -230,12 +231,16 @@ export function OnboardingPage() {
           // non-fatal — avatar can be set later from profile page
         }
       }
-      setStep("reveal");
-      triggerReveal();
+      if (form.accountType === "parent") {
+        setStep("parentReveal");
+      } else {
+        setStep("reveal");
+        triggerReveal();
+      }
     } catch (err) {
       console.log("[HH] advanceFromPhoto error:", err);
       setSubmitError("Something went wrong. Please try again.");
-      setStep("photo");
+      setStep(form.accountType === "parent" ? "avatar" : "photo");
     } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -1056,6 +1061,140 @@ export function OnboardingPage() {
         <style>{`
           @keyframes fadeUp {
             from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────
+  // PARENT WELCOME SCREEN
+  // ──────────────────────────────────────────────────
+  if (step === "parentReveal") {
+    const selectedBallers = (allPlayers ?? []).filter((p) => pendingBallers.includes(p.id));
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 24px",
+          background: "radial-gradient(ellipse at 50% 40%, hsl(22 78% 14% / 0.6), hsl(222 42% 4%) 70%)",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Background glow */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          background: "radial-gradient(ellipse at 50% 30%, hsl(22 78% 46% / 0.12), transparent 60%)",
+        }} />
+
+        <div
+          style={{
+            width: "100%", maxWidth: 360,
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 28,
+            animation: "prFadeUp 0.7s ease both",
+          }}
+        >
+          {/* Icon */}
+          <div style={{
+            width: 80, height: 80, borderRadius: 24,
+            background: "linear-gradient(135deg, hsl(22 78% 46% / 0.2), hsl(22 78% 46% / 0.08))",
+            border: "1.5px solid hsl(22 78% 46% / 0.4)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 36,
+          }}>
+            🏀
+          </div>
+
+          {/* Headline */}
+          <div style={{ textAlign: "center" }}>
+            <p style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: "0.18em",
+              textTransform: "uppercase", color: "hsl(22,78%,60%)", marginBottom: 8,
+            }}>
+              Welcome to the League
+            </p>
+            <h2 style={{
+              fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif",
+              fontSize: "clamp(36px,10vw,52px)", fontWeight: 900, color: "#fff",
+              lineHeight: 1, margin: "0 0 12px", textTransform: "uppercase",
+              letterSpacing: "0.02em",
+            }}>
+              YOU'RE IN,<br />{form.firstName.toUpperCase()}!
+            </h2>
+            <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 15, lineHeight: 1.6, margin: 0 }}>
+              {selectedBallers.length > 0
+                ? `You're all set to follow ${selectedBallers.length === 1 ? selectedBallers[0].firstName : "your ballers"} and stay connected to every game.`
+                : "Your parent account is active. Head to your profile to link the players you're here to support."}
+            </p>
+          </div>
+
+          {/* Ballers preview */}
+          {selectedBallers.length > 0 && (
+            <div style={{ width: "100%" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", marginBottom: 12, textAlign: "center" }}>
+                Your Ballers
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+                {selectedBallers.map((baller) => (
+                  <div key={baller.id} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px", borderRadius: 12,
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    minWidth: 0,
+                  }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                      background: "hsl(22,78%,25%)", overflow: "hidden",
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+                    }}>
+                      {baller.avatarUrl
+                        ? <img src={baller.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : "🏀"}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0, lineHeight: 1.2 }}>
+                        {baller.firstName} {baller.lastName}
+                      </p>
+                      {baller.position && (
+                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(22,78%,55%)", margin: 0 }}>
+                          {baller.position}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CTA */}
+          <button
+            onClick={enterLeague}
+            style={{
+              width: "100%", padding: "16px 20px", borderRadius: 14,
+              background: "linear-gradient(135deg, #F97316, #B45309)",
+              border: "none", color: "#fff",
+              fontSize: 16, fontWeight: 700, letterSpacing: "0.03em",
+              cursor: "pointer", display: "flex", alignItems: "center",
+              justifyContent: "center", gap: 8,
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              boxShadow: "0 4px 24px hsl(22 78% 46% / 30%)",
+            }}
+          >
+            Enter the League <ArrowRight style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+
+        <style>{`
+          @keyframes prFadeUp {
+            from { opacity: 0; transform: translateY(20px); }
             to   { opacity: 1; transform: translateY(0); }
           }
         `}</style>
