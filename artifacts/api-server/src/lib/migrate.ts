@@ -270,6 +270,33 @@ export async function runMigrations(): Promise<void> {
     `);
     console.log("[migrate] Column additions OK");
 
+    // ── One-time data migrations ──────────────────────────────────────────────
+    // A lightweight flag table so each data op only ever runs once.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS data_migrations (
+        key        text PRIMARY KEY,
+        applied_at timestamp NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // scrub_test_players_v1: wipe ALL player rows (and their jersey stubs) so
+    // test/placeholder names are completely removed from the site. The admin
+    // will repopulate rosters with real players going forward.
+    const { rows: scrubRows } = await client.query(
+      `SELECT 1 FROM data_migrations WHERE key = 'scrub_test_players_v1'`
+    );
+    if (scrubRows.length === 0) {
+      console.log("[migrate] Running scrub_test_players_v1...");
+      await client.query(`DELETE FROM jersey_stubs;`);
+      await client.query(`DELETE FROM players;`);
+      await client.query(
+        `INSERT INTO data_migrations (key) VALUES ('scrub_test_players_v1');`
+      );
+      console.log("[migrate] scrub_test_players_v1 complete — all player names removed.");
+    } else {
+      console.log("[migrate] scrub_test_players_v1 already applied, skipping.");
+    }
+
     // ── Verify tables exist ───────────────────────────────────────────────────
     const { rows } = await client.query<{ tablename: string }>(`
       SELECT tablename FROM pg_tables
