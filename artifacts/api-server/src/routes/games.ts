@@ -12,6 +12,7 @@ import {
   GetGameResponse,
   UpdateGameResponse,
   ListGamesResponse,
+  ListGamesResponseItem,
   ListGamesQueryParams,
   GetGamePlayerStatsParams,
   GetGamePlayerStatsResponse,
@@ -67,7 +68,18 @@ router.get("/games", async (req, res): Promise<void> => {
   } else {
     games = await db.select().from(gamesTable).orderBy(desc(gamesTable.gameDate));
   }
-  res.json(ListGamesResponse.parse(normalizeGames(serializeRows(games))));
+
+  // Validate per-item so a single malformed row never crashes the whole endpoint.
+  // Invalid rows are logged and skipped rather than causing a 500.
+  const serialized = normalizeGames(serializeRows(games));
+  const valid = serialized.filter((row) => {
+    const result = ListGamesResponseItem.safeParse(row);
+    if (!result.success) {
+      console.error("[games] Row failed validation, skipping:", row.id, result.error.message);
+    }
+    return result.success;
+  });
+  res.json(valid);
 });
 
 router.post("/games", async (req, res): Promise<void> => {
