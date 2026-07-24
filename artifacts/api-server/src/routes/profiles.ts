@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, count, and, isNull, ne, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable, teamsTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, teamsTable, arcadeSessionsTable, isoBallSessionsTable, isoBallDailyQuestionsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 
@@ -498,6 +498,13 @@ router.delete("/profiles/:clerkUserId", async (req, res): Promise<void> => {
         )
       );
   }
+
+  // Remove all arcade and Iso Ball data for this account
+  await Promise.all([
+    db.delete(arcadeSessionsTable).where(eq(arcadeSessionsTable.clerkUserId, clerkUserId)),
+    db.delete(isoBallSessionsTable).where(eq(isoBallSessionsTable.clerkUserId, clerkUserId)),
+    db.delete(isoBallDailyQuestionsTable).where(eq(isoBallDailyQuestionsTable.clerkUserId, clerkUserId)),
+  ]);
 
   res.status(204).send();
 });
