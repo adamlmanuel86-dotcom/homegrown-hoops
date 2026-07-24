@@ -13,6 +13,7 @@ import {
   useGetMyArcadeStats,
   useGetMyArcadeRank,
   useGetIsoBallRank,
+  useGetProfileBallers,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Pencil, ChevronLeft, School, Calendar, Trophy, Share2, Check, ChevronDown, Brain, Medal, RefreshCw, Camera, Loader2, X as XIcon, Award, Gamepad2 } from "lucide-react";
@@ -299,6 +300,11 @@ export function ProfilePage() {
   );
   const { data: ibRank } = useGetIsoBallRank({ query: { enabled: isOwner } });
 
+  const isParent = profile?.role === "parent";
+  const { data: profileBallers } = useGetProfileBallers(clerkUserId, {
+    query: { enabled: !!profile && profile.role === "parent" },
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-xl mx-auto space-y-6 animate-pulse">
@@ -463,8 +469,8 @@ export function ProfilePage() {
         </button>
       </div>
 
-      {/* Season selector */}
-      {seasons.length > 0 && (
+      {/* Season selector — not shown for parent accounts */}
+      {!isParent && seasons.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Season</span>
           <div className="relative">
@@ -621,6 +627,129 @@ export function ProfilePage() {
         </div>
       )}
 
+      {/* ── Parent profile card ──────────────────────────────────────────── */}
+      {isParent && (
+        <div className="space-y-6">
+          <div className="flex flex-col items-center gap-4">
+            <div
+              className="w-28 h-28 rounded-full overflow-hidden border-4 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] flex items-center justify-center"
+              style={{ background: "hsl(var(--muted))" }}
+            >
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile.firstName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="h-14 w-14 text-muted-foreground" />
+              )}
+            </div>
+            <div className="text-center space-y-2">
+              <h1 className="font-display text-4xl text-secondary leading-tight">
+                {profile.firstName.toUpperCase()} {profile.lastName.toUpperCase()}
+              </h1>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest px-3 py-1 border-2 border-primary/40 text-primary">
+                🏆 Parent
+              </span>
+            </div>
+            {profile.bio && (
+              <p className="text-muted-foreground text-sm leading-relaxed text-center max-w-sm">
+                {profile.bio}
+              </p>
+            )}
+            <div className="flex flex-wrap justify-center gap-2">
+              {isViewerAdmin && (
+                <button
+                  onClick={openPhotoEditor}
+                  className="inline-flex items-center gap-2 px-4 py-2 font-bold text-xs transition-colors"
+                  style={{ background: "hsl(220 28% 14%)", border: "1px solid hsl(220 28% 22%)", color: "hsl(210 16% 65%)" }}
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  Edit Photo
+                </button>
+              )}
+              {isOwner && (
+                <Link href="/my-profile" className="btn-primary text-sm">
+                  <Pencil className="h-4 w-4" /> Edit Profile
+                </Link>
+              )}
+              <button
+                onClick={handleShare}
+                className={`inline-flex items-center gap-2 px-5 py-2.5 font-bold text-sm transition-all ${
+                  copied
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                    : "bg-white/8 hover:bg-white/12 text-foreground/80 hover:text-white border border-white/10"
+                }`}
+              >
+                {copied ? (
+                  <><Check className="h-4 w-4" /> Copied!</>
+                ) : (
+                  <><Share2 className="h-4 w-4" /> Share Profile</>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* My Ballers */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: 16 }}>🏀</span>
+              <h3 className="label-upper text-xs text-muted-foreground">My Ballers</h3>
+            </div>
+            {(profileBallers ?? []).length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {(profileBallers ?? []).map((baller) => (
+                  <Link key={baller.id} href={`/players/${baller.id}`}>
+                    <div
+                      className="border-2 border-black shadow-[3px_3px_0_0_rgba(0,0,0,1)] p-4 flex flex-col items-center gap-2 text-center cursor-pointer hover:bg-muted/40 transition-colors"
+                      style={{ background: "hsl(var(--card))" }}
+                    >
+                      <div
+                        className="rounded-full overflow-hidden flex items-center justify-center"
+                        style={{ width: 52, height: 52, background: "hsl(var(--muted))" }}
+                      >
+                        {baller.avatarUrl ? (
+                          <img src={baller.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <span style={{ fontSize: 22 }}>🏀</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm leading-tight">
+                          {baller.number && <span className="text-primary mr-1">#{baller.number}</span>}
+                          {baller.firstName} {baller.lastName}
+                        </p>
+                        {baller.teamName && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{baller.teamName}</p>
+                        )}
+                        {baller.position && (
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5 opacity-70">
+                            {baller.position}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : isOwner ? (
+              <div
+                className="border-2 border-dashed border-border p-6 text-center"
+                style={{ background: "hsl(var(--card))" }}
+              >
+                <p className="text-sm text-muted-foreground mb-3">No ballers added yet.</p>
+                <Link href="/my-profile" className="btn-primary text-sm">
+                  + Add My Ballers
+                </Link>
+              </div>
+            ) : (
+              <div className="border border-border p-5 text-center" style={{ background: "hsl(var(--card))" }}>
+                <p className="text-sm text-muted-foreground">No ballers added yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Player card (non-parent accounts) ───────────────────────────────── */}
+      {!isParent && (
       <div className="flex flex-col items-center gap-4">
         <PlayerCard
           profile={displayProfile}
@@ -667,8 +796,9 @@ export function ProfilePage() {
           )}
         </button>
       </div>
+      )}
 
-      {displayStats && (
+      {!isParent && displayStats && (
         <div className="card-base p-4">
           <p className="label-upper mb-3 px-1">Defensive &amp; Ball Stats · {seasonLabel}</p>
           <div className="grid grid-cols-3 gap-3">
@@ -687,7 +817,7 @@ export function ProfilePage() {
         </div>
       )}
 
-      {displayStats && (displayStats.totalFieldGoalsAttempted ?? 0) > 0 && (
+      {!isParent && displayStats && (displayStats.totalFieldGoalsAttempted ?? 0) > 0 && (
         <div className="card-base p-4 space-y-3">
           <p className="label-upper mb-1 px-1">Shooting Splits · {seasonLabel}</p>
           {[
@@ -736,6 +866,7 @@ export function ProfilePage() {
         </div>
       )}
 
+      {!isParent && (
       <div className="rounded-2xl overflow-hidden bg-secondary text-white">
         <div className="px-8 py-10 flex items-center gap-5">
           <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
@@ -769,7 +900,9 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+      )}
 
+      {!isParent && (
       <div className="card-base p-6 space-y-5">
         {profile.school && (
           <div className="flex items-start gap-3">
@@ -807,18 +940,21 @@ export function ProfilePage() {
           </div>
         )}
       </div>
+      )}
 
-      {profile.isAdmin && (
+      {!isParent && profile.isAdmin && (
         <div className="flex items-center gap-2 text-xs font-bold uppercase text-primary tracking-wider px-1">
           <Trophy className="h-3.5 w-3.5" /> League Admin
         </div>
       )}
 
+      {!isParent && (
       <RecognitionBlock
         stamps={profile.stamps ?? []}
         tides={tidesForBlock}
         archetype={displayArchetype}
       />
+      )}
 
       {isOwner && (
         <div className="space-y-3">

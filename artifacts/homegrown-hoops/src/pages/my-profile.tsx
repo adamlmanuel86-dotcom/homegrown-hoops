@@ -86,6 +86,7 @@ export function MyProfilePage() {
   const [pickerSelection, setPickerSelection] = useState<number[]>([]);
   const [ballerSearch, setBallerSearch] = useState("");
   const [ballerSaveError, setBallerSaveError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"profile" | "ballers">("profile");
 
   const isNew = !isLoading && !profile && (error as { status?: number } | null)?.status === 404;
 
@@ -577,8 +578,28 @@ export function MyProfilePage() {
         </form>
       )}
 
-      {/* Recognition — visible in view mode when profile exists */}
-      {!showForm && profile && (
+      {/* Tab nav — parents only, view mode */}
+      {!showForm && isParent && (
+        <div className="flex border-2 border-black shadow-[3px_3px_0_0_rgba(0,0,0,1)]">
+          {(["profile", "ballers"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className="flex-1 py-3 font-display text-sm uppercase tracking-wider transition-colors"
+              style={{
+                background: activeTab === tab ? "hsl(15 100% 50%)" : "hsl(var(--card))",
+                color: activeTab === tab ? "#fff" : "hsl(var(--muted-foreground))",
+              }}
+            >
+              {tab === "profile" ? "My Profile" : "🏀 My Ballers"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Recognition — visible in view mode when profile exists (parents: profile tab only) */}
+      {!showForm && profile && (!isParent || activeTab === "profile") && (
         <RecognitionBlock
           stamps={profile.stamps ?? []}
           tides={profile.tides ?? []}
@@ -587,8 +608,8 @@ export function MyProfilePage() {
         />
       )}
 
-      {/* ── MY BALLERS — parent accounts only ── */}
-      {!showForm && isParent && (
+      {/* ── MY BALLERS — parent accounts only, ballers tab ── */}
+      {!showForm && isParent && activeTab === "ballers" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -634,9 +655,9 @@ export function MyProfilePage() {
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {(myBallers ?? []).map((baller) => (
+                    <Link key={baller.id} href={`/players/${baller.id}`}>
                     <div
-                      key={baller.id}
-                      className="border border-border rounded-xl overflow-hidden"
+                      className="border-2 border-black shadow-[3px_3px_0_0_rgba(0,0,0,1)] overflow-hidden cursor-pointer hover:bg-muted/40 transition-colors"
                       style={{ background: "hsl(var(--card))" }}
                     >
                       <div
@@ -675,6 +696,7 @@ export function MyProfilePage() {
                         </div>
                       </div>
                     </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -793,8 +815,8 @@ export function MyProfilePage() {
         </div>
       )}
 
-      {/* Arcade Stats — always visible in view mode when profile exists */}
-      {!showForm && profile && (
+      {/* Arcade Stats — visible in view mode (parents: profile tab only) */}
+      {!showForm && profile && (!isParent || activeTab === "profile") && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Gamepad2 className="h-4 w-4 text-primary" />
