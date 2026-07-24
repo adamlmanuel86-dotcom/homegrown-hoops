@@ -278,6 +278,17 @@ export function AdminPage() {
   const [rosterTeamId, setRosterTeamId] = useState<number | null>(null);
   const [confirmDeletePlayerId, setConfirmDeletePlayerId] = useState<number | null>(null);
   const [confirmClearTeamId, setConfirmClearTeamId] = useState<number | null>(null);
+  const [confirmWipeAllPlayers, setConfirmWipeAllPlayers] = useState(false);
+
+  const wipeAllPlayers = useMutation({
+    mutationFn: async () => {
+      await customFetch(`/api/admin/players/all`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      setConfirmWipeAllPlayers(false);
+      qc.invalidateQueries({ queryKey: ["/api/players"] });
+    },
+  });
 
   const clearRoster = useMutation({
     mutationFn: async (teamId: number) => {
@@ -728,9 +739,36 @@ export function AdminPage() {
               {teams.length} {teams.length === 1 ? "team" : "teams"}
             </span>
           )}
+          {!confirmWipeAllPlayers ? (
+            <button
+              onClick={() => setConfirmWipeAllPlayers(true)}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove All Players
+            </button>
+          ) : (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Remove ALL players from every team?</span>
+              <button
+                onClick={() => wipeAllPlayers.mutate()}
+                disabled={wipeAllPlayers.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
+              >
+                <Trash2 className="h-3 w-3" />
+                {wipeAllPlayers.isPending ? "Removing…" : "Yes, Remove All"}
+              </button>
+              <button
+                onClick={() => setConfirmWipeAllPlayers(false)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <button
             onClick={() => { setShowAddTeam((v) => !v); setAddTeamError(null); }}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 transition-colors"
+            className={`${confirmWipeAllPlayers ? "" : "ml-auto "}flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 transition-colors`}
           >
             <Plus className="h-3.5 w-3.5" />
             Add Team

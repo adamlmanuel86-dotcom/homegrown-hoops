@@ -362,6 +362,22 @@ router.delete("/admin/teams/:teamId/seasons/:season", async (req, res): Promise<
 });
 
 // ─── One-time / on-demand roster cleanup ─────────────────────────────────────
+// DELETE /admin/players/all — wipe EVERY player across all teams at once
+router.delete("/admin/players/all", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const allPlayerIds = await db.select({ id: playersTable.id }).from(playersTable);
+  const ids = allPlayerIds.map((p) => p.id);
+
+  if (ids.length > 0) {
+    await db.delete(jerseyStubsTable).where(inArray(jerseyStubsTable.playerId, ids));
+    await db.delete(playersTable);
+  }
+
+  res.json({ deleted: ids.length });
+});
+
 // DELETE /admin/teams/:teamId/players — wipe every player on a team at once
 router.delete("/admin/teams/:teamId/players", async (req, res): Promise<void> => {
   const adminId = await requireAdmin(req, res);

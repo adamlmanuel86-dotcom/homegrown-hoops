@@ -83,9 +83,7 @@ export async function syncPlayerForTeamChange(
       )
     );
 
-  if (!existing) {
-    await db.insert(playersTable).values({ firstName: newFirstName, lastName: newLastName, teamId: newTeamId, number: number ?? null });
-  } else if (number !== undefined) {
+  if (existing && number !== undefined) {
     await db.update(playersTable)
       .set({ number: number ?? null })
       .where(eq(playersTable.id, existing.id));
