@@ -165,7 +165,8 @@ export interface ExternalLink {
 
 export interface Game {
   id: number;
-  homeTeamId: number;
+  /** @nullable */
+  homeTeamId?: number | null;
   /** @nullable */
   awayTeamId?: number | null;
   /** @nullable */
@@ -694,7 +695,8 @@ export interface SubmitPlayerStatRow {
 }
 
 export interface SubmitTrackGameBody {
-  homeTeamId: number;
+  /** @nullable */
+  homeTeamId?: number | null;
   /** @nullable */
   awayTeamId?: number | null;
   /** @nullable */

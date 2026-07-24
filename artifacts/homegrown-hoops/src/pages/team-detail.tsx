@@ -176,7 +176,7 @@ export function TeamDetailPage() {
                     <div>
                       <p className="label-upper text-[10px]">{game.gameDate}</p>
                       <p className="text-sm font-semibold text-secondary mt-0.5">
-                        {isHome ? "vs" : "@"} {allTeams?.find((t) => t.id === (isHome ? game.awayTeamId : game.homeTeamId))?.name ?? (isHome ? (game.opponentName ?? "Away") : "Home")}
+                        {isHome ? "vs" : "@"} {allTeams?.find((t) => t.id === (isHome ? game.awayTeamId : game.homeTeamId))?.name ?? (game.opponentName ?? (isHome ? "Away" : "Home"))}
                       </p>
                     </div>
                     {isFinal ? (

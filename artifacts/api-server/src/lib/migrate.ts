@@ -256,6 +256,18 @@ export async function runMigrations(): Promise<void> {
         UNIQUE(jersey_number, team_id, season)
       );
     `);
+    // Make home_team_id nullable — supports "my team is away" tracking mode
+    await client.query(`
+      DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema='public' AND table_name='games'
+            AND column_name='home_team_id' AND is_nullable='NO'
+        ) THEN
+          ALTER TABLE games ALTER COLUMN home_team_id DROP NOT NULL;
+        END IF;
+      END $$;
+    `);
     console.log("[migrate] Column additions OK");
 
     // ── Verify tables exist ───────────────────────────────────────────────────

@@ -301,7 +301,7 @@ export function Home() {
                         <span className="font-display text-base">{game.awayScore ?? "—"}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
-                        <span>{teamById(game.homeTeamId)}</span>
+                        <span>{teamById(game.homeTeamId, game.opponentName)}</span>
                         <span className="font-display text-base">{game.homeScore ?? "—"}</span>
                       </div>
                     </div>

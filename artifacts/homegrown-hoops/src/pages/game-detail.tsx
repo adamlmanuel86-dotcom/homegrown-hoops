@@ -590,17 +590,30 @@ export function GameDetailPage() {
             )}
           </div>
 
-          <Link href={homeTeam ? `/teams/${homeTeam.id}` : "#"} className="flex flex-col items-center gap-3 group">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: homeTeam?.primaryColor ?? "#555" }}>
-              {homeTeam?.abbreviation ?? "?"}
+          {homeTeam ? (
+            <Link href={`/teams/${homeTeam.id}`} className="flex flex-col items-center gap-3 group">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: homeTeam.primaryColor ?? "#555" }}>
+                {homeTeam.abbreviation}
+              </div>
+              <div className="text-center">
+                <p className={`font-display text-lg leading-tight group-hover:text-primary transition-colors ${homeWon ? "text-white" : "text-white/60"}`}>
+                  {homeTeam.name.toUpperCase()}
+                </p>
+                <p className="text-xs text-white/60 mt-0.5">{homeTeam.city}</p>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: "#555" }}>
+                {opponentName ? opponentAbbr(opponentName) : "?"}
+              </div>
+              <div className="text-center">
+                <p className={`font-display text-lg leading-tight ${homeWon ? "text-white" : "text-white/60"}`}>
+                  {(opponentName ?? "Home").toUpperCase()}
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className={`font-display text-lg leading-tight group-hover:text-primary transition-colors ${homeWon ? "text-white" : "text-white/60"}`}>
-                {homeTeam?.name?.toUpperCase() ?? "HOME"}
-              </p>
-              <p className="text-xs text-white/60 mt-0.5">{homeTeam?.city}</p>
-            </div>
-          </Link>
+          )}
         </div>
 
         {isAdmin && !editingScore && (
@@ -635,7 +648,7 @@ export function GameDetailPage() {
                 className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
             </div>
             <div>
-              <label className="label-upper block mb-2">{homeTeam?.name ?? "Home"} Score</label>
+              <label className="label-upper block mb-2">{homeTeam?.name ?? opponentName ?? "Home"} Score</label>
               <input type="number" min={0} value={homeScoreInput} onChange={(e) => { setHomeScoreInput(e.target.value); setScoreError(null); }} placeholder="0"
                 className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
             </div>

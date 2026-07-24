@@ -1390,7 +1390,7 @@ components:
         id:
           type: integer
         homeTeamId:
-          type: integer
+          type: ["integer", "null"]
         awayTeamId:
           type: ["integer", "null"]
         homeScore:
@@ -1423,7 +1423,6 @@ components:
           type: string
       required:
         - id
-        - homeTeamId
         - gameDate
         - season
         - status
@@ -2246,7 +2245,7 @@ components:
       type: object
       properties:
         homeTeamId:
-          type: integer
+          type: ["integer", "null"]
         awayTeamId:
           type: ["integer", "null"]
         opponentName:
@@ -2266,7 +2265,6 @@ components:
           items:
             $ref: "#/components/schemas/SubmitPlayerStatRow"
       required:
-        - homeTeamId
         - homeScore
         - awayScore
         - gameDate

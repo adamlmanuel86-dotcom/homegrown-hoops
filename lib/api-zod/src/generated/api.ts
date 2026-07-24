@@ -261,7 +261,7 @@ export const ListGamesQueryParams = zod.object({
 
 export const ListGamesResponseItem = zod.object({
   id: zod.number(),
-  homeTeamId: zod.number(),
+  homeTeamId: zod.number().nullish(),
   awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
@@ -326,7 +326,7 @@ export const GetGameParams = zod.object({
 
 export const GetGameResponse = zod.object({
   id: zod.number(),
-  homeTeamId: zod.number(),
+  homeTeamId: zod.number().nullish(),
   awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
@@ -384,7 +384,7 @@ export const UpdateGameBody = zod.object({
 
 export const UpdateGameResponse = zod.object({
   id: zod.number(),
-  homeTeamId: zod.number(),
+  homeTeamId: zod.number().nullish(),
   awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
@@ -566,7 +566,7 @@ export const GetStatsSummaryResponse = zod.object({
   recentGames: zod.array(
     zod.object({
       id: zod.number(),
-      homeTeamId: zod.number(),
+      homeTeamId: zod.number().nullish(),
       awayTeamId: zod.number().nullish(),
       homeScore: zod.number().nullish(),
       awayScore: zod.number().nullish(),
@@ -825,7 +825,7 @@ export const RejectPendingAccountResponse = zod.object({
  * @summary Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.
  */
 export const SubmitTrackGameBody = zod.object({
-  homeTeamId: zod.number(),
+  homeTeamId: zod.number().nullish(),
   awayTeamId: zod.number().nullish(),
   opponentName: zod.string().nullish(),
   homeScore: zod.number(),
@@ -905,7 +905,7 @@ export const ApprovePendingGameParams = zod.object({
 
 export const ApprovePendingGameResponse = zod.object({
   id: zod.number(),
-  homeTeamId: zod.number(),
+  homeTeamId: zod.number().nullish(),
   awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
@@ -945,7 +945,7 @@ export const RejectPendingGameBody = zod.object({
 
 export const RejectPendingGameResponse = zod.object({
   id: zod.number(),
-  homeTeamId: zod.number(),
+  homeTeamId: zod.number().nullish(),
   awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),

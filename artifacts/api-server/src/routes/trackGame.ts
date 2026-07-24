@@ -25,7 +25,7 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
   }
 
   const body = req.body as {
-    homeTeamId: number;
+    homeTeamId?: number | null;
     awayTeamId?: number | null;
     opponentName?: string | null;
     homeScore: number;
@@ -52,16 +52,22 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     }>;
   };
 
-  if (!body.homeTeamId || body.homeScore == null || body.awayScore == null || !body.gameDate || !body.season) {
+  if (body.homeScore == null || body.awayScore == null || !body.gameDate || !body.season) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
 
+  const homeTeamId = body.homeTeamId ?? null;
   const awayTeamId = body.awayTeamId ?? null;
   const opponentName = body.opponentName ?? null;
 
-  if (!awayTeamId && !opponentName) {
-    res.status(400).json({ error: "Either awayTeamId or opponentName is required" });
+  // Require at least one registered team; and an opponentName when either slot is unnamed
+  if (!homeTeamId && !awayTeamId) {
+    res.status(400).json({ error: "At least one of homeTeamId or awayTeamId is required" });
+    return;
+  }
+  if ((!homeTeamId || !awayTeamId) && !opponentName) {
+    res.status(400).json({ error: "opponentName is required when one team has no ID" });
     return;
   }
 
@@ -70,7 +76,7 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
   const [game] = await db
     .insert(gamesTable)
     .values({
-      homeTeamId: body.homeTeamId,
+      homeTeamId,
       awayTeamId,
       homeScore: body.homeScore,
       awayScore: body.awayScore,

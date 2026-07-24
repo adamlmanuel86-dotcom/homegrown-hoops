@@ -117,6 +117,7 @@ export function TrackGamePage() {
   // Setup state
   const [screen, setScreen] = useState<Screen>("setup");
   const [mode, setMode] = useState<Mode>("myteam");
+  const [myTeamSide, setMyTeamSide] = useState<"home" | "away">("home");
   const [homeTeamId, setHomeTeamId] = useState<number | null>(null);
   const [awayTeamId, setAwayTeamId] = useState<number | null>(null);
   const [opponentName, setOpponentName] = useState("");
@@ -251,7 +252,7 @@ export function TrackGamePage() {
 
   // ── Start game
   function startGame() {
-    if (!homeTeamId) { showToast("Select a home team"); return; }
+    if (!homeTeamId) { showToast("Select your team"); return; }
     if (mode === "both" && !awayTeamId) { showToast("Select an away team"); return; }
     if (mode === "myteam" && !opponentName.trim()) { showToast("Enter opponent name"); return; }
 
@@ -395,13 +396,15 @@ export function TrackGamePage() {
         ...homePlayerStats,
         ...(mode === "both" ? awayPlayerStats : []),
       ];
+      // When tracking as away team: my team goes in the awayTeamId slot, opponent in home
+      const isMyTeamAway = mode === "myteam" && myTeamSide === "away";
       const game = await submitGame.mutateAsync({
         data: {
-          homeTeamId: homeTeamId!,
-          awayTeamId: mode === "both" ? awayTeamId : null,
+          homeTeamId: mode === "both" ? homeTeamId : (isMyTeamAway ? null : homeTeamId),
+          awayTeamId: mode === "both" ? awayTeamId : (isMyTeamAway ? homeTeamId : null),
           opponentName: mode === "myteam" ? opponentName : null,
-          homeScore: getHomeScore(),
-          awayScore: getAwayScore(),
+          homeScore: isMyTeamAway ? getAwayScore() : getHomeScore(),
+          awayScore: isMyTeamAway ? getHomeScore() : getAwayScore(),
           gameDate,
           season: deriveSeason(gameDate),
           location: locationStr || null,
@@ -487,22 +490,47 @@ export function TrackGamePage() {
 
           {/* VS row */}
           <div className="vs-row">
-            <div>
-              <label>Home Team</label>
-              <select
-                value={homeTeamId ?? ""}
-                onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
-              >
-                <option value="">Select team…</option>
-                {(teams ?? []).map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="vs-badge">VS</div>
-            <div>
-              {mode === "both" ? (
-                <>
+            {mode === "myteam" && myTeamSide === "away" ? (
+              <>
+                <div>
+                  <label>Opponent (Home)</label>
+                  <input
+                    type="text"
+                    placeholder="Team name"
+                    value={opponentName}
+                    onChange={(e) => setOpponentName(e.target.value)}
+                  />
+                </div>
+                <div className="vs-badge">VS</div>
+                <div>
+                  <label>My Team (Away)</label>
+                  <select
+                    value={homeTeamId ?? ""}
+                    onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
+                  >
+                    <option value="">Select team…</option>
+                    {(teams ?? []).map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : mode === "both" ? (
+              <>
+                <div>
+                  <label>Home Team</label>
+                  <select
+                    value={homeTeamId ?? ""}
+                    onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
+                  >
+                    <option value="">Select team…</option>
+                    {(teams ?? []).map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="vs-badge">VS</div>
+                <div>
                   <label>Away Team</label>
                   <select
                     value={awayTeamId ?? ""}
@@ -515,19 +543,34 @@ export function TrackGamePage() {
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                   </select>
-                </>
-              ) : (
-                <>
-                  <label>Opponent</label>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label>My Team (Home)</label>
+                  <select
+                    value={homeTeamId ?? ""}
+                    onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
+                  >
+                    <option value="">Select team…</option>
+                    {(teams ?? []).map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="vs-badge">VS</div>
+                <div>
+                  <label>Opponent (Away)</label>
                   <input
                     type="text"
                     placeholder="Team name"
                     value={opponentName}
                     onChange={(e) => setOpponentName(e.target.value)}
                   />
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div>
@@ -568,6 +611,28 @@ export function TrackGamePage() {
               </div>
             </div>
           </div>
+
+          {mode === "myteam" && (
+            <div>
+              <label>My Team is Playing</label>
+              <div className="mode-toggle">
+                <div
+                  className={`mode-opt${myTeamSide === "home" ? " active" : ""}`}
+                  onClick={() => setMyTeamSide("home")}
+                >
+                  Home
+                  <span>My team is the home team</span>
+                </div>
+                <div
+                  className={`mode-opt${myTeamSide === "away" ? " active" : ""}`}
+                  onClick={() => setMyTeamSide("away")}
+                >
+                  Away
+                  <span>My team is the away team</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="divider" />
 

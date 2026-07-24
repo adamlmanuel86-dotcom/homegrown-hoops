@@ -337,8 +337,8 @@ export function GamesPage() {
                 {/* Teams + Scores — score lives inside each team row for perfect alignment */}
                 <div className="flex-1 min-w-0 space-y-2.5">
                   {[
-                    { team: homeTeam, won: homeWon, score: game.homeScore, fallbackName: "Home", fallbackAbbr: "HM" },
-                    { team: awayTeam, won: awayWon, score: game.awayScore, fallbackName: game.opponentName ?? "Away", fallbackAbbr: game.opponentName ? opponentAbbr(game.opponentName) : "?" },
+                    { team: homeTeam, won: homeWon, score: game.homeScore, fallbackName: game.homeTeamId == null ? (game.opponentName ?? "Home") : "Home", fallbackAbbr: game.homeTeamId == null && game.opponentName ? opponentAbbr(game.opponentName) : "HM" },
+                    { team: awayTeam, won: awayWon, score: game.awayScore, fallbackName: game.awayTeamId == null ? (game.opponentName ?? "Away") : "Away", fallbackAbbr: game.awayTeamId == null && game.opponentName ? opponentAbbr(game.opponentName) : "?" },
                   ].map(({ team, won, score, fallbackName, fallbackAbbr }) => (
                     <div key={fallbackName} className="flex items-center gap-3 min-w-0">
                       <div

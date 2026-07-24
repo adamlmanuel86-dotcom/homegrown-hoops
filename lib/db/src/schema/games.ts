@@ -9,7 +9,7 @@ export type ExternalLink = { label: string; url: string };
 
 export const gamesTable = pgTable("games", {
   id: serial("id").primaryKey(),
-  homeTeamId: integer("home_team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
+  homeTeamId: integer("home_team_id").references(() => teamsTable.id, { onDelete: "cascade" }),
   awayTeamId: integer("away_team_id").references(() => teamsTable.id, { onDelete: "cascade" }),
   homeScore: integer("home_score"),
   awayScore: integer("away_score"),
