@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, playersTable, gamePlayerStatsTable, gamesTable, teamsTable, userProfilesTable } from "@workspace/db";
+import { db, playersTable, gamePlayerStatsTable, gamesTable, teamsTable, userProfilesTable, jerseyStubsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import {
   CreatePlayerBody,
@@ -97,6 +97,9 @@ router.delete("/players/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid player id" });
     return;
   }
+
+  // Remove jersey_stubs rows first — the FK has no cascade so we must clean up manually
+  await db.delete(jerseyStubsTable).where(eq(jerseyStubsTable.playerId, id));
 
   const [deleted] = await db
     .delete(playersTable)

@@ -1211,7 +1211,7 @@ export function GameDetailPage() {
             { label: awayTeam?.name ?? "Away", team: awayTeam, teamId: game.awayTeamId },
             { label: homeTeam?.name ?? "Home", team: homeTeam, teamId: game.homeTeamId },
           ].map(({ label, team, teamId }) => {
-            const teamPlayers = players?.filter((p) => p.teamId === teamId) ?? [];
+            const teamPlayers = (players?.filter((p) => p.teamId === teamId) ?? []).filter((p) => playerStats?.some((s) => s.playerId === p.id));
             // Sort: recorded points first (desc), then null-points rows, then no-row players
             const sorted = [...teamPlayers].sort((a, b) => {
               const sa = playerStats?.find((s) => s.playerId === a.id);
