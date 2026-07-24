@@ -183,7 +183,7 @@ export function ManagerPage() {
                 </p>
               </div>
               <a
-                href="/track-game"
+                href={`/track-game?team=${team.id}`}
                 className="flex items-center gap-1.5 text-xs font-bold bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors shrink-0"
               >
                 <ClipboardList className="h-3.5 w-3.5" />

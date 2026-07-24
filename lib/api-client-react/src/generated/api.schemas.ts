@@ -854,6 +854,12 @@ export interface ManagerCreateTeamBody {
   league?: string | null;
 }
 
+export interface TrackGameAccess {
+  canTrack: boolean;
+  managedTeamIds: number[];
+  delegatedTeamIds: number[];
+}
+
 export interface ManagerDelegation {
   id: number;
   managerClerkUserId: string;

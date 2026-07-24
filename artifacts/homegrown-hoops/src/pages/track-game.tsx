@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,6 +7,7 @@ import {
   useListPlayers,
   useGetMyProfile,
   useSubmitTrackGame,
+  useGetTrackGameAccess,
 } from "@workspace/api-client-react";
 import "./track-game.css";
 
@@ -107,18 +108,27 @@ const OPP_STAT_LABELS: Record<string, string> = {
 
 export function TrackGamePage() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { isSignedIn } = useUser();
   const qc = useQueryClient();
   const { data: myProfile } = useGetMyProfile();
   const submitGame = useSubmitTrackGame();
   const { data: teams } = useListTeams();
   const { data: allPlayers } = useListPlayers();
+  const { data: trackAccess } = useGetTrackGameAccess({ query: { enabled: isSignedIn === true } });
+
+  // Preselect team from ?team=ID query param
+  const preselectedTeamId = (() => {
+    const params = new URLSearchParams(search);
+    const v = params.get("team");
+    return v ? parseInt(v, 10) || null : null;
+  })();
 
   // Setup state
   const [screen, setScreen] = useState<Screen>("setup");
   const [mode, setMode] = useState<Mode>("myteam");
   const [myTeamSide, setMyTeamSide] = useState<"home" | "away">("home");
-  const [homeTeamId, setHomeTeamId] = useState<number | null>(null);
+  const [homeTeamId, setHomeTeamId] = useState<number | null>(preselectedTeamId);
   const [awayTeamId, setAwayTeamId] = useState<number | null>(null);
   const [opponentName, setOpponentName] = useState("");
   const [gameDate, setGameDate] = useState(todayISO());
@@ -147,21 +157,19 @@ export function TrackGamePage() {
   const [toastMsg, setToastMsg] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
 
-  const canAccess =
-    isSignedIn &&
-    (myProfile?.role === "admin" ||
-      myProfile?.role === "manager" ||
-      myProfile?.role === "coach") &&
-    !myProfile?.isPending;
+  const canAccess = isSignedIn && (trackAccess?.canTrack ?? false) && !myProfile?.isPending;
 
-  // For managers, only show their managed teams in "My Team" selectors.
-  // Admins see all teams.
-  const myManagedTeamIds: number[] = (myProfile?.role === "manager")
-    ? ((myProfile?.teamIds as number[] | null) ?? [])
-    : [];
-  const myTeamsForPicker = (myProfile?.role === "manager" && myManagedTeamIds.length > 0)
-    ? (teams ?? []).filter((t) => myManagedTeamIds.includes(t.id))
-    : (teams ?? []);
+  // Build authorized team set: admin sees all; others see managed + delegated only
+  const isAdmin = myProfile?.role === "admin";
+  const authorizedTeamIds: number[] = isAdmin
+    ? []  // empty means "all" for admin
+    : [
+        ...(trackAccess?.managedTeamIds ?? []),
+        ...(trackAccess?.delegatedTeamIds ?? []),
+      ];
+  const myTeamsForPicker = isAdmin
+    ? (teams ?? [])
+    : (teams ?? []).filter((t) => authorizedTeamIds.includes(t.id));
 
   // ── Pre-populate rosters from DB when team changes
   useEffect(() => {
@@ -442,7 +450,15 @@ export function TrackGamePage() {
       ]);
       showToast("✓ Uploaded to Homegrown Hoops!");
       setTimeout(() => navigate(`/games/${game.id}`), 2200);
-    } catch {
+    } catch (err: unknown) {
+      // Surface duplicate-game 409 with a clear message
+      if (err && typeof err === "object" && "response" in err) {
+        const resp = (err as { response?: { status?: number; data?: { error?: string } } }).response;
+        if (resp?.status === 409 && resp?.data?.error) {
+          showToast(resp.data.error);
+          return;
+        }
+      }
       showToast("Upload failed — try again");
     }
   }

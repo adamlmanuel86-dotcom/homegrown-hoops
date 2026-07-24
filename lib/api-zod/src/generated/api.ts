@@ -879,6 +879,15 @@ export const RejectPendingAccountResponse = zod.object({
 });
 
 /**
+ * @summary Get the current user's track-game authorization (managed + delegated team IDs)
+ */
+export const GetTrackGameAccessResponse = zod.object({
+  canTrack: zod.boolean(),
+  managedTeamIds: zod.array(zod.number()),
+  delegatedTeamIds: zod.array(zod.number()),
+});
+
+/**
  * @summary Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.
  */
 export const SubmitTrackGameBody = zod.object({

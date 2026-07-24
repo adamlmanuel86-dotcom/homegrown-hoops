@@ -590,6 +590,21 @@ paths:
         "404":
           description: Account not found
 
+  /track-game/my-access:
+    get:
+      operationId: getTrackGameAccess
+      tags: [games]
+      summary: Get the current user's track-game authorization (managed + delegated team IDs)
+      responses:
+        "200":
+          description: Access info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackGameAccess"
+        "401":
+          description: Unauthorized
+
   /track-game/submit:
     post:
       operationId: submitTrackGame
@@ -2596,6 +2611,24 @@ components:
           type: ["string", "null"]
       required:
         - name
+
+    TrackGameAccess:
+      type: object
+      properties:
+        canTrack:
+          type: boolean
+        managedTeamIds:
+          type: array
+          items:
+            type: integer
+        delegatedTeamIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - canTrack
+        - managedTeamIds
+        - delegatedTeamIds
 
     ManagerDelegation:
       type: object

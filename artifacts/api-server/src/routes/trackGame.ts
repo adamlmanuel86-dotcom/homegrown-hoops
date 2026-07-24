@@ -7,6 +7,54 @@ import { runFullRecognition } from "../recognition";
 
 const router: IRouter = Router();
 
+// ── GET /track-game/my-access ─────────────────────────────────────────────────
+router.get("/track-game/my-access", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db
+    .select()
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+
+  if (!profile || profile.isPending) {
+    res.json({ canTrack: false, managedTeamIds: [], delegatedTeamIds: [] });
+    return;
+  }
+
+  const isAdmin = profile.role === "admin";
+
+  // Admin or manager: has managed teams
+  const managedTeamIds: number[] = isAdmin
+    ? [] // admin sees all teams — return empty; frontend uses full team list
+    : (profile.role === "manager" ? (profile.teamIds as number[] | null) ?? [] : []);
+
+  // Any role can have delegations
+  const delegations = await db
+    .select({ teamId: gameTrackingDelegationsTable.teamId })
+    .from(gameTrackingDelegationsTable)
+    .where(
+      and(
+        eq(gameTrackingDelegationsTable.delegateeClerkUserId, userId),
+        eq(gameTrackingDelegationsTable.used, false)
+      )
+    );
+
+  const delegatedTeamIds = delegations.map((d) => d.teamId);
+
+  const canTrack =
+    isAdmin ||
+    profile.role === "manager" ||
+    profile.role === "coach" ||
+    delegatedTeamIds.length > 0;
+
+  res.json({ canTrack, managedTeamIds, delegatedTeamIds });
+});
+
+// ── POST /track-game/submit ───────────────────────────────────────────────────
 router.post("/track-game/submit", async (req, res): Promise<void> => {
   const { userId } = getAuth(req);
   if (!userId) {
@@ -19,8 +67,8 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
-  if (!profile || !["admin", "manager", "coach"].includes(profile.role) || profile.isPending) {
-    res.status(403).json({ error: "Coach, manager, or admin access required" });
+  if (!profile || profile.isPending) {
+    res.status(403).json({ error: "Access required to submit games" });
     return;
   }
 
@@ -91,45 +139,67 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
   }
 
   // ── Authorization for non-admin roles ────────────────────────────────────
-  if (profile.role !== "admin") {
-    const managerTeamIds = (profile.teamIds as number[] | null) ?? [];
+  const isAdmin = profile.role === "admin";
+  let activeDelegationId: number | null = null;
 
+  if (!isAdmin) {
+    const managerTeamIds = (profile.teamIds as number[] | null) ?? [];
     const touchedTeams = registeredTeamIds;
     const managedTeamTouched = touchedTeams.some((tid) => managerTeamIds.includes(tid));
 
     if (!managedTeamTouched) {
-      // Check delegations
-      const delegationChecks = touchedTeams.map((tid) =>
-        and(
-          eq(gameTrackingDelegationsTable.delegateeClerkUserId, userId),
-          eq(gameTrackingDelegationsTable.teamId, tid),
-          eq(gameTrackingDelegationsTable.used, false)
-        )
-      );
+      // Check if the user has coach role (coach can track their manager's teams via delegation or direct)
+      if (profile.role === "coach") {
+        // Coaches must have a delegation for at least one of the touched teams
+        const delegationChecks = touchedTeams.map((tid) =>
+          and(
+            eq(gameTrackingDelegationsTable.delegateeClerkUserId, userId),
+            eq(gameTrackingDelegationsTable.teamId, tid),
+            eq(gameTrackingDelegationsTable.used, false)
+          )
+        );
 
-      const activeDelegation = delegationChecks.length > 0
-        ? await db.select().from(gameTrackingDelegationsTable).where(
-            delegationChecks.length === 1 ? delegationChecks[0]! : or(...delegationChecks)
-          ).then((rows) => rows[0] ?? null)
-        : null;
+        const found = delegationChecks.length > 0
+          ? await db.select().from(gameTrackingDelegationsTable).where(
+              delegationChecks.length === 1 ? delegationChecks[0]! : or(...delegationChecks)
+            ).then((rows) => rows[0] ?? null)
+          : null;
 
-      if (!activeDelegation) {
-        res.status(403).json({
-          error: "You are not authorized to submit games for this team. Contact your manager.",
-        });
-        return;
+        if (!found) {
+          res.status(403).json({
+            error: "You are not authorized to submit games for this team. Contact your manager.",
+          });
+          return;
+        }
+        activeDelegationId = found.id;
+      } else {
+        // Any other role (player, etc.) — check active delegation
+        const delegationChecks = touchedTeams.map((tid) =>
+          and(
+            eq(gameTrackingDelegationsTable.delegateeClerkUserId, userId),
+            eq(gameTrackingDelegationsTable.teamId, tid),
+            eq(gameTrackingDelegationsTable.used, false)
+          )
+        );
+
+        const found = delegationChecks.length > 0
+          ? await db.select().from(gameTrackingDelegationsTable).where(
+              delegationChecks.length === 1 ? delegationChecks[0]! : or(...delegationChecks)
+            ).then((rows) => rows[0] ?? null)
+          : null;
+
+        if (!found) {
+          res.status(403).json({
+            error: "You are not authorized to submit games for this team. Contact your manager.",
+          });
+          return;
+        }
+        activeDelegationId = found.id;
       }
-
-      // Mark delegation used
-      await db
-        .update(gameTrackingDelegationsTable)
-        .set({ used: true })
-        .where(eq(gameTrackingDelegationsTable.id, activeDelegation.id));
     }
   }
 
   // ── Game status: admins go straight to final; others go to pending ────────
-  const isAdmin = profile.role === "admin";
   const status = isAdmin ? "final" : "pending";
 
   const [game] = await db
@@ -240,6 +310,14 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
       minutesPlayed: 0,
     });
     resolvedPlayerIds.push(resolvedPlayerId);
+  }
+
+  // ── Mark delegation used AFTER successful insertion ───────────────────────
+  if (activeDelegationId !== null) {
+    await db
+      .update(gameTrackingDelegationsTable)
+      .set({ used: true })
+      .where(eq(gameTrackingDelegationsTable.id, activeDelegationId));
   }
 
   // Only run recognition immediately for admin submissions (final status)

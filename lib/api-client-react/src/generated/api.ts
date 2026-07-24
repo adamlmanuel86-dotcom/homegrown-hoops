@@ -57,6 +57,7 @@ import type {
   SubmitTrackGameBody,
   Team,
   TeamStats,
+  TrackGameAccess,
   UpdateGameBody,
   UpdateMyBallersBody,
   UpdatePlayerBody,
@@ -2321,6 +2322,81 @@ export const useRejectPendingAccount = <
 > => {
   return useMutation(getRejectPendingAccountMutationOptions(options));
 };
+
+/**
+ * @summary Get the current user's track-game authorization (managed + delegated team IDs)
+ */
+export const getGetTrackGameAccessUrl = () => {
+  return `/api/track-game/my-access`;
+};
+
+export const getTrackGameAccess = async (
+  options?: RequestInit,
+): Promise<TrackGameAccess> => {
+  return customFetch<TrackGameAccess>(getGetTrackGameAccessUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTrackGameAccessQueryKey = () => {
+  return [`/api/track-game/my-access`] as const;
+};
+
+export const getGetTrackGameAccessQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTrackGameAccess>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrackGameAccess>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTrackGameAccessQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTrackGameAccess>>
+  > = ({ signal }) => getTrackGameAccess({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTrackGameAccess>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTrackGameAccessQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTrackGameAccess>>
+>;
+export type GetTrackGameAccessQueryError = ErrorType<void>;
+
+/**
+ * @summary Get the current user's track-game authorization (managed + delegated team IDs)
+ */
+
+export function useGetTrackGameAccess<
+  TData = Awaited<ReturnType<typeof getTrackGameAccess>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrackGameAccess>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTrackGameAccessQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Submit a tracked game (manager or admin). Admins bypass approval; managers go to pending.

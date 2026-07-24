@@ -69,6 +69,7 @@ export * from "./submitPlayerStatRow";
 export * from "./submitTrackGameBody";
 export * from "./team";
 export * from "./teamStats";
+export * from "./trackGameAccess";
 export * from "./updateGameBody";
 export * from "./updateGameBodyStatus";
 export * from "./updateMyBallersBody";
