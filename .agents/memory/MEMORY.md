@@ -4,3 +4,4 @@
 - [Migration script must stay in sync with Drizzle schema](migration-sync.md) — every new column in lib/db/src/schema/ must get an addCol() in migrate.ts or Railway crashes with 500
 - [ClerkTokenBridge required for Vercel→Railway auth](clerk-token-bridge.md) — setAuthTokenGetter via ClerkTokenBridge is required in this split-deploy setup; cookie forwarding alone is insufficient
 - [Jersey stub system](jersey-stubs.md) — #N-format player names create jersey_stubs rows + isJerseyStub players; claiming updates player name → recognition fires automatically
+- [Clerk v6 sign-up: Safari ITP + finalize() bug](clerk-signup-safari.md) — signUp.finalize() doesn't exist in Clerk v6; use setActive({session}) from useClerk(). Then use wouter setLocation (SPA nav), NOT window.location.href — Safari ITP blocks Clerk dev-mode cookie re-read on full reload, bouncing user back to sign-in.

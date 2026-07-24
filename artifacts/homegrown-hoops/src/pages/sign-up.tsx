@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSignUp, useClerk } from "@clerk/react";
+import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const LS_KEY = "hh_su_state";
@@ -35,6 +36,7 @@ function loadState(): { email: string } | null {
 export function CustomSignUpPage() {
   const { signUp } = useSignUp();
   const { setActive } = useClerk();
+  const [, setLocation] = useLocation();
 
   const [step, setStep] = useState<"form" | "verify" | "link-sent">("form");
   const [email, setEmail] = useState("");
@@ -119,7 +121,7 @@ export function CustomSignUpPage() {
         if (setActive && signUp.createdSessionId) {
           await setActive({ session: signUp.createdSessionId });
         }
-        window.location.href = `${window.location.origin}${basePath}/onboarding`;
+        setLocation("/onboarding");
       } else {
         setError("Verification incomplete — please try again.");
       }
