@@ -14,4 +14,6 @@ The migration runs on server startup. If the column is missing from `addCol()`, 
 await addCol("table_name", "column_name", "SQL_TYPE DEFAULT value");
 ```
 
-The bug that prompted this: `avatarConfig: jsonb("avatar_config")` was added to `userProfiles.ts` without a matching `addCol()`. This caused `GET /api/profiles`, `GET /api/profiles/me`, `POST /api/profiles/me`, and `PATCH /api/profiles/me` to all return 500 on Railway, breaking the Players page and all profile operations.
+Known past misses (both caused HTML 500 on Railway):
+- `avatarConfig: jsonb("avatar_config")` — caused 500 on all profile routes (Players page broken)
+- `myBallers: json("my_ballers").notNull().default([])` — caused 500 on `POST /profiles/me` during onboarding; `GetMyProfileResponse.parse()` threw ZodError because the column was absent from `RETURNING *` results
