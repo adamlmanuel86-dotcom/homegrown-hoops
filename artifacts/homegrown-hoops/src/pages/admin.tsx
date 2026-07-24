@@ -24,7 +24,6 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Shield, User, Lock, Pencil, Save, X, Users, Trash2, AlertTriangle, Plus, CheckCircle, UserCheck, CalendarDays, Waves, ChevronDown, ChevronUp, Trophy, RotateCcw, Brain, Hash, Clock } from "lucide-react";
 import { TIDES } from "@/components/recognition";
 
-import { apiBase } from "@/lib/api";
 
 
 const ROLES = ["admin", "manager", "coach", "player"] as const;
@@ -166,7 +165,7 @@ export function AdminPage() {
 
   const deleteGame = useMutation({
     mutationFn: async (gameId: number) => {
-      await customFetch(`${apiBase}/api/games/${gameId}`, { method: "DELETE" });
+      await customFetch(`/api/games/${gameId}`, { method: "DELETE" });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
   });
@@ -174,7 +173,7 @@ export function AdminPage() {
   // Run the canonical roster sync + load tide profiles once when admin is confirmed.
   useEffect(() => {
     if (!isAdmin) return;
-    customFetch(`${apiBase}/api/admin/sync-all-players`, { method: "POST" })
+    customFetch(`/api/admin/sync-all-players`, { method: "POST" })
       .then(() => qc.invalidateQueries({ queryKey: ["/api/players"] }))
       .catch(() => { /* non-critical, silent */ });
     loadTideProfiles();
@@ -190,7 +189,7 @@ export function AdminPage() {
   async function loadTideProfiles() {
     setTideProfilesLoading(true);
     try {
-      const data = await customFetch<{ id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] | null }[]>(`${apiBase}/api/admin/profiles-tides`);
+      const data = await customFetch<{ id: number; firstName: string; lastName: string; tides: { id: string; earnedAt: string }[] | null }[]>(`/api/admin/profiles-tides`);
       setTideProfiles(data.map((p) => ({ ...p, tides: p.tides ?? [] })));
       setTideProfilesLoaded(true);
     } catch {
@@ -202,7 +201,7 @@ export function AdminPage() {
 
   const calculateSeasonTides = useMutation({
     mutationFn: async (season: string) => {
-      return customFetch(`${apiBase}/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
+      return customFetch(`/api/admin/season-tides/${encodeURIComponent(season)}`, { method: "POST" });
     },
     onSuccess: () => {
       setTidesSeasonMsg({ ok: true, text: "Season tides calculated and awarded successfully." });
@@ -216,7 +215,7 @@ export function AdminPage() {
 
   const awardTide = useMutation({
     mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
-      return customFetch(`${apiBase}/api/admin/profiles/${profileId}/tides`, {
+      return customFetch(`/api/admin/profiles/${profileId}/tides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tideId }),
@@ -230,7 +229,7 @@ export function AdminPage() {
 
   const removeTide = useMutation({
     mutationFn: async ({ profileId, tideId }: { profileId: number; tideId: string }) => {
-      return customFetch(`${apiBase}/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
+      return customFetch(`/api/admin/profiles/${profileId}/tides/${encodeURIComponent(tideId)}`, {
         method: "DELETE",
       });
     },
@@ -290,7 +289,7 @@ export function AdminPage() {
   const [confirmingResetIsoBallId, setConfirmingResetIsoBallId] = useState<string | null>(null);
   const resetIsoBall = useMutation({
     mutationFn: async (clerkUserId: string) => {
-      await customFetch(`${apiBase}/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
+      await customFetch(`/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
         method: "DELETE",
       });
     },
@@ -404,7 +403,7 @@ export function AdminPage() {
     setEndOfSeasonPending(true);
     setEndOfSeasonError(null);
     try {
-      const data = await customFetch<{ season: string; winners: TideWinner[] }>(`${apiBase}/api/admin/teams/${teamId}/season-tides`, {
+      const data = await customFetch<{ season: string; winners: TideWinner[] }>(`/api/admin/teams/${teamId}/season-tides`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -424,7 +423,7 @@ export function AdminPage() {
     setNewSeasonResetError(null);
     setNewSeasonResetDone(false);
     try {
-      await customFetch(`${apiBase}/api/admin/teams/${teamId}/new-season-reset`, {
+      await customFetch(`/api/admin/teams/${teamId}/new-season-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newSeasonName: newSeasonName.trim() }),
@@ -444,7 +443,7 @@ export function AdminPage() {
 
   async function loadTeamSeasons(teamId: number) {
     try {
-      const data = await customFetch<{ seasons: string[]; currentSeason: string | null }>(`${apiBase}/api/admin/teams/${teamId}/seasons`);
+      const data = await customFetch<{ seasons: string[]; currentSeason: string | null }>(`/api/admin/teams/${teamId}/seasons`);
       setTeamSeasonsMap((prev) => new Map(prev).set(teamId, data));
     } catch {
       // silently ignore — UI handles empty state
@@ -456,7 +455,7 @@ export function AdminPage() {
     setSeasonDeleteError(null);
     try {
       await customFetch(
-        `${apiBase}/api/admin/teams/${teamId}/seasons/${encodeURIComponent(season)}`,
+        `/api/admin/teams/${teamId}/seasons/${encodeURIComponent(season)}`,
         { method: "DELETE" }
       );
       setSeasonDeleteConfirmKey(null);
@@ -636,8 +635,13 @@ export function AdminPage() {
                         <div className="flex gap-2 mt-3">
                           <button
                             onClick={async () => {
-                              await deleteGame.mutateAsync(g.id);
-                              setConfirmingDeleteGameId(null);
+                              try {
+                                await deleteGame.mutateAsync(g.id);
+                                setConfirmingDeleteGameId(null);
+                              } catch (err) {
+                                console.error("Delete game failed:", err);
+                                alert(`Failed to delete game: ${err instanceof Error ? err.message : String(err)}`);
+                              }
                             }}
                             disabled={deleteGame.isPending}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 hover:bg-red-600 active:scale-95 text-white transition-all touch-manipulation disabled:opacity-50"

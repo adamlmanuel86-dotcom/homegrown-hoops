@@ -12,16 +12,16 @@ import {
   useAddGameVideo,
   useDeleteGameVideo,
   useUpsertGamePlayerStats,
+  customFetch,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play, ExternalLink, Film, Youtube } from "lucide-react";
 
-import { apiBase } from "@/lib/api";
 import { opponentAbbr } from "@/lib/utils";
 
 function videoUrl(objectPath: string) {
   if (objectPath.startsWith("http")) return objectPath;
-  return `${apiBase}/api/storage${objectPath}`;
+  return `/api/storage${objectPath}`;
 }
 
 function cloudinaryThumbnail(url: string): string | null {
@@ -57,8 +57,7 @@ export function GameDetailPage() {
   const upsertGamePlayerStats = useUpsertGamePlayerStats();
   const deleteGamePlayerStat = useMutation({
     mutationFn: async ({ id: gameId, playerId }: { id: number; playerId: number }) => {
-      const res = await fetch(`${apiBase}/api/games/${gameId}/player-stats/${playerId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`Failed to delete stat: ${res.status}`);
+      await customFetch(`/api/games/${gameId}/player-stats/${playerId}`, { method: "DELETE" });
     },
   });
 
@@ -469,12 +468,13 @@ export function GameDetailPage() {
 
     try {
       // Get signed upload credentials from our server
-      const sigRes = await fetch(`${apiBase}/api/cloudinary/signature`, { method: "POST" });
-      if (!sigRes.ok) {
-        const errData = await sigRes.json().catch(() => ({}));
-        throw new Error(errData.error ?? `Could not get upload credentials (${sigRes.status})`);
-      }
-      const { signature, apiKey, cloudName, timestamp, folder } = await sigRes.json();
+      const { signature, apiKey, cloudName, timestamp, folder } = await customFetch<{
+        signature: string;
+        apiKey: string;
+        cloudName: string;
+        timestamp: number;
+        folder: string;
+      }>(`/api/cloudinary/signature`, { method: "POST" });
 
       // Chunked upload: split into 20 MB pieces so large files (up to ~2 GB) work reliably
       const CHUNK_SIZE = 20 * 1024 * 1024;

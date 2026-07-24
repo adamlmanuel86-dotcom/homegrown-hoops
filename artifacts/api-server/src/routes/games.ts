@@ -163,20 +163,24 @@ router.delete("/games/:id", async (req, res): Promise<void> => {
   // Delete game — cascades to game_player_stats and game_videos
   await db.delete(gamesTable).where(eq(gamesTable.id, id));
 
-  // Recompute stamps + archetypes for every player who had stats in this game
+  // Recompute stamps + archetypes — best-effort, never fail the delete
   if (affectedPlayerIds.length > 0) {
-    await Promise.all(affectedPlayerIds.map((pid) => recalculateStampsForPlayer(pid)));
+    try {
+      await Promise.all(affectedPlayerIds.map((pid) => recalculateStampsForPlayer(pid)));
 
-    const playerRows = await db
-      .select({ teamId: playersTable.teamId })
-      .from(playersTable)
-      .where(inArray(playersTable.id, affectedPlayerIds));
+      const playerRows = await db
+        .select({ teamId: playersTable.teamId })
+        .from(playersTable)
+        .where(inArray(playersTable.id, affectedPlayerIds));
 
-    const teamIds = [
-      ...new Set(playerRows.map((r) => r.teamId).filter((t): t is number => t != null)),
-    ];
-    if (teamIds.length > 0 && season) {
-      await Promise.all(teamIds.map((tid) => recalculateArchetypesForTeam(tid, season)));
+      const teamIds = [
+        ...new Set(playerRows.map((r) => r.teamId).filter((t): t is number => t != null)),
+      ];
+      if (teamIds.length > 0 && season) {
+        await Promise.all(teamIds.map((tid) => recalculateArchetypesForTeam(tid, season)));
+      }
+    } catch (err) {
+      req.log.warn({ err }, "Recognition recalc failed after game delete — non-critical");
     }
   }
 
