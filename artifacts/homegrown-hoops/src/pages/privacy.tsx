@@ -22,7 +22,7 @@ export function PrivacyPage() {
         <div style={headerStyle}>
           <div style={pillStyle}>Legal</div>
           <h1 style={h1Style}>Privacy Policy</h1>
-          <p style={metaStyle}>Homegrown Hoops · Pilot Season 2026</p>
+          <p style={metaStyle}>Court Presence · Pilot Season 2026</p>
         </div>
 
         <Section title="What We Collect">

@@ -22,12 +22,12 @@ export function TermsPage() {
         <div style={headerStyle}>
           <div style={pillStyle}>Legal</div>
           <h1 style={h1Style}>Terms of Service</h1>
-          <p style={metaStyle}>Homegrown Hoops · Pilot Season 2026</p>
+          <p style={metaStyle}>Court Presence · Pilot Season 2026</p>
         </div>
 
-        <Section title="What Homegrown Hoops Is">
+        <Section title="What Court Presence Is">
           <p style={bodyStyle}>
-            Homegrown Hoops is a youth basketball platform that tracks player stats, displays achievements and stores game footage. It is currently operating as a free pilot season.
+            Court Presence is a youth basketball platform that recognizes every player's contribution — the scorer, the defender, the playmaker, the bench player who changes the game in four minutes. Every player earns their Court Presence through real performance on the court.
           </p>
         </Section>
 
@@ -39,7 +39,7 @@ export function TermsPage() {
 
         <Section title="Your Content">
           <p style={bodyStyle}>
-            By uploading or allowing upload of video footage you grant Homegrown Hoops permission to store and display that footage on the platform. You retain ownership of your content. You can request removal at any time by contacting us.
+            By uploading or allowing upload of video footage you grant Court Presence permission to store and display that footage on the platform. You retain ownership of your content. You can request removal at any time by contacting us.
           </p>
         </Section>
 
@@ -64,14 +64,14 @@ export function TermsPage() {
         <div id="video-consent" style={{ scrollMarginTop: 80 }}>
           <Section title="Video and Image Consent">
             <p style={bodyStyle}>
-              By creating a player profile on Homegrown Hoops you consent to the following:
+              By creating a player profile on Court Presence you consent to the following:
             </p>
             <ul style={listStyle}>
               <li style={listItemStyle}>Your profile photo, name, school, position, stats and achievements are visible to all registered users of the platform.</li>
               <li style={listItemStyle}>Game footage that you or your team uploads may be stored on the platform and viewable by registered users.</li>
               <li style={listItemStyle}>If you are under 18, a parent or guardian must provide this consent on your behalf at signup.</li>
               <li style={listItemStyle}>You may request removal of any footage or image containing you at any time by contacting the platform administrator. Removal will be completed within 48 hours.</li>
-              <li style={listItemStyle}>You retain ownership of any content you upload. Homegrown Hoops does not sell, license or transfer your images or footage to third parties.</li>
+              <li style={listItemStyle}>You retain ownership of any content you upload. Court Presence does not sell, license or transfer your images or footage to third parties.</li>
             </ul>
           </Section>
         </div>

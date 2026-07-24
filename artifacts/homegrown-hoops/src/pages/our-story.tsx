@@ -1,8 +1,8 @@
-import { HomegrownHoopsLogo } from "@/components/logo";
+import { CourtPresenceLogo } from "@/components/logo";
 
 const paragraphs = [
-  "Homegrown Hoops is Atlantic Canada's home for youth basketball.",
-  "The best teams need every role filled. Homegrown Hoops was built to recognize all of them.",
+  "Court Presence is a youth basketball platform that recognizes every player's contribution — the scorer, the defender, the playmaker, the bench player who changes the game in four minutes. Every player earns their Court Presence through real performance on the court.",
+  "The best teams need every role filled. Court Presence was built to recognize all of them.",
   "Every game filmed and uploaded to the platform. Every point, rebound and assist tracked and displayed on your own player profile.",
   "Earn Stamps for standout performances. Earn your Archetype — are you The Current? The Vortex? The Mainstay? Every player starts Uncharted and earns their identity through real performance.",
   "At the end of every season the best performers earn Tides — the highest honours on the platform. The Crest goes to one player. Will it be you?",
@@ -48,15 +48,15 @@ export function OurStoryPage() {
       {/* ── Closing tagline ─────────────────────────────────────────────────── */}
       <div className="mt-16 rounded-2xl bg-card border border-white/5 p-8 text-center shadow-xl">
         <div className="flex justify-center mb-5">
-          <HomegrownHoopsLogo size="lg" />
+          <CourtPresenceLogo size="lg" />
         </div>
         <p
           className="text-2xl sm:text-3xl font-black uppercase tracking-wide text-foreground"
           style={{ fontFamily: "'Anton', sans-serif" }}
         >
           Your Game.{" "}
-          <span className="text-primary">Your Stats.</span>{" "}
-          Your Legacy.
+          <span className="text-primary">Your Story.</span>{" "}
+          Your Court Presence.
         </p>
       </div>
     </div>

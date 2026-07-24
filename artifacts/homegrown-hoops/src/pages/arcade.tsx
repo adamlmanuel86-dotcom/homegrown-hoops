@@ -170,7 +170,7 @@ export function ArcadePage() {
 
       <div className="mb-8 text-center">
         <h1 className="font-display text-4xl uppercase tracking-widest text-primary mb-2">Arcade</h1>
-        <p className="text-white/50 text-sm">Mini-games for Homegrown Hoops heads. Pick a game and get buckets.</p>
+        <p className="text-white/50 text-sm">Mini-games for Court Presence heads. Pick a game and get buckets.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

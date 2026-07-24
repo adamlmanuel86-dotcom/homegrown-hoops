@@ -298,7 +298,7 @@ export function Layout({ children }: { children: ReactNode }) {
               Contact
             </a>
           </div>
-          <div>© {new Date().getFullYear()} Homegrown Hoops</div>
+          <div>© {new Date().getFullYear()} Court Presence</div>
         </div>
       </footer>
     </div>

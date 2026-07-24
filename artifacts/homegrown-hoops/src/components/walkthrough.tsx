@@ -36,8 +36,8 @@ const SLIDES = [
   {
     icon: ArrowRight,
     iconColor: "#F97316",
-    headline: "Your Game. Your Stats. Your Legacy.",
-    body: "Welcome to Homegrown Hoops.",
+    headline: "Your Game. Your Story. Your Court Presence.",
+    body: "Welcome to Court Presence.",
     isLast: true,
   },
 ];

@@ -551,7 +551,7 @@ function CardBack({
                 textTransform: "uppercase", letterSpacing: "0.07em",
               }}
             >
-              Homegrown Hoops
+              Court Presence
             </span>
           </div>
           <button
@@ -731,7 +731,7 @@ export function PlayerCard({
         typeof navigator.canShare === "function" &&
         navigator.canShare({ files: [file] })
       ) {
-        await navigator.share({ files: [file], title: "My Homegrown Hoops Card" });
+        await navigator.share({ files: [file], title: "My Court Presence Card" });
         return;
       }
 
@@ -1174,6 +1174,19 @@ export function PlayerCard({
                 >
                   <p
                     style={{
+                      fontSize: 8,
+                      fontWeight: 700,
+                      color: primaryColor,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.14em",
+                      marginBottom: 4,
+                      opacity: 0.8,
+                    }}
+                  >
+                    Your Court Presence
+                  </p>
+                  <p
+                    style={{
                       fontFamily: "'Barlow Condensed', 'Impact', sans-serif",
                       fontSize: 38,
                       fontWeight: 900,
@@ -1226,7 +1239,7 @@ export function PlayerCard({
                         letterSpacing: "0.07em",
                       }}
                     >
-                      Homegrown Hoops
+                      Court Presence
                     </span>
                   </div>
                   <span

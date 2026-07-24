@@ -9,7 +9,7 @@ const BALL_PX = { sm: 28, md: 36, lg: 60 } as const;
 const NAME_CLS = { sm: "text-[12px]", md: "text-[15px]", lg: "text-[24px]" } as const;
 const TAG_CLS  = { sm: "text-[9px]",  md: "text-[11px]", lg: "text-[17px]" } as const;
 
-export function HomegrownHoopsLogo({ size = "md", className }: LogoProps) {
+export function CourtPresenceLogo({ size = "md", className }: LogoProps) {
   const uid = useId().replace(/:/g, "u");
 
   return (
@@ -17,15 +17,17 @@ export function HomegrownHoopsLogo({ size = "md", className }: LogoProps) {
       <BasketballSVG size={BALL_PX[size]} uid={uid} />
       <div className="flex flex-col leading-none gap-[2px]">
         <span className={`font-display tracking-wide text-white ${NAME_CLS[size]}`}>
-          HOMEGROWN
+          COURT
         </span>
         <span className={`font-display tracking-[0.18em] text-primary ${TAG_CLS[size]}`}>
-          HOOPS
+          PRESENCE
         </span>
       </div>
     </div>
   );
 }
+
+export { CourtPresenceLogo as HomegrownHoopsLogo };
 
 function BasketballSVG({ size, uid }: { size: number; uid: string }) {
   return (

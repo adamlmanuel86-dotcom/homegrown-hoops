@@ -271,7 +271,7 @@ export function PublicProfilePage() {
             gap: 8,
           }}
         >
-          Visit Homegrown Hoops <ExternalLink style={{ width: 14, height: 14 }} />
+          Visit Court Presence <ExternalLink style={{ width: 14, height: 14 }} />
         </a>
       </div>
     );
@@ -306,7 +306,7 @@ export function PublicProfilePage() {
         >
           <img
             src={`${BASE_URL}/logo.svg`}
-            alt="Homegrown Hoops"
+            alt="Court Presence"
             style={{ height: 28, width: "auto" }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
@@ -320,7 +320,7 @@ export function PublicProfilePage() {
               letterSpacing: "0.04em",
             }}
           >
-            Homegrown Hoops
+            Court Presence
           </span>
         </a>
         <a
@@ -811,7 +811,7 @@ export function PublicProfilePage() {
             marginRight: "auto",
           }}
         >
-          Want your own profile? Sign up at Homegrown Hoops — free for the 2026 pilot season.
+          Want your own profile? Sign up at Court Presence — free for the 2026 pilot season.
         </p>
         <a
           href={`${BASE_URL}/sign-up`}

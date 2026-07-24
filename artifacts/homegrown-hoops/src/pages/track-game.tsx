@@ -448,7 +448,7 @@ export function TrackGamePage() {
         qc.invalidateQueries({ queryKey: ["/api/games"] }),
         qc.invalidateQueries({ queryKey: ["/api/players"] }),
       ]);
-      showToast("✓ Uploaded to Homegrown Hoops!");
+      showToast("✓ Uploaded to Court Presence!");
       setTimeout(() => navigate(`/games/${game.id}`), 2200);
     } catch (err: unknown) {
       // Surface duplicate-game 409 with a clear message
@@ -978,7 +978,7 @@ export function TrackGamePage() {
         <div className="hgh-summary">
           <div>
             <div className="summary-title">Game Complete <span>✓</span></div>
-            <div className="summary-sub">Review box score before uploading to Homegrown Hoops</div>
+            <div className="summary-sub">Review box score before uploading to Court Presence</div>
           </div>
 
           <div className="final-score">
@@ -1038,7 +1038,7 @@ export function TrackGamePage() {
             onClick={handleSubmit}
             disabled={submitGame.isPending}
           >
-            {submitGame.isPending ? "Uploading…" : "✓  Upload to Homegrown Hoops"}
+            {submitGame.isPending ? "Uploading…" : "✓  Upload to Court Presence"}
           </button>
         </div>
       )}

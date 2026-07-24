@@ -203,7 +203,7 @@ export function CustomSignUpPage() {
           <a href={`${basePath}/`}>
             <img
               src={`${basePath}/logo.svg`}
-              alt="Homegrown Hoops"
+              alt="Court Presence"
               style={{ height: 48, width: "auto" }}
             />
           </a>
@@ -533,7 +533,7 @@ export function CustomSignUpPage() {
                 }}
               >
                 <strong>How it works:</strong> Open your email app, find the
-                message from Homegrown Hoops, and tap the link. It will
+                message from Court Presence, and tap the link. It will
                 automatically sign you in — no code needed.
               </div>
 

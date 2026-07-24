@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ChevronRight, Camera, Compass, X, Upload, Gamepad2, Users, ClipboardList, Clock } from "lucide-react";
-import { HomegrownHoopsLogo } from "@/components/logo";
+import { CourtPresenceLogo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { Walkthrough } from "@/components/walkthrough";
 import { AvatarCreator } from "@/components/AvatarCreator";
@@ -331,7 +331,7 @@ export function OnboardingPage() {
     const url = `${window.location.origin}${import.meta.env.BASE_URL}profiles/${user?.id}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "My Homegrown Hoops Card", url });
+        await navigator.share({ title: "My Court Presence Card", url });
       } catch { /* ignore */ }
     } else {
       await navigator.clipboard.writeText(url);
@@ -570,7 +570,7 @@ export function OnboardingPage() {
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
               }}>
-                {teamData?.name ?? "Homegrown Hoops"}
+                {teamData?.name ?? "Court Presence"}
               </p>
             </div>
 
@@ -767,7 +767,7 @@ export function OnboardingPage() {
           }}
         >
           <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, textAlign: "center", lineHeight: 1.6, margin: 0, letterSpacing: "0.01em" }}>
-            Homegrown Hoops isn't about stat chasing. It is about your contribution. Every role matters here.
+            Every player starts Uncharted. Build your Court Presence.
           </p>
 
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", lineHeight: 1.6, margin: 0 }}>
@@ -895,7 +895,7 @@ export function OnboardingPage() {
         <div className="flex flex-col items-center gap-10 text-center" style={{ animation: "fadeUp 0.8s ease both" }}>
           {/* Logo — pulses once */}
           <div style={{ animation: "pulseBig 1.2s ease 0.2s 1 both" }}>
-            <HomegrownHoopsLogo size="lg" />
+            <CourtPresenceLogo size="lg" />
           </div>
 
           <p
