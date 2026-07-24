@@ -83,10 +83,21 @@ export async function syncPlayerForTeamChange(
       )
     );
 
-  if (existing && number !== undefined) {
-    await db.update(playersTable)
-      .set({ number: number ?? null })
-      .where(eq(playersTable.id, existing.id));
+  if (existing) {
+    // Row already exists — just keep the jersey number in sync if provided
+    if (number !== undefined) {
+      await db.update(playersTable)
+        .set({ number: number ?? null })
+        .where(eq(playersTable.id, existing.id));
+    }
+  } else {
+    // No row yet — create the player so they appear on the team roster
+    await db.insert(playersTable).values({
+      firstName: newFirstName,
+      lastName: newLastName,
+      teamId: newTeamId,
+      number: number ?? null,
+    });
   }
 }
 

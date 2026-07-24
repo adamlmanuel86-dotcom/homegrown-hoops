@@ -279,22 +279,29 @@ export async function runMigrations(): Promise<void> {
       );
     `);
 
-    // scrub_test_players_v1: wipe ALL player rows (and their jersey stubs) so
-    // test/placeholder names are completely removed from the site. The admin
-    // will repopulate rosters with real players going forward.
+    // scrub_test_players_v1: wipe ALL player rows (and their jersey stubs).
+    // Intent: removes test/placeholder names from the site completely.
+    // Cascades to game_player_stats intentionally — stats attached to fake
+    // player names are also test data and should not be preserved.
+    // Guarded by env var SCRUB_TEST_DATA=1 so it never runs unless explicitly
+    // enabled by an admin. Once applied the data_migrations flag prevents it
+    // from running again even if the env var remains set.
     const { rows: scrubRows } = await client.query(
       `SELECT 1 FROM data_migrations WHERE key = 'scrub_test_players_v1'`
     );
-    if (scrubRows.length === 0) {
-      console.log("[migrate] Running scrub_test_players_v1...");
+    const scrubEnabled = process.env["SCRUB_TEST_DATA"] === "1";
+    if (scrubRows.length === 0 && scrubEnabled) {
+      console.log("[migrate] SCRUB_TEST_DATA=1 detected — running scrub_test_players_v1...");
       await client.query(`DELETE FROM jersey_stubs;`);
       await client.query(`DELETE FROM players;`);
       await client.query(
         `INSERT INTO data_migrations (key) VALUES ('scrub_test_players_v1');`
       );
-      console.log("[migrate] scrub_test_players_v1 complete — all player names removed.");
-    } else {
+      console.log("[migrate] scrub_test_players_v1 complete — all player names and their stats removed.");
+    } else if (scrubRows.length > 0) {
       console.log("[migrate] scrub_test_players_v1 already applied, skipping.");
+    } else {
+      console.log("[migrate] scrub_test_players_v1 skipped — set SCRUB_TEST_DATA=1 to enable.");
     }
 
     // ── Verify tables exist ───────────────────────────────────────────────────
