@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useListTeams,
   useListPlayers,
@@ -107,6 +108,7 @@ const OPP_STAT_LABELS: Record<string, string> = {
 export function TrackGamePage() {
   const [, navigate] = useLocation();
   const { isSignedIn } = useUser();
+  const qc = useQueryClient();
   const { data: myProfile } = useGetMyProfile();
   const submitGame = useSubmitTrackGame();
   const { data: teams } = useListTeams();
@@ -393,7 +395,7 @@ export function TrackGamePage() {
         ...homePlayerStats,
         ...(mode === "both" ? awayPlayerStats : []),
       ];
-      await submitGame.mutateAsync({
+      const game = await submitGame.mutateAsync({
         data: {
           homeTeamId: homeTeamId!,
           awayTeamId: mode === "both" ? awayTeamId : null,
@@ -422,8 +424,12 @@ export function TrackGamePage() {
           })),
         },
       });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["/api/games"] }),
+        qc.invalidateQueries({ queryKey: ["/api/players"] }),
+      ]);
       showToast("✓ Uploaded to Homegrown Hoops!");
-      setTimeout(() => navigate("/games"), 2200);
+      setTimeout(() => navigate(`/games/${game.id}`), 2200);
     } catch {
       showToast("Upload failed — try again");
     }
