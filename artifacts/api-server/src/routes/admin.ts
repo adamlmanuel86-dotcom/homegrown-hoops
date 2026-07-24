@@ -362,6 +362,34 @@ router.delete("/admin/teams/:teamId/seasons/:season", async (req, res): Promise<
 });
 
 // ─── One-time / on-demand roster cleanup ─────────────────────────────────────
+// DELETE /admin/teams/:teamId/players — wipe every player on a team at once
+router.delete("/admin/teams/:teamId/players", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const teamId = parseInt(req.params.teamId, 10);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid teamId" });
+    return;
+  }
+
+  const teamPlayers = await db
+    .select({ id: playersTable.id })
+    .from(playersTable)
+    .where(eq(playersTable.teamId, teamId));
+
+  const playerIds = teamPlayers.map((p) => p.id);
+
+  if (playerIds.length > 0) {
+    // Clear jersey_stubs first (no cascade on that FK)
+    await db.delete(jerseyStubsTable).where(inArray(jerseyStubsTable.playerId, playerIds));
+    // Delete players — cascades to game_player_stats
+    await db.delete(playersTable).where(eq(playersTable.teamId, teamId));
+  }
+
+  res.json({ deleted: playerIds.length });
+});
+
 // POST /admin/sync-all-players
 // For every profile: removes player rows that don't match the profile's current
 // teamId, and ensures the correct row exists. Safe to call repeatedly.

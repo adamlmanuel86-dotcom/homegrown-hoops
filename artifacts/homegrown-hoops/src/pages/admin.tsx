@@ -185,12 +185,9 @@ export function AdminPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/games"] }),
   });
 
-  // Run the canonical roster sync + load tide profiles once when admin is confirmed.
+  // Load tide profiles once when admin is confirmed.
   useEffect(() => {
     if (!isAdmin) return;
-    customFetch(`/api/admin/sync-all-players`, { method: "POST" })
-      .then(() => qc.invalidateQueries({ queryKey: ["/api/players"] }))
-      .catch(() => { /* non-critical, silent */ });
     loadTideProfiles();
   }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -280,6 +277,18 @@ export function AdminPage() {
 
   const [rosterTeamId, setRosterTeamId] = useState<number | null>(null);
   const [confirmDeletePlayerId, setConfirmDeletePlayerId] = useState<number | null>(null);
+  const [confirmClearTeamId, setConfirmClearTeamId] = useState<number | null>(null);
+
+  const clearRoster = useMutation({
+    mutationFn: async (teamId: number) => {
+      await customFetch(`/api/admin/teams/${teamId}/players`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      setConfirmClearTeamId(null);
+      setConfirmDeletePlayerId(null);
+      qc.invalidateQueries({ queryKey: ["/api/players"] });
+    },
+  });
 
   const [claimJerseyUserId, setClaimJerseyUserId] = useState<string | null>(null);
   const [claimJerseyForm, setClaimJerseyForm] = useState<{ jerseyNumber: string; teamId: string; season: string }>({ jerseyNumber: "", teamId: "", season: "" });
@@ -1081,13 +1090,50 @@ export function AdminPage() {
                                 <p className="text-sm font-bold">Roster — {team.name}</p>
                                 <span className="text-xs text-muted-foreground">({teamPlayers.length} players)</span>
                               </div>
-                              <button
-                                onClick={() => { setRosterTeamId(null); setConfirmDeletePlayerId(null); }}
-                                className="text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {teamPlayers.length > 0 && confirmClearTeamId !== team.id && (
+                                  <button
+                                    onClick={() => setConfirmClearTeamId(team.id)}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    Clear All
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => { setRosterTeamId(null); setConfirmDeletePlayerId(null); setConfirmClearTeamId(null); }}
+                                  className="text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
+                            {confirmClearTeamId === team.id && (
+                              <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-3 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                                  <p className="text-xs text-muted-foreground">
+                                    Remove <span className="font-bold text-foreground">all {teamPlayers.length} players</span> from {team.name}? This erases all their stats too. Cannot be undone.
+                                  </p>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => clearRoster.mutate(team.id)}
+                                    disabled={clearRoster.isPending}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    {clearRoster.isPending ? "Clearing…" : "Yes, Clear All"}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmClearTeamId(null)}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                             {teamPlayers.length === 0 ? (
                               <p className="text-xs text-muted-foreground text-center py-2">No players on this roster.</p>
                             ) : (
