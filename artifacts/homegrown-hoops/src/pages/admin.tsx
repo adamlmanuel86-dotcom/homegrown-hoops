@@ -279,6 +279,8 @@ export function AdminPage() {
   const [confirmDeletePlayerId, setConfirmDeletePlayerId] = useState<number | null>(null);
   const [confirmClearTeamId, setConfirmClearTeamId] = useState<number | null>(null);
   const [confirmWipeAllPlayers, setConfirmWipeAllPlayers] = useState(false);
+  const [confirmWipeOrphans, setConfirmWipeOrphans] = useState(false);
+  const [orphanResult, setOrphanResult] = useState<string | null>(null);
 
   const wipeAllPlayers = useMutation({
     mutationFn: async () => {
@@ -287,6 +289,19 @@ export function AdminPage() {
     onSuccess: () => {
       setConfirmWipeAllPlayers(false);
       qc.invalidateQueries({ queryKey: ["/api/players"] });
+    },
+  });
+
+  const wipeOrphanedPlayers = useMutation({
+    mutationFn: async () => {
+      const r = await customFetch(`/api/admin/players/orphaned`, { method: "DELETE" });
+      return r.json() as Promise<{ deleted: number }>;
+    },
+    onSuccess: (data) => {
+      setConfirmWipeOrphans(false);
+      setOrphanResult(`Removed ${data.deleted} player${data.deleted === 1 ? "" : "s"} with no account`);
+      qc.invalidateQueries({ queryKey: ["/api/players"] });
+      setTimeout(() => setOrphanResult(null), 4000);
     },
   });
 
@@ -739,15 +754,49 @@ export function AdminPage() {
               {teams.length} {teams.length === 1 ? "team" : "teams"}
             </span>
           )}
-          {!confirmWipeAllPlayers ? (
+          {/* Delete players with no accounts */}
+          {orphanResult && (
+            <span className="ml-auto text-xs font-semibold text-green-500">{orphanResult}</span>
+          )}
+          {!confirmWipeOrphans && !confirmWipeAllPlayers && !orphanResult && (
+            <button
+              onClick={() => setConfirmWipeOrphans(true)}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-orange-500/40 text-orange-400 hover:bg-orange-500/10 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove Unlinked Players
+            </button>
+          )}
+          {confirmWipeOrphans && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Remove players with no account?</span>
+              <button
+                onClick={() => wipeOrphanedPlayers.mutate()}
+                disabled={wipeOrphanedPlayers.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-orange-600 text-white hover:bg-orange-500 disabled:opacity-50 transition-colors"
+              >
+                <Trash2 className="h-3 w-3" />
+                {wipeOrphanedPlayers.isPending ? "Removing…" : "Yes, Remove"}
+              </button>
+              <button
+                onClick={() => setConfirmWipeOrphans(false)}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {/* Remove ALL players (nuclear option) */}
+          {!confirmWipeAllPlayers && !confirmWipeOrphans && (
             <button
               onClick={() => setConfirmWipeAllPlayers(true)}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Remove All Players
             </button>
-          ) : (
+          )}
+          {confirmWipeAllPlayers && (
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Remove ALL players from every team?</span>
               <button

@@ -406,6 +406,39 @@ router.delete("/admin/teams/:teamId/players", async (req, res): Promise<void> =>
   res.json({ deleted: playerIds.length });
 });
 
+// DELETE /admin/players/orphaned
+// Deletes players that have no matching user_profile (firstName+lastName+teamId).
+// Safe to run any time — preserves players who ARE linked to real accounts.
+router.delete("/admin/players/orphaned", async (req, res): Promise<void> => {
+  const adminId = await requireAdmin(req, res);
+  if (!adminId) return;
+
+  const allPlayers = await db.select().from(playersTable);
+  const profiles = await db
+    .select({
+      firstName: userProfilesTable.firstName,
+      lastName: userProfilesTable.lastName,
+      teamId: userProfilesTable.teamId,
+    })
+    .from(userProfilesTable);
+
+  // Build lookup: "firstName|lastName|teamId"
+  const profileKeys = new Set(
+    profiles.map((p) => `${p.firstName}|${p.lastName}|${p.teamId ?? ""}`)
+  );
+
+  const orphanedIds = allPlayers
+    .filter((p) => !profileKeys.has(`${p.firstName}|${p.lastName}|${p.teamId ?? ""}`))
+    .map((p) => p.id);
+
+  if (orphanedIds.length > 0) {
+    await db.delete(jerseyStubsTable).where(inArray(jerseyStubsTable.playerId, orphanedIds));
+    await db.delete(playersTable).where(inArray(playersTable.id, orphanedIds));
+  }
+
+  res.json({ deleted: orphanedIds.length });
+});
+
 // POST /admin/sync-all-players
 // For every profile: removes player rows that don't match the profile's current
 // teamId, and ensures the correct row exists. Safe to call repeatedly.
