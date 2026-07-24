@@ -11,6 +11,6 @@ export interface MyArcadeStats {
   fastBreak: ArcadeGameStats;
   whoYaGot: ArcadeGameStats;
   shotClock: ArcadeGameStats;
-  shotClockScramble: ArcadeGameStats;
+  meterMaster: ArcadeGameStats;
   chainGame: ArcadeGameStats;
 }

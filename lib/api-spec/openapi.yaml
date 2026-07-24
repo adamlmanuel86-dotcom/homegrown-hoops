@@ -2383,11 +2383,11 @@ components:
           $ref: "#/components/schemas/ArcadeGameStats"
         shotClock:
           $ref: "#/components/schemas/ArcadeGameStats"
-        shotClockScramble:
+        meterMaster:
           $ref: "#/components/schemas/ArcadeGameStats"
         chainGame:
           $ref: "#/components/schemas/ArcadeGameStats"
-      required: [fastBreak, whoYaGot, shotClock, shotClockScramble, chainGame]
+      required: [fastBreak, whoYaGot, shotClock, meterMaster, chainGame]
 
     SubmitPlayerStatRow:
       type: object

@@ -10,7 +10,7 @@ type GameTile = {
   description: string;
   href: string;
   color: string;
-  statKey: "fastBreak" | "whoYaGot" | "shotClock" | "shotClockScramble" | "chainGame" | null;
+  statKey: "fastBreak" | "whoYaGot" | "shotClock" | "meterMaster" | "chainGame" | null;
 };
 
 const GAMES: GameTile[] = [
@@ -42,13 +42,13 @@ const GAMES: GameTile[] = [
     statKey: "shotClock",
   },
   {
-    id: "shot-clock-scramble",
-    title: "Shot Clock Scramble",
+    id: "meter-master",
+    title: "Meter Master",
     emoji: "🧠",
     description: "Answer NBA trivia before the 24-second shot clock expires. Three tiers — Rookie, Varsity, Elite.",
-    href: "/arcade/shot-clock-scramble",
+    href: "/arcade/meter-master",
     color: "border-red-500",
-    statKey: "shotClockScramble",
+    statKey: "meterMaster",
   },
   {
     id: "chain-game",
@@ -149,7 +149,7 @@ export function ArcadePage() {
   const { data: fbBoard } = useGetArcadeLeaderboard({ game: "fast-break" });
   const { data: wygBoard } = useGetArcadeLeaderboard({ game: "who-ya-got" });
   const { data: scBoard } = useGetArcadeLeaderboard({ game: "shot-clock" });
-  const { data: scsBoard } = useGetArcadeLeaderboard({ game: "shot-clock-scramble" });
+  const { data: scsBoard } = useGetArcadeLeaderboard({ game: "meter-master" });
   const { data: cgBoard } = useGetArcadeLeaderboard({ game: "chain-game" });
   const { data: ibBoard } = useGetIsoBallLeaderboard();
 
@@ -208,7 +208,7 @@ export function ArcadePage() {
           <LeaderboardTable title="Fast Break" emoji="🏃" color="bg-orange-700" data={fbBoard} />
           <LeaderboardTable title="Who Ya Got" emoji="🏆" color="bg-purple-800" data={wygBoard} />
           <LeaderboardTable title="Shot Clock" emoji="⏱" color="bg-green-800" data={scBoard} />
-          <LeaderboardTable title="Shot Clock Scramble" emoji="🧠" color="bg-red-800" data={scsBoard} />
+          <LeaderboardTable title="Meter Master" emoji="🧠" color="bg-red-800" data={scsBoard} />
           <LeaderboardTable title="Chain Game" emoji="🔗" color="bg-blue-800" data={cgBoard} />
           <IsoBallLeaderboardTable data={ibBoard} />
         </div>
