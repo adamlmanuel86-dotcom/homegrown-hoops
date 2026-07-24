@@ -13,6 +13,7 @@ import {
   useUpdateTeam,
   useDeleteTeam,
   useListGames,
+  useListPlayers,
   useListJerseyStubs,
   useClaimJerseyNumber,
   useListPendingAccounts,
@@ -156,12 +157,26 @@ export function AdminPage() {
     query: { enabled: isAdmin === true },
   });
 
+  const { data: allPlayers } = useListPlayers(undefined, {
+    query: { enabled: isAdmin === true },
+  });
+
   const updateRole = useUpdateUserRole();
   const updateProfile = useUpdateProfile();
   const deleteProfile = useDeleteProfile();
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
+
+  const deletePlayer = useMutation({
+    mutationFn: async (playerId: number) => {
+      await customFetch(`/api/players/${playerId}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      setConfirmDeletePlayerId(null);
+      qc.invalidateQueries({ queryKey: ["/api/players"] });
+    },
+  });
 
   const deleteGame = useMutation({
     mutationFn: async (gameId: number) => {
@@ -262,6 +277,9 @@ export function AdminPage() {
   const [seasonDeleteConfirmKey, setSeasonDeleteConfirmKey] = useState<string | null>(null);
   const [seasonDeletePending, setSeasonDeletePending] = useState(false);
   const [seasonDeleteError, setSeasonDeleteError] = useState<string | null>(null);
+
+  const [rosterTeamId, setRosterTeamId] = useState<number | null>(null);
+  const [confirmDeletePlayerId, setConfirmDeletePlayerId] = useState<number | null>(null);
 
   const [claimJerseyUserId, setClaimJerseyUserId] = useState<string | null>(null);
   const [claimJerseyForm, setClaimJerseyForm] = useState<{ jerseyNumber: string; teamId: string; season: string }>({ jerseyNumber: "", teamId: "", season: "" });
@@ -890,6 +908,16 @@ export function AdminPage() {
                           <CalendarDays className="h-3.5 w-3.5" />
                           Season History
                         </button>
+                        <button
+                          onClick={() => {
+                            setRosterTeamId(rosterTeamId === team.id ? null : team.id);
+                            setConfirmDeletePlayerId(null);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors"
+                        >
+                          <Users className="h-3.5 w-3.5" />
+                          Roster
+                        </button>
                       </div>
 
                       {/* End of Season drawer */}
@@ -1031,6 +1059,89 @@ export function AdminPage() {
                                               Cancel
                                             </button>
                                           </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Roster panel */}
+                      {rosterTeamId === team.id && (() => {
+                        const teamPlayers = (allPlayers ?? []).filter((p) => p.teamId === team.id);
+                        return (
+                          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                <p className="text-sm font-bold">Roster — {team.name}</p>
+                                <span className="text-xs text-muted-foreground">({teamPlayers.length} players)</span>
+                              </div>
+                              <button
+                                onClick={() => { setRosterTeamId(null); setConfirmDeletePlayerId(null); }}
+                                className="text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            {teamPlayers.length === 0 ? (
+                              <p className="text-xs text-muted-foreground text-center py-2">No players on this roster.</p>
+                            ) : (
+                              <div className="space-y-1.5">
+                                {teamPlayers.map((player) => {
+                                  const isConfirming = confirmDeletePlayerId === player.id;
+                                  return (
+                                    <div key={player.id}>
+                                      {isConfirming ? (
+                                        <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-3 space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                                            <p className="text-xs text-muted-foreground">
+                                              Delete <span className="font-bold text-foreground">{player.firstName} {player.lastName}</span>? This removes them from the roster and erases all their stats. Cannot be undone.
+                                            </p>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            <button
+                                              onClick={async () => {
+                                                try {
+                                                  await deletePlayer.mutateAsync(player.id);
+                                                } catch (err) {
+                                                  alert(`Failed to delete player: ${err instanceof Error ? err.message : String(err)}`);
+                                                }
+                                              }}
+                                              disabled={deletePlayer.isPending}
+                                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition-colors"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                              {deletePlayer.isPending ? "Deleting…" : "Yes, Delete"}
+                                            </button>
+                                            <button
+                                              onClick={() => setConfirmDeletePlayerId(null)}
+                                              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-border hover:bg-muted transition-colors"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-background">
+                                          <div className="flex items-center gap-2">
+                                            {player.number != null && (
+                                              <span className="text-xs font-bold text-muted-foreground w-6 text-right">#{player.number}</span>
+                                            )}
+                                            <span className="text-sm font-semibold">{player.firstName} {player.lastName}</span>
+                                          </div>
+                                          <button
+                                            onClick={() => setConfirmDeletePlayerId(player.id)}
+                                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                            Remove
+                                          </button>
                                         </div>
                                       )}
                                     </div>

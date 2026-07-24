@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, playersTable, gamePlayerStatsTable, gamesTable, teamsTable } from "@workspace/db";
+import { getAuth } from "@clerk/express";
+import { db, playersTable, gamePlayerStatsTable, gamesTable, teamsTable, userProfilesTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import {
   CreatePlayerBody,
@@ -73,6 +74,41 @@ router.patch("/players/:id", async (req, res): Promise<void> => {
     return;
   }
   res.json(UpdatePlayerResponse.parse(serializeRow(player)));
+});
+
+// DELETE /players/:id — admin-only, removes player and cascades their stats
+router.delete("/players/:id", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const [profile] = await db
+    .select({ isAdmin: userProfilesTable.isAdmin })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, userId));
+  if (!profile?.isAdmin) {
+    res.status(403).json({ error: "Forbidden — admin only" });
+    return;
+  }
+
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid player id" });
+    return;
+  }
+
+  const [deleted] = await db
+    .delete(playersTable)
+    .where(eq(playersTable.id, id))
+    .returning();
+
+  if (!deleted) {
+    res.status(404).json({ error: "Player not found" });
+    return;
+  }
+
+  res.status(204).send();
 });
 
 // GET /players/:id/seasons — distinct seasons a player has game data for
