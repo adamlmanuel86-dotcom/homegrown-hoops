@@ -51,6 +51,7 @@ import type {
   PlayerStats,
   PostArcadeSessionBody,
   RejectPendingGameBody,
+  ResetArcadeSessions200,
   SaveAvatarConfigBody,
   StatLeaders,
   StatsSummary,
@@ -3136,6 +3137,87 @@ export const useRejectPendingGame = <
   TContext
 > => {
   return useMutation(getRejectPendingGameMutationOptions(options));
+};
+
+/**
+ * @summary Clear all arcade and iso-ball sessions (admin only)
+ */
+export const getResetArcadeSessionsUrl = () => {
+  return `/api/admin/arcade/sessions`;
+};
+
+export const resetArcadeSessions = async (
+  options?: RequestInit,
+): Promise<ResetArcadeSessions200> => {
+  return customFetch<ResetArcadeSessions200>(getResetArcadeSessionsUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getResetArcadeSessionsMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetArcadeSessions>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resetArcadeSessions>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["resetArcadeSessions"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resetArcadeSessions>>,
+    void
+  > = () => {
+    return resetArcadeSessions(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResetArcadeSessionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resetArcadeSessions>>
+>;
+
+export type ResetArcadeSessionsMutationError = ErrorType<void>;
+
+/**
+ * @summary Clear all arcade and iso-ball sessions (admin only)
+ */
+export const useResetArcadeSessions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetArcadeSessions>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resetArcadeSessions>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getResetArcadeSessionsMutationOptions(options));
 };
 
 /**

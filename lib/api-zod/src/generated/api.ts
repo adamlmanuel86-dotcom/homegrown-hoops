@@ -1100,6 +1100,13 @@ export const RejectPendingGameResponse = zod.object({
 });
 
 /**
+ * @summary Clear all arcade and iso-ball sessions (admin only)
+ */
+export const ResetArcadeSessionsResponse = zod.object({
+  deleted: zod.number(),
+});
+
+/**
  * @summary List all public user profiles
  */
 export const ListProfilesResponseItem = zod.object({
@@ -2126,7 +2133,13 @@ export const SaveAvatarConfigResponse = zod.object({
  * @summary Submit an arcade game session
  */
 export const PostArcadeSessionBody = zod.object({
-  game: zod.enum(["fast-break", "who-ya-got", "shot-clock"]),
+  game: zod.enum([
+    "fast-break",
+    "who-ya-got",
+    "meter-master",
+    "shot-clock-scramble",
+    "chain-game",
+  ]),
   score: zod.number(),
   bestStreak: zod.number(),
   roundsPlayed: zod.number(),
@@ -2199,7 +2212,13 @@ export const GetMyArcadeStatsResponse = zod.object({
 export const getArcadeLeaderboardQueryLimitDefault = 10;
 
 export const GetArcadeLeaderboardQueryParams = zod.object({
-  game: zod.enum(["fast-break", "who-ya-got", "shot-clock"]),
+  game: zod.enum([
+    "fast-break",
+    "who-ya-got",
+    "meter-master",
+    "shot-clock-scramble",
+    "chain-game",
+  ]),
   limit: zod.coerce.number().default(getArcadeLeaderboardQueryLimitDefault),
 });
 
@@ -2217,7 +2236,13 @@ export const GetArcadeLeaderboardResponse = zod.array(
  * @summary Get current user rank for a specific game
  */
 export const GetMyArcadeRankQueryParams = zod.object({
-  game: zod.enum(["fast-break", "who-ya-got", "shot-clock"]),
+  game: zod.enum([
+    "fast-break",
+    "who-ya-got",
+    "meter-master",
+    "shot-clock-scramble",
+    "chain-game",
+  ]),
 });
 
 export const GetMyArcadeRankResponse = zod.object({

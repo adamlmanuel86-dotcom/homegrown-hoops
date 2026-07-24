@@ -647,7 +647,9 @@ export type ArcadeSessionGame =
 export const ArcadeSessionGame = {
   "fast-break": "fast-break",
   "who-ya-got": "who-ya-got",
-  "shot-clock": "shot-clock",
+  "meter-master": "meter-master",
+  "shot-clock-scramble": "shot-clock-scramble",
+  "chain-game": "chain-game",
 } as const;
 
 export interface ArcadeSession {
@@ -666,7 +668,9 @@ export type PostArcadeSessionBodyGame =
 export const PostArcadeSessionBodyGame = {
   "fast-break": "fast-break",
   "who-ya-got": "who-ya-got",
-  "shot-clock": "shot-clock",
+  "meter-master": "meter-master",
+  "shot-clock-scramble": "shot-clock-scramble",
+  "chain-game": "chain-game",
 } as const;
 
 export interface PostArcadeSessionBody {
@@ -886,6 +890,10 @@ export type ListGamesParams = {
   season?: string;
 };
 
+export type ResetArcadeSessions200 = {
+  deleted: number;
+};
+
 export type GetArcadeLeaderboardParams = {
   game: GetArcadeLeaderboardGame;
   limit?: number;
@@ -897,7 +905,9 @@ export type GetArcadeLeaderboardGame =
 export const GetArcadeLeaderboardGame = {
   "fast-break": "fast-break",
   "who-ya-got": "who-ya-got",
-  "shot-clock": "shot-clock",
+  "meter-master": "meter-master",
+  "shot-clock-scramble": "shot-clock-scramble",
+  "chain-game": "chain-game",
 } as const;
 
 export type GetMyArcadeRankParams = {
@@ -910,7 +920,9 @@ export type GetMyArcadeRankGame =
 export const GetMyArcadeRankGame = {
   "fast-break": "fast-break",
   "who-ya-got": "who-ya-got",
-  "shot-clock": "shot-clock",
+  "meter-master": "meter-master",
+  "shot-clock-scramble": "shot-clock-scramble",
+  "chain-game": "chain-game",
 } as const;
 
 export type GetIsoBallLeaderboardParams = {

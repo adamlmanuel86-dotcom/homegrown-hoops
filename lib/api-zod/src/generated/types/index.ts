@@ -62,6 +62,7 @@ export * from "./postArcadeSessionBody";
 export * from "./postArcadeSessionBodyGame";
 export * from "./recognitionEntry";
 export * from "./rejectPendingGameBody";
+export * from "./resetArcadeSessions200";
 export * from "./saveAvatarConfigBody";
 export * from "./statLeaders";
 export * from "./statsSummary";

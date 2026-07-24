@@ -12,5 +12,7 @@ export type PostArcadeSessionBodyGame =
 export const PostArcadeSessionBodyGame = {
   "fast-break": "fast-break",
   "who-ya-got": "who-ya-got",
-  "shot-clock": "shot-clock",
+  "meter-master": "meter-master",
+  "shot-clock-scramble": "shot-clock-scramble",
+  "chain-game": "chain-game",
 } as const;

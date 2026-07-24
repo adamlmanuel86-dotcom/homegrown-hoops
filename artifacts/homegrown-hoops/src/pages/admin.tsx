@@ -19,6 +19,7 @@ import {
   useListPendingAccounts,
   useApprovePendingAccount,
   useRejectPendingAccount,
+  useResetArcadeSessions,
   customFetch,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -339,7 +340,20 @@ export function AdminPage() {
     },
   });
 
+  const [confirmResetArcade, setConfirmResetArcade] = useState(false);
   const [confirmingResetIsoBallId, setConfirmingResetIsoBallId] = useState<string | null>(null);
+  const resetArcade = useResetArcadeSessions({
+    mutation: {
+      onSuccess: () => {
+        setConfirmResetArcade(false);
+        qc.invalidateQueries({ queryKey: ["/api/arcade/leaderboard"] });
+        qc.invalidateQueries({ queryKey: ["/api/arcade/my-stats"] });
+        qc.invalidateQueries({ queryKey: ["/api/iso-ball/leaderboard"] });
+        qc.invalidateQueries({ queryKey: ["/api/profiles"] });
+      },
+    },
+  });
+
   const resetIsoBall = useMutation({
     mutationFn: async (clerkUserId: string) => {
       await customFetch(`/api/iso-ball/sessions/${encodeURIComponent(clerkUserId)}`, {
@@ -1700,6 +1714,57 @@ export function AdminPage() {
             })}
           </div>
         ) : null}
+
+      {/* ── Arcade Reset ───────────────────────────────────────────────── */}
+      <div className="card-base overflow-hidden border-2 border-red-700">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-red-900/20">
+          <RotateCcw className="h-5 w-5 text-red-400" />
+          <h2 className="font-bold text-secondary">Reset Arcade Stats</h2>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm text-muted-foreground mb-4">
+            Clears <span className="font-semibold text-white">all</span> arcade session data and Iso-Ball scores for every player. Leaderboards will be empty. This cannot be undone.
+          </p>
+          {!confirmResetArcade ? (
+            <button
+              onClick={() => setConfirmResetArcade(true)}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-red-600 text-red-400 font-bold text-sm hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              Reset All Arcade Stats
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm font-bold text-red-400">
+                Are you sure? Every player's arcade history and leaderboard positions will be wiped.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => resetArcade.mutate()}
+                  disabled={resetArcade.isPending}
+                  className="px-4 py-2 bg-red-700 border-2 border-red-600 text-white font-bold text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {resetArcade.isPending ? "Resetting…" : "Yes, Reset All"}
+                </button>
+                <button
+                  onClick={() => setConfirmResetArcade(false)}
+                  disabled={resetArcade.isPending}
+                  className="px-4 py-2 border-2 border-border text-muted-foreground font-bold text-sm hover:border-white/40 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {resetArcade.isSuccess && (
+            <p className="text-sm text-green-400 mt-3 font-medium">✓ All arcade stats cleared.</p>
+          )}
+          {resetArcade.isError && (
+            <p className="text-sm text-red-400 mt-3 font-medium">Failed to reset. Please try again.</p>
+          )}
+        </div>
+      </div>
+
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ne, isNull, or, inArray, desc } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable, teamsTable, jerseyStubsTable } from "@workspace/db";
+import { db, userProfilesTable, playersTable, gamesTable, gamePlayerStatsTable, teamsTable, jerseyStubsTable, arcadeSessionsTable, isoBallSessionsTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { isProtectedAdmin } from "../lib/adminGuard";
 import { recalculateTides, previewTeamTides, applyTeamTides, resetTeamSeason, getTeamCurrentSeason, recalculateStampsForPlayer } from "../recognition";
@@ -781,6 +781,21 @@ router.post("/admin/users/:clerkUserId/claim-jersey", async (req, res): Promise<
     .where(eq(userProfilesTable.clerkUserId, clerkUserId));
 
   res.json(serializeRow(fresh));
+});
+
+router.delete("/admin/arcade/sessions", async (req, res): Promise<void> => {
+  const userId = await requireAdmin(req, res);
+  if (!userId) return;
+
+  const [arcadeResult, isoBallResult] = await Promise.all([
+    db.delete(arcadeSessionsTable),
+    db.delete(isoBallSessionsTable),
+  ]);
+
+  const deleted =
+    (arcadeResult.rowCount ?? 0) + (isoBallResult.rowCount ?? 0);
+
+  res.json({ deleted });
 });
 
 export default router;

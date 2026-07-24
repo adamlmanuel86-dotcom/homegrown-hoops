@@ -808,6 +808,27 @@ paths:
         "404":
           description: Game not found
 
+  /admin/arcade/sessions:
+    delete:
+      operationId: resetArcadeSessions
+      tags: [admin]
+      summary: Clear all arcade and iso-ball sessions (admin only)
+      responses:
+        "200":
+          description: All sessions cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+                required: [deleted]
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
   /profiles:
     get:
       operationId: listProfiles
@@ -1159,7 +1180,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [fast-break, who-ya-got, shot-clock]
+            enum: [fast-break, who-ya-got, meter-master, shot-clock-scramble, chain-game]
         - name: limit
           in: query
           required: false
@@ -1187,7 +1208,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [fast-break, who-ya-got, shot-clock]
+            enum: [fast-break, who-ya-got, meter-master, shot-clock-scramble, chain-game]
       responses:
         "200":
           description: User rank for the given game
@@ -2262,7 +2283,7 @@ components:
           type: string
         game:
           type: string
-          enum: [fast-break, who-ya-got, shot-clock]
+          enum: [fast-break, who-ya-got, meter-master, shot-clock-scramble, chain-game]
         score:
           type: integer
         bestStreak:
@@ -2286,7 +2307,7 @@ components:
       properties:
         game:
           type: string
-          enum: [fast-break, who-ya-got, shot-clock]
+          enum: [fast-break, who-ya-got, meter-master, shot-clock-scramble, chain-game]
         score:
           type: integer
         bestStreak:
