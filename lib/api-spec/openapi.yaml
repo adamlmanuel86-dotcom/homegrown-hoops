@@ -1392,7 +1392,7 @@ components:
         homeTeamId:
           type: integer
         awayTeamId:
-          type: integer
+          type: ["integer", "null"]
         homeScore:
           type: ["integer", "null"]
         awayScore:

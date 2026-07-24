@@ -262,7 +262,7 @@ export const ListGamesQueryParams = zod.object({
 export const ListGamesResponseItem = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number().optional(),
+  awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
@@ -327,7 +327,7 @@ export const GetGameParams = zod.object({
 export const GetGameResponse = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number().optional(),
+  awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
@@ -385,7 +385,7 @@ export const UpdateGameBody = zod.object({
 export const UpdateGameResponse = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number().optional(),
+  awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
@@ -567,7 +567,7 @@ export const GetStatsSummaryResponse = zod.object({
     zod.object({
       id: zod.number(),
       homeTeamId: zod.number(),
-      awayTeamId: zod.number().optional(),
+      awayTeamId: zod.number().nullish(),
       homeScore: zod.number().nullish(),
       awayScore: zod.number().nullish(),
       gameDate: zod.string(),
@@ -906,7 +906,7 @@ export const ApprovePendingGameParams = zod.object({
 export const ApprovePendingGameResponse = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number().optional(),
+  awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),
@@ -946,7 +946,7 @@ export const RejectPendingGameBody = zod.object({
 export const RejectPendingGameResponse = zod.object({
   id: zod.number(),
   homeTeamId: zod.number(),
-  awayTeamId: zod.number().optional(),
+  awayTeamId: zod.number().nullish(),
   homeScore: zod.number().nullish(),
   awayScore: zod.number().nullish(),
   gameDate: zod.string(),

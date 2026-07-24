@@ -166,7 +166,8 @@ export interface ExternalLink {
 export interface Game {
   id: number;
   homeTeamId: number;
-  awayTeamId?: number;
+  /** @nullable */
+  awayTeamId?: number | null;
   /** @nullable */
   homeScore?: number | null;
   /** @nullable */
