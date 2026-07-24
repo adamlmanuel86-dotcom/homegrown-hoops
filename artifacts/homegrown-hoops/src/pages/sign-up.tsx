@@ -105,12 +105,16 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      // Clerk v6.12+ new signals API: verifyEmailCode instead of attemptEmailAddressVerification
-      await (signUp as any).verifications.verifyEmailCode({ code });
-      if (signUp.status === "complete") {
+      // Clerk v6.12+ new signals API: verifyEmailCode instead of attemptEmailAddressVerification.
+      // The return value may contain the updated sign-up resource with status/createdSessionId;
+      // fall back to the proxy getters as a secondary source.
+      const result = await (signUp as any).verifications.verifyEmailCode({ code });
+      const status = (result as any)?.status ?? signUp.status;
+      const sessionId = (result as any)?.createdSessionId ?? signUp.createdSessionId;
+      if (status === "complete") {
         clearState();
-        if (setActive && signUp.createdSessionId) {
-          await setActive({ session: signUp.createdSessionId });
+        if (sessionId) {
+          await setActive({ session: sessionId });
         }
         setLocation("/onboarding");
       } else {

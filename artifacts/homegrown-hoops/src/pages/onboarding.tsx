@@ -240,7 +240,12 @@ export function OnboardingPage() {
     } catch (err) {
       console.log("[HH] advanceFromPhoto error:", err);
       setSubmitError("Something went wrong. Please try again.");
-      setStep(form.accountType === "parent" ? "avatar" : "photo");
+      // Return user to the step they were on when they submitted.
+      // `step` is captured from the render closure — "avatar" or "photo".
+      // Previously this always went to "photo", which confused users who came
+      // from the avatar step (they'd see an unfamiliar page, click Back, and
+      // think the avatar page had "reloaded" with no error).
+      setStep(form.accountType === "parent" ? "avatar" : step);
     } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -1249,6 +1254,12 @@ export function OnboardingPage() {
               void advanceFromPhoto(false, config);
             }}
           />
+
+          {submitError && (
+            <p style={{ color: "#f87171", fontSize: 13, fontWeight: 600, textAlign: "center", margin: "8px 0 0" }}>
+              {submitError}
+            </p>
+          )}
 
           {/* Secondary escape hatches */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8, paddingBottom: 8 }}>
