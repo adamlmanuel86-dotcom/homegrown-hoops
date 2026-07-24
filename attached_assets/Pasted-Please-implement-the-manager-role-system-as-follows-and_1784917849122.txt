@@ -1,0 +1,19 @@
+Please implement the manager role system as follows and push to GitHub:
+
+1. During signup a user can select Manager/Coach as their account type. They then complete a team creation form including: team name, league or organization, city or location, and their roster by jersey number with player names optional. This submission goes to admin as a pending manager request.
+
+2. Admin reviews pending manager requests in the admin panel and sees the team details submitted. Admin approves or rejects the request. On approval the manager account is activated, their team is created in the database automatically from the information they submitted, and they immediately gain access to track games for that team.
+
+3. An approved manager can create additional teams at any time from their manager dashboard — for example when a new season starts or if they coach multiple teams. Each new team creation is auto approved without requiring admin review since the manager is already verified.
+
+4. A designated manager can temporarily delegate game tracking for a specific game to another registered user. The manager selects a registered user and grants them one-time tracking access for that team. After the game is submitted the temporary access expires automatically.
+
+5. Only the designated manager or their temporary delegate can submit games for a team. Duplicate game submissions from the same team on the same date are flagged and blocked automatically.
+
+6. Admin can create teams directly at any time without any approval process. Admin created teams are immediately active in the database. Admin can also assign any registered user as manager of any team directly from the admin panel.
+
+7. During game tracking managers can add unregistered players by jersey number only. Their stats appear in the box score but the number is not clickable, no player card exists and no Legacy Score is visible until admin assigns a registered user to that number. When assigned all accumulated stats stamps archetypes and legacy score calculate instantly on their profile. This applies to the current season only. Once a number is claimed it cannot be reassigned.
+
+8. Game creation happens automatically when a manager submits stats — managers do not need to pre-create games and admins do not need to set up games in advance. The act of submitting stats creates the game record with the teams, date, score and all player stats in one action.
+
+**9. When a manager submits a game it goes to a pending review queue with status pending. No Legacy Scores Stamps or Archetypes update until admin approves. When admin approves the game recognition recalculation runs automatically for all
