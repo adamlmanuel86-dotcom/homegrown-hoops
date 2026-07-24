@@ -1,0 +1,47 @@
+Please update the archetype system completely. Make sure both the assignment logic AND the descriptions match exactly what is listed below. Push all changes to GitHub and recalculate all player archetypes in Railway using connection string postgresql://postgres:dlQosuUfRaioPgyIzfQLJipwKRwXKZfb@switchyard.proxy.rlwy.net:18663/railway
+
+REMOVE The Spark archetype entirely from all code, metadata, icons, descriptions and any dropdown or list it appears in.
+
+ARCHETYPE ASSIGNMENT LOGIC — use these weighted category scores:
+
+	•	Scoring score = PPG × 10
+	•	Rebounding score = RPG × 15
+	•	Playmaking score = APG × 20
+	•	Steals score = SPG × 35
+	•	Blocks score = BPG × 35
+	•	Three point score = 3PM × 40
+
+Assignment rules in strict priority order:
+
+	1.	Scoring score above 150 AND highest scorer on team → The Mainstay
+	2.	Scoring score above 150 AND not highest scorer on team → The Voltage
+	3.	Scoring score 120-149 PLUS rebounding score above 75 OR playmaking score above 60 → The Engine
+	4.	Three point score is highest weighted score AND above 60 AND minimum 1.5 3PM per game → The Deep
+	5.	Rebounding score is highest weighted score AND above 75 → The Vortex
+	6.	Playmaking score is highest weighted score AND above 75 → The Current
+	7.	Steals score is highest weighted score AND above 52 → The Warden
+	8.	Blocks score is highest weighted score AND above 35 → The Wall
+	9.	Player has stats but nothing above thresholds → The Climb
+	10.	Player has no stats yet → Uncharted
+
+ARCHETYPE DESCRIPTIONS — update everywhere they appear in the codebase:
+
+The Mainstay: ‘The go-to scorer — when points are needed this player delivers consistently’
+
+The Voltage: ‘An elite scorer who creates their own shot and puts up big numbers every night’
+
+The Engine: ‘Does everything — scoring rebounding and playmaking at a high level. The team runs through this player’
+
+The Deep: ‘The three pointer is this player’s signature weapon — range is their superpower’
+
+The Vortex: ‘Rebounds are this player’s signature — they control the glass on both ends’
+
+The Current: ‘A natural playmaker whose passing defines how this team moves the ball’
+
+The Warden: ‘Steals are this player’s weapon — they make life difficult for every ball handler’
+
+The Wall: ‘Shot blocking defines this player — they protect the paint and alter shots’
+
+The Climb: ‘Still writing their story — consistent contributor whose best games lie ahead’
+
+Uncharted: ‘Your story has not been written yet — step on the court and let your game speak’
