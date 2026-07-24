@@ -68,7 +68,7 @@ export function MyProfilePage() {
     { query: { enabled: isSignedIn === true } },
   );
   const { data: scRank } = useGetMyArcadeRank(
-    { game: "shot-clock" },
+    { game: "meter-master" },
     { query: { enabled: isSignedIn === true } },
   );
   const { data: isoBallData } = useGetIsoBallProfile(user?.id ?? null, { query: { enabled: isSignedIn === true } });
@@ -1105,11 +1105,11 @@ export function MyProfilePage() {
             );
           })()}
 
-          {/* ── SHOT CLOCK ─────────────────────────────────────────────── */}
+          {/* ── METER MASTER ─────────────────────────────────────────────── */}
           {(() => {
-            const sc = arcadeStats?.shotClock ?? null;
+            const sc = arcadeStats?.meterMaster ?? null;
             return (
-              <Link href="/arcade/shot-clock">
+              <Link href="/arcade/meter-master">
                 <div
                   className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
                   style={{ background: "linear-gradient(135deg, #1a0808 0%, #2a1010 100%)" }}
@@ -1120,7 +1120,7 @@ export function MyProfilePage() {
                   <div className="flex items-center justify-between px-4 pt-4">
                     <div className="flex items-center gap-2">
                       <span style={{ fontSize: 18 }}>⏱</span>
-                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Shot Clock</span>
+                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Meter Master</span>
                     </div>
                     <span
                       className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-red-500/60"

@@ -5,7 +5,7 @@ import { apiBase } from "@/lib/api";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
-export function ShotClockPage() {
+export function MeterMasterPage() {
   const { getToken, isSignedIn } = useAuth();
   const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -22,13 +22,13 @@ export function ShotClockPage() {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
-              game: "shot-clock",
+              game: "meter-master",
               score: typeof e.data.score === "number" ? e.data.score : 0,
               bestStreak: typeof e.data.bestStreak === "number" ? e.data.bestStreak : 0,
               roundsPlayed: typeof e.data.roundsPlayed === "number" ? e.data.roundsPlayed : 0,
             }),
           });
-          qc.invalidateQueries({ queryKey: ["/api/arcade/leaderboard", { game: "shot-clock" }] });
+          qc.invalidateQueries({ queryKey: ["/api/arcade/leaderboard", { game: "meter-master" }] });
           qc.invalidateQueries({ queryKey: ["/api/arcade/my-stats"] });
         } catch {
           // ignore
@@ -50,7 +50,7 @@ export function ShotClockPage() {
         ref={iframeRef}
         src="/games/shot-clock.html"
         className="flex-1 w-full border-0"
-        title="Shot Clock"
+        title="Meter Master"
         allow="autoplay"
       />
     </div>

@@ -31,7 +31,7 @@ export function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [arcadeModal, setArcadeModal] = useState<"fastBreak" | "whoYaGot" | "shotClock" | null>(null);
+  const [arcadeModal, setArcadeModal] = useState<"fastBreak" | "whoYaGot" | "meterMaster" | null>(null);
 
   async function handleShare() {
     const url = `${window.location.origin}${BASE_URL}/p/${clerkUserId}`;
@@ -339,7 +339,7 @@ export function ProfilePage() {
     { query: { enabled: isOwner } },
   );
   const { data: scRank } = useGetMyArcadeRank(
-    { game: "shot-clock" },
+    { game: "meter-master" },
     { query: { enabled: isOwner } },
   );
   const { data: ibRank } = useGetIsoBallRank({ query: { enabled: isOwner } });
@@ -1233,11 +1233,11 @@ export function ProfilePage() {
             );
           })()}
 
-          {/* ── SHOT CLOCK ────────────────────────────────────────────── */}
+          {/* ── METER MASTER ────────────────────────────────────────────── */}
           {(() => {
-            const sc = arcadeStats?.shotClock ?? null;
+            const sc = arcadeStats?.meterMaster ?? null;
             return (
-              <Link href="/arcade/shot-clock">
+              <Link href="/arcade/meter-master">
                 <div
                   className="relative overflow-hidden border-2 border-black shadow-[4px_4px_0_0_rgba(0,0,0,1)] cursor-pointer group"
                   style={{ background: "linear-gradient(135deg, #1a0808 0%, #2a1010 100%)" }}
@@ -1246,7 +1246,7 @@ export function ProfilePage() {
                   <div className="flex items-center justify-between px-4 pt-4">
                     <div className="flex items-center gap-2">
                       <span style={{ fontSize: 18 }}>⏱</span>
-                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Shot Clock</span>
+                      <span className="font-display text-sm tracking-widest text-white/60 uppercase">Meter Master</span>
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-red-500/60" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>
                       Pressure
@@ -1363,7 +1363,7 @@ export function ProfilePage() {
           stats={
             arcadeModal === "fastBreak" ? arcadeStats.fastBreak :
             arcadeModal === "whoYaGot" ? arcadeStats.whoYaGot :
-            arcadeStats.shotClock
+            arcadeStats.meterMaster
           }
           onClose={() => setArcadeModal(null)}
         />
@@ -1374,22 +1374,22 @@ export function ProfilePage() {
 
 // ── Arcade stat modal ────────────────────────────────────────────────────────
 
-type ArcadeGameKey = "fastBreak" | "whoYaGot" | "shotClock";
+type ArcadeGameKey = "fastBreak" | "whoYaGot" | "meterMaster";
 
 const GAME_LABEL: Record<ArcadeGameKey, string> = {
-  fastBreak: "FAST BREAK",
-  whoYaGot:  "WHO YA GOT",
-  shotClock: "SHOT CLOCK",
+  fastBreak:   "FAST BREAK",
+  whoYaGot:    "WHO YA GOT",
+  meterMaster: "METER MASTER",
 };
-const GAME_SLUG: Record<ArcadeGameKey, "fast-break" | "who-ya-got" | "shot-clock"> = {
-  fastBreak: "fast-break",
-  whoYaGot:  "who-ya-got",
-  shotClock: "shot-clock",
+const GAME_SLUG: Record<ArcadeGameKey, "fast-break" | "who-ya-got" | "meter-master"> = {
+  fastBreak:   "fast-break",
+  whoYaGot:    "who-ya-got",
+  meterMaster: "meter-master",
 };
 const GAME_EMOJI: Record<ArcadeGameKey, string> = {
-  fastBreak: "🏀",
-  whoYaGot:  "🎯",
-  shotClock: "⏱️",
+  fastBreak:   "🏀",
+  whoYaGot:    "🎯",
+  meterMaster: "⏱️",
 };
 
 function fmtArcadePct(made: number, att: number): string {

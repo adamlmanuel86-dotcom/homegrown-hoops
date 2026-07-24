@@ -2161,7 +2161,7 @@ export const GetMyArcadeStatsResponse = zod.object({
     totalTpa: zod.number().optional(),
     totalDunks: zod.number().optional(),
   }),
-  shotClock: zod.object({
+  meterMaster: zod.object({
     bestScore: zod.number().optional(),
     bestStreak: zod.number().optional(),
     gamesPlayed: zod.number().optional(),
@@ -2171,7 +2171,7 @@ export const GetMyArcadeStatsResponse = zod.object({
     totalTpa: zod.number().optional(),
     totalDunks: zod.number().optional(),
   }),
-  meterMaster: zod.object({
+  shotClockScramble: zod.object({
     bestScore: zod.number().optional(),
     bestStreak: zod.number().optional(),
     gamesPlayed: zod.number().optional(),

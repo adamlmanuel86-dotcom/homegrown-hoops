@@ -10,7 +10,7 @@ type GameTile = {
   description: string;
   href: string;
   color: string;
-  statKey: "fastBreak" | "whoYaGot" | "shotClock" | "meterMaster" | "chainGame" | null;
+  statKey: "fastBreak" | "whoYaGot" | "meterMaster" | "shotClockScramble" | "chainGame" | null;
 };
 
 const GAMES: GameTile[] = [
@@ -33,22 +33,22 @@ const GAMES: GameTile[] = [
     statKey: "whoYaGot",
   },
   {
-    id: "shot-clock",
-    title: "Shot Clock",
-    emoji: "⏱️",
-    description: "Tap SHOOT when the marker hits the sweet zone. The window shrinks every round.",
-    href: "/arcade/shot-clock",
-    color: "border-green-500",
-    statKey: "shotClock",
-  },
-  {
     id: "meter-master",
     title: "Meter Master",
+    emoji: "⏱️",
+    description: "Tap SHOOT when the marker hits the sweet zone. The window shrinks every round.",
+    href: "/arcade/meter-master",
+    color: "border-green-500",
+    statKey: "meterMaster",
+  },
+  {
+    id: "shot-clock-scramble",
+    title: "Shot Clock Scramble",
     emoji: "🧠",
     description: "Answer NBA trivia before the 24-second shot clock expires. Three tiers — Rookie, Varsity, Elite.",
-    href: "/arcade/meter-master",
+    href: "/arcade/shot-clock-scramble",
     color: "border-red-500",
-    statKey: "meterMaster",
+    statKey: "shotClockScramble",
   },
   {
     id: "chain-game",
@@ -148,8 +148,8 @@ export function ArcadePage() {
   });
   const { data: fbBoard } = useGetArcadeLeaderboard({ game: "fast-break" });
   const { data: wygBoard } = useGetArcadeLeaderboard({ game: "who-ya-got" });
-  const { data: scBoard } = useGetArcadeLeaderboard({ game: "shot-clock" });
-  const { data: scsBoard } = useGetArcadeLeaderboard({ game: "meter-master" });
+  const { data: scBoard } = useGetArcadeLeaderboard({ game: "meter-master" });
+  const { data: scsBoard } = useGetArcadeLeaderboard({ game: "shot-clock-scramble" });
   const { data: cgBoard } = useGetArcadeLeaderboard({ game: "chain-game" });
   const { data: ibBoard } = useGetIsoBallLeaderboard();
 
@@ -207,8 +207,8 @@ export function ArcadePage() {
         <div className="space-y-4">
           <LeaderboardTable title="Fast Break" emoji="🏃" color="bg-orange-700" data={fbBoard} />
           <LeaderboardTable title="Who Ya Got" emoji="🏆" color="bg-purple-800" data={wygBoard} />
-          <LeaderboardTable title="Shot Clock" emoji="⏱" color="bg-green-800" data={scBoard} />
-          <LeaderboardTable title="Meter Master" emoji="🧠" color="bg-red-800" data={scsBoard} />
+          <LeaderboardTable title="Meter Master" emoji="⏱" color="bg-green-800" data={scBoard} />
+          <LeaderboardTable title="Shot Clock Scramble" emoji="🧠" color="bg-red-800" data={scsBoard} />
           <LeaderboardTable title="Chain Game" emoji="🔗" color="bg-blue-800" data={cgBoard} />
           <IsoBallLeaderboardTable data={ibBoard} />
         </div>

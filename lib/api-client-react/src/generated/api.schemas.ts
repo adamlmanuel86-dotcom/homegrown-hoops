@@ -724,8 +724,8 @@ export interface IsoBallRank {
 export interface MyArcadeStats {
   fastBreak: ArcadeGameStats;
   whoYaGot: ArcadeGameStats;
-  shotClock: ArcadeGameStats;
   meterMaster: ArcadeGameStats;
+  shotClockScramble: ArcadeGameStats;
   chainGame: ArcadeGameStats;
 }
 

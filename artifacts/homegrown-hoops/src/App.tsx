@@ -29,8 +29,8 @@ import { AdminPendingGamesPage } from "@/pages/admin-pending-games";
 import { ManagerPage } from "@/pages/manager";
 import { WhoYaGotPage } from "@/pages/who-ya-got";
 import { FastBreakPage } from "@/pages/fast-break";
-import { ShotClockPage } from "@/pages/shot-clock";
-import { MeterMasterPage } from "@/pages/shot-clock-scramble";
+import { MeterMasterPage } from "@/pages/shot-clock";
+import { ShotClockScramblePage } from "@/pages/shot-clock-scramble";
 import { ChainGamePage } from "@/pages/chain-game";
 import { MyAvatarPage } from "@/pages/my-avatar";
 import { OnboardingPage } from "@/pages/onboarding";
@@ -214,8 +214,8 @@ function Router() {
             <Route path="/arcade" component={ArcadePage} />
             <Route path="/arcade/who-ya-got" component={WhoYaGotPage} />
             <Route path="/arcade/fast-break" component={FastBreakPage} />
-            <Route path="/arcade/shot-clock" component={ShotClockPage} />
             <Route path="/arcade/meter-master" component={MeterMasterPage} />
+            <Route path="/arcade/shot-clock-scramble" component={ShotClockScramblePage} />
             <Route path="/arcade/chain-game" component={ChainGamePage} />
             <Route path="/my-avatar" component={MyAvatarPage} />
             <Route path="/terms" component={TermsPage} />
