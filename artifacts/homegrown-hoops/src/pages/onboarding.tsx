@@ -198,24 +198,32 @@ export function OnboardingPage() {
       setJustCreated(true);
       // Submit profile
       setStep("submitting");
-      await createProfile.mutateAsync({
-        data: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          school: form.school || null,
-          teamId: form.teamId ? parseInt(form.teamId) : null,
-          position: form.position || null,
-          graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
-          avatarUrl: finalAvatarUrl || null,
-          number: form.jerseyNumber || null,
-          ...(form.accountType === "parent"
-            ? {
-                requestedRole: "parent" as const,
-                ...(pendingBallers.length > 0 ? { myBallers: pendingBallers } : {}),
-              }
-            : {}),
-        },
-      });
+      try {
+        await createProfile.mutateAsync({
+          data: {
+            firstName: form.firstName,
+            lastName: form.lastName,
+            school: form.school || null,
+            teamId: form.teamId ? parseInt(form.teamId) : null,
+            position: form.position || null,
+            graduationYear: form.graduationYear ? parseInt(form.graduationYear) : null,
+            avatarUrl: finalAvatarUrl || null,
+            number: form.jerseyNumber || null,
+            ...(form.accountType === "parent"
+              ? {
+                  requestedRole: "parent" as const,
+                  ...(pendingBallers.length > 0 ? { myBallers: pendingBallers } : {}),
+                }
+              : {}),
+          },
+        });
+      } catch (createErr) {
+        // 409 = profile already exists from a prior partial attempt.
+        // Treat as success: skip creation, continue to avatar config + reveal.
+        const e = createErr as { status?: number };
+        if (e?.status !== 409) throw createErr;
+        console.log("[HH] 409: profile already exists — continuing to reveal");
+      }
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       const avatarConfigToSave = overrideAvatarConfig ?? pendingAvatarConfig;
       if (avatarConfigToSave) {
@@ -238,13 +246,14 @@ export function OnboardingPage() {
         triggerReveal();
       }
     } catch (err) {
-      console.log("[HH] advanceFromPhoto error:", err);
-      setSubmitError("Something went wrong. Please try again.");
+      console.error("[HH] advanceFromPhoto error:", err);
+      const apiErr = err as { status?: number; message?: string };
+      const rawMsg = apiErr?.message ?? "Something went wrong. Please try again.";
+      // Strip "HTTP NNN StatusText: " prefix for a friendlier display
+      const displayMsg = rawMsg.replace(/^HTTP \d+[^:]*:\s*/i, "").trim() || "Something went wrong. Please try again.";
+      setSubmitError(displayMsg);
       // Return user to the step they were on when they submitted.
       // `step` is captured from the render closure — "avatar" or "photo".
-      // Previously this always went to "photo", which confused users who came
-      // from the avatar step (they'd see an unfamiliar page, click Back, and
-      // think the avatar page had "reloaded" with no error).
       setStep(form.accountType === "parent" ? "avatar" : step);
     } finally {
       isSubmittingRef.current = false;
