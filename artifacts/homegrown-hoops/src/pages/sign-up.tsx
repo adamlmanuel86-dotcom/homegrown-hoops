@@ -81,8 +81,8 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      await signUp.create({ emailAddress: email, password });
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      const created = await signUp.create({ emailAddress: email, password });
+      await created.prepareEmailAddressVerification({ strategy: "email_code" });
       saveState(email);
       setStep("verify");
     } catch (err: unknown) {
