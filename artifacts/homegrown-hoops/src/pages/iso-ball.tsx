@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Brain, ChevronLeft, RotateCcw, Zap, Trophy, Timer, BookOpen, Medal, Lock, Info } from "lucide-react";
 import { useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetIsoBallLeaderboard } from "@workspace/api-client-react";
-import { apiBase } from "@/lib/api";
+import { useGetIsoBallLeaderboard, customFetch } from "@workspace/api-client-react";
 
 type Difficulty = "rookie" | "varsity" | "elite";
 type AnswerKey = "A" | "B" | "C" | "D";
@@ -393,9 +392,8 @@ export function IsoBallPage() {
   // Fetch daily status for signed-in users on mount
   useEffect(() => {
     if (!isSignedIn) { setStatusLoaded(true); return; }
-    fetch(`${apiBase}/api/iso-ball/daily-status`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((data: DailyStatus) => {
+    customFetch<DailyStatus>(`/api/iso-ball/daily-status`)
+      .then((data) => {
         setDailyStatus(data.sessionsByDifficulty);
         if (data.cooldownByDifficulty) {
           (["rookie", "varsity", "elite"] as Difficulty[]).forEach((d) => {
@@ -464,14 +462,10 @@ export function IsoBallPage() {
     let cancelled = false;
     async function save() {
       try {
-        const res = await fetch(`${apiBase}/api/iso-ball/sessions`, {
+        const data = await customFetch<SessionResponse>(`/api/iso-ball/sessions`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ difficulty, correctQuestionIndices: correctIndices }),
         });
-        if (!res.ok) throw new Error("Failed");
-        const data = await res.json() as SessionResponse;
 
         // Always invalidate cache — safe to call even if component has unmounted
         qc.invalidateQueries({ queryKey: ["/api/iso-ball/leaderboard"] });

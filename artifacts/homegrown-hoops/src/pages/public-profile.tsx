@@ -681,8 +681,7 @@ export function PublicProfilePage() {
           archetype={displayArchetype}
         />
 
-        {/* Ball Knowledge — only visible after at least 1 Iso Ball session */}
-        {isoBallData && isoBallData.sessionCount > 0 && (
+        {isoBallData && (
           <PublicBallKnowledgeBlock
             totalPoints={isoBallData.totalPoints}
             sessionCount={isoBallData.sessionCount}

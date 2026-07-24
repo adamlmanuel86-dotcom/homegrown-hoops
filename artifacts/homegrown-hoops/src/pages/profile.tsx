@@ -768,7 +768,7 @@ export function ProfilePage() {
             Edit Photo
           </button>
         )}
-        {isoBallData && isoBallData.sessionCount > 0 && (
+        {isoBallData && (
           <BallKnowledgeBlock
             totalPoints={isoBallData.totalPoints}
             sessionCount={isoBallData.sessionCount}
