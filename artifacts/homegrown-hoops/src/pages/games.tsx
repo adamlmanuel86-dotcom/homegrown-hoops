@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@clerk/react";
 import { CalendarDays, ArrowRight, Plus, X, Save } from "lucide-react";
+import { opponentAbbr } from "@/lib/utils";
 
 const statusStyle: Record<string, string> = {
   final: "bg-secondary text-white",
@@ -336,10 +337,10 @@ export function GamesPage() {
                 {/* Teams + Scores — score lives inside each team row for perfect alignment */}
                 <div className="flex-1 min-w-0 space-y-2.5">
                   {[
-                    { team: homeTeam, won: homeWon, score: game.homeScore },
-                    { team: awayTeam, won: awayWon, score: game.awayScore },
-                  ].map(({ team, won, score }, idx) => (
-                    <div key={idx} className="flex items-center gap-3 min-w-0">
+                    { team: homeTeam, won: homeWon, score: game.homeScore, fallbackName: "Home", fallbackAbbr: "HM" },
+                    { team: awayTeam, won: awayWon, score: game.awayScore, fallbackName: game.opponentName ?? "Away", fallbackAbbr: game.opponentName ? opponentAbbr(game.opponentName) : "?" },
+                  ].map(({ team, won, score, fallbackName, fallbackAbbr }) => (
+                    <div key={fallbackName} className="flex items-center gap-3 min-w-0">
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center font-display text-xs text-white flex-shrink-0"
                         style={{
@@ -348,14 +349,14 @@ export function GamesPage() {
                             : "#888",
                         }}
                       >
-                        {team?.abbreviation ?? "?"}
+                        {team?.abbreviation ?? fallbackAbbr}
                       </div>
                       <span
                         className={`flex-1 text-sm font-semibold truncate ${
                           won ? "text-secondary" : "text-muted-foreground"
                         }`}
                       >
-                        {team?.name ?? (idx === 0 ? "Home" : "Away")}
+                        {team?.name ?? fallbackName}
                       </span>
                       <span
                         className={`flex-shrink-0 font-display text-xl leading-none ${

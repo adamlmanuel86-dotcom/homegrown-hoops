@@ -17,6 +17,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { ChevronLeft, CalendarDays, Pencil, Save, X, Video, Trash2, Upload, Loader2, BarChart3, AlertTriangle, Play, ExternalLink, Film, Youtube } from "lucide-react";
 
 import { apiBase } from "@/lib/api";
+import { opponentAbbr } from "@/lib/utils";
 
 function videoUrl(objectPath: string) {
   if (objectPath.startsWith("http")) return objectPath;
@@ -110,6 +111,7 @@ export function GameDetailPage() {
 
   const homeTeam = teams?.find((t) => t.id === game?.homeTeamId);
   const awayTeam = teams?.find((t) => t.id === game?.awayTeamId);
+  const opponentName = game?.opponentName ?? null;
 
   const isFinal = game?.status === "final";
   const homeWon = isFinal && game?.homeScore != null && game?.awayScore != null && game.homeScore > game.awayScore;
@@ -543,17 +545,30 @@ export function GameDetailPage() {
         </div>
 
         <div className="grid grid-cols-3 items-center py-10 px-6">
-          <Link href={awayTeam ? `/teams/${awayTeam.id}` : "#"} className="flex flex-col items-center gap-3 group">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: awayTeam?.primaryColor ?? "#555" }}>
-              {awayTeam?.abbreviation ?? "?"}
+          {awayTeam ? (
+            <Link href={`/teams/${awayTeam.id}`} className="flex flex-col items-center gap-3 group">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: awayTeam.primaryColor ?? "#555" }}>
+                {awayTeam.abbreviation}
+              </div>
+              <div className="text-center">
+                <p className={`font-display text-lg leading-tight group-hover:text-primary transition-colors ${awayWon ? "text-white" : "text-white/60"}`}>
+                  {awayTeam.name.toUpperCase()}
+                </p>
+                <p className="text-xs text-white/60 mt-0.5">{awayTeam.city}</p>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-display text-2xl text-white shadow-lg" style={{ backgroundColor: "#555" }}>
+                {opponentName ? opponentAbbr(opponentName) : "?"}
+              </div>
+              <div className="text-center">
+                <p className={`font-display text-lg leading-tight ${awayWon ? "text-white" : "text-white/60"}`}>
+                  {(opponentName ?? "Away").toUpperCase()}
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className={`font-display text-lg leading-tight group-hover:text-primary transition-colors ${awayWon ? "text-white" : "text-white/60"}`}>
-                {awayTeam?.name?.toUpperCase() ?? "AWAY"}
-              </p>
-              <p className="text-xs text-white/60 mt-0.5">{awayTeam?.city}</p>
-            </div>
-          </Link>
+          )}
 
           <div className="flex flex-col items-center gap-2">
             {isFinal ? (
@@ -615,7 +630,7 @@ export function GameDetailPage() {
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="label-upper block mb-2">{awayTeam?.name ?? "Away"} Score</label>
+              <label className="label-upper block mb-2">{awayTeam?.name ?? opponentName ?? "Away"} Score</label>
               <input type="number" min={0} value={awayScoreInput} onChange={(e) => { setAwayScoreInput(e.target.value); setScoreError(null); }} placeholder="0"
                 className="w-full border border-border rounded-lg px-4 py-3 text-2xl font-display text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" />
             </div>

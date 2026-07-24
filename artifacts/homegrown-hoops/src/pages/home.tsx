@@ -88,8 +88,8 @@ export function Home() {
   const { user, isSignedIn } = useUser();
   const { data: profile } = useGetMyProfile({ query: { enabled: !!isSignedIn, retry: false } });
 
-  const teamById = (id: number) =>
-    teams?.find((t) => t.id === id)?.name ?? `Team #${id}`;
+  const teamById = (id: number | null | undefined, fallback?: string | null) =>
+    (id != null ? teams?.find((t) => t.id === id)?.name : null) ?? fallback ?? (id != null ? `Team #${id}` : "Away");
 
   const needsAvatar = isSignedIn && profile && !profile.avatarConfig;
 
@@ -297,7 +297,7 @@ export function Home() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm font-semibold">
-                        <span>{teamById(game.awayTeamId)}</span>
+                        <span>{teamById(game.awayTeamId, game.opponentName)}</span>
                         <span className="font-display text-base">{game.awayScore ?? "—"}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
