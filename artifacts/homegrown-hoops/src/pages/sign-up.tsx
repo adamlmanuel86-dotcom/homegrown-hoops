@@ -81,16 +81,8 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const { error: createErr } = await signUp.create({ emailAddress: email, password });
-      if (createErr) {
-        setError(createErr.longMessage ?? createErr.message ?? "Could not create account.");
-        return;
-      }
-      const { error: sendErr } = await signUp.verifications.sendEmailCode();
-      if (sendErr) {
-        setError(sendErr.longMessage ?? sendErr.message ?? "Could not send verification code.");
-        return;
-      }
+      await signUp.create({ emailAddress: email, password });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       saveState(email);
       setStep("verify");
     } catch (err: unknown) {
@@ -111,11 +103,7 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const { error: verifyErr } = await signUp.verifications.verifyEmailCode({ code });
-      if (verifyErr) {
-        setError(verifyErr.longMessage ?? verifyErr.message ?? "Invalid code.");
-        return;
-      }
+      await signUp.attemptEmailAddressVerification({ code });
       if (signUp.status === "complete") {
         clearState();
         if (setActive && signUp.createdSessionId) {
@@ -137,12 +125,8 @@ export function CustomSignUpPage() {
     if (!signUp || loading) return;
     setError("");
     try {
-      const { error: sendErr } = await signUp.verifications.sendEmailCode();
-      if (sendErr) {
-        setError(sendErr.longMessage ?? sendErr.message ?? "Could not resend — please try again.");
-      } else {
-        saveState(email);
-      }
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      saveState(email);
     } catch {
       setError("Could not resend — please try again.");
     }
@@ -153,19 +137,22 @@ export function CustomSignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const { error: linkErr } = await signUp.verifications.sendEmailLink(
-        { redirectUrl: `${window.location.origin}${basePath}/onboarding` } as never,
-      );
-      if (linkErr) {
-        setError(linkErr.longMessage ?? linkErr.message ?? "Could not send magic link.");
-      } else {
-        saveState(email);
-        setStep("link-sent");
+      const { startEmailLinkFlow } = signUp.createEmailLinkFlow();
+      saveState(email);
+      setStep("link-sent");
+      setLoading(false);
+      // startEmailLinkFlow polls until the user clicks the link in their email
+      const result = await startEmailLinkFlow({
+        redirectUrl: `${window.location.origin}${basePath}/sign-in/sso-callback`,
+      });
+      if (result.status === "complete" && result.createdSessionId) {
+        clearState();
+        await setActive({ session: result.createdSessionId });
+        setLocation("/onboarding");
       }
     } catch (err: unknown) {
       const e2 = err as { errors?: { longMessage?: string }[]; message?: string };
       setError(e2.errors?.[0]?.longMessage ?? e2.message ?? "Could not send magic link.");
-    } finally {
       setLoading(false);
     }
   }
