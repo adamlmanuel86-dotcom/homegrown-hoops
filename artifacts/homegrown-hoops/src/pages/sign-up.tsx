@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSignUp } from "@clerk/react";
+import { useSignUp, useClerk } from "@clerk/react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const LS_KEY = "hh_su_state";
@@ -34,6 +34,7 @@ function loadState(): { email: string } | null {
 
 export function CustomSignUpPage() {
   const { signUp } = useSignUp();
+  const { setActive } = useClerk();
 
   const [step, setStep] = useState<"form" | "verify" | "link-sent">("form");
   const [email, setEmail] = useState("");
@@ -115,16 +116,10 @@ export function CustomSignUpPage() {
       }
       if (signUp.status === "complete") {
         clearState();
-        const { error: finalErr } = await signUp.finalize({
-          navigate: async ({ decorateUrl }) => {
-            window.location.href = decorateUrl(
-              `${window.location.origin}${basePath}/onboarding`
-            );
-          },
-        });
-        if (finalErr) {
-          setError(finalErr.longMessage ?? finalErr.message ?? "Could not finalize sign-up.");
+        if (setActive && signUp.createdSessionId) {
+          await setActive({ session: signUp.createdSessionId });
         }
+        window.location.href = `${window.location.origin}${basePath}/onboarding`;
       } else {
         setError("Verification incomplete — please try again.");
       }
