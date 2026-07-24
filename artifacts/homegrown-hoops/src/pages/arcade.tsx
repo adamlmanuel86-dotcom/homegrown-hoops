@@ -10,7 +10,7 @@ type GameTile = {
   description: string;
   href: string;
   color: string;
-  statKey: "fastBreak" | "whoYaGot" | "shotClock" | null;
+  statKey: "fastBreak" | "whoYaGot" | "shotClock" | "shotClockScramble" | "chainGame" | null;
 };
 
 const GAMES: GameTile[] = [
@@ -42,9 +42,27 @@ const GAMES: GameTile[] = [
     statKey: "shotClock",
   },
   {
+    id: "shot-clock-scramble",
+    title: "Shot Clock Scramble",
+    emoji: "🧠",
+    description: "Answer NBA trivia before the 24-second shot clock expires. Three tiers — Rookie, Varsity, Elite.",
+    href: "/arcade/shot-clock-scramble",
+    color: "border-red-500",
+    statKey: "shotClockScramble",
+  },
+  {
+    id: "chain-game",
+    title: "Chain Game",
+    emoji: "🔗",
+    description: "Link NBA players together. Each next player's first name must start with the last letter of the previous player's last name.",
+    href: "/arcade/chain-game",
+    color: "border-blue-500",
+    statKey: "chainGame",
+  },
+  {
     id: "iso-ball",
     title: "Iso Ball",
-    emoji: "🧠",
+    emoji: "🎯",
     description: "Basketball trivia quiz. Answer fast, climb the leaderboard, earn Iso Ball points.",
     href: "/iso-ball",
     color: "border-purple-500",
@@ -131,6 +149,8 @@ export function ArcadePage() {
   const { data: fbBoard } = useGetArcadeLeaderboard({ game: "fast-break" });
   const { data: wygBoard } = useGetArcadeLeaderboard({ game: "who-ya-got" });
   const { data: scBoard } = useGetArcadeLeaderboard({ game: "shot-clock" });
+  const { data: scsBoard } = useGetArcadeLeaderboard({ game: "shot-clock-scramble" });
+  const { data: cgBoard } = useGetArcadeLeaderboard({ game: "chain-game" });
   const { data: ibBoard } = useGetIsoBallLeaderboard();
 
   function getBest(key: GameTile["statKey"]): ArcadeGameStats | null {
@@ -185,9 +205,11 @@ export function ArcadePage() {
       <div className="mt-10">
         <h2 className="font-display text-2xl uppercase tracking-widest text-white mb-4 text-center">Leaderboards</h2>
         <div className="space-y-4">
-          <LeaderboardTable title="Fast Break" emoji="🏀" color="bg-orange-700" data={fbBoard} />
+          <LeaderboardTable title="Fast Break" emoji="🏃" color="bg-orange-700" data={fbBoard} />
           <LeaderboardTable title="Who Ya Got" emoji="🏆" color="bg-purple-800" data={wygBoard} />
-          <LeaderboardTable title="Shot Clock" emoji="⏱" color="bg-red-800" data={scBoard} />
+          <LeaderboardTable title="Shot Clock" emoji="⏱" color="bg-green-800" data={scBoard} />
+          <LeaderboardTable title="Shot Clock Scramble" emoji="🧠" color="bg-red-800" data={scsBoard} />
+          <LeaderboardTable title="Chain Game" emoji="🔗" color="bg-blue-800" data={cgBoard} />
           <IsoBallLeaderboardTable data={ibBoard} />
         </div>
       </div>

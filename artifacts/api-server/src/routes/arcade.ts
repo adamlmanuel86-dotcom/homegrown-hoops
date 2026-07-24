@@ -6,7 +6,7 @@ import { serializeRow } from "../lib/serialize";
 
 const router = Router();
 
-const VALID_GAMES = ["fast-break", "who-ya-got", "shot-clock"] as const;
+const VALID_GAMES = ["fast-break", "who-ya-got", "shot-clock", "shot-clock-scramble", "chain-game"] as const;
 type ArcadeGame = (typeof VALID_GAMES)[number];
 
 router.post("/arcade/sessions", async (req, res) => {
@@ -78,6 +78,8 @@ router.get("/arcade/my-stats", async (req, res) => {
     "fast-break": null,
     "who-ya-got": null,
     "shot-clock": null,
+    "shot-clock-scramble": null,
+    "chain-game": null,
   };
 
   for (const row of rows) {
@@ -97,6 +99,8 @@ router.get("/arcade/my-stats", async (req, res) => {
     fastBreak: statsMap["fast-break"],
     whoYaGot: statsMap["who-ya-got"],
     shotClock: statsMap["shot-clock"],
+    shotClockScramble: statsMap["shot-clock-scramble"],
+    chainGame: statsMap["chain-game"],
   });
 });
 

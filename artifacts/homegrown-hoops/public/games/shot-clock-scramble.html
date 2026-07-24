@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Shot Clock Scramble</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#070c14;color:#fff;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;overflow:hidden;}
+#wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;padding:12px 16px 16px;overflow-y:auto;}
+
+/* HUD */
+#hud{width:100%;max-width:480px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.hud-pill{background:rgba(249,115,22,0.12);border:1.5px solid rgba(249,115,22,0.3);border-radius:20px;padding:5px 12px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:#f97316;}
+.tier-badge{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:900;letter-spacing:2px;padding:4px 10px;border-radius:20px;text-transform:uppercase;}
+.tier-ROOKIE{background:rgba(34,197,94,0.2);color:#22c55e;border:1.5px solid rgba(34,197,94,0.4);}
+.tier-VARSITY{background:rgba(59,130,246,0.2);color:#3b82f6;border:1.5px solid rgba(59,130,246,0.4);}
+.tier-ELITE{background:rgba(234,179,8,0.2);color:#eab308;border:1.5px solid rgba(234,179,8,0.4);}
+
+/* Timer ring */
+#ring-wrap{position:relative;width:100px;height:100px;flex-shrink:0;margin:4px 0;}
+#ring-wrap svg{position:absolute;inset:0;transform:rotate(-90deg);}
+#ring-bg{stroke:#1e293b;stroke-width:8;fill:none;}
+#ring-arc{stroke:#f97316;stroke-width:8;fill:none;stroke-linecap:round;transition:stroke-dashoffset 0.1s linear;}
+#ring-urgent #ring-arc{stroke:#ef4444;}
+#timer-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:#f97316;}
+#ring-wrap.urgent #timer-text{color:#ef4444;}
+
+/* Question area */
+#question-wrap{width:100%;max-width:480px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;margin:8px 0;min-height:80px;display:flex;align-items:center;justify-content:center;text-align:center;}
+#question-text{font-size:15px;line-height:1.5;color:#e2e8f0;font-weight:600;}
+
+/* Answers */
+#answers{width:100%;max-width:480px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.ans-btn{background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px 10px;display:flex;align-items:flex-start;gap:8px;text-align:left;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.ans-btn:active{transform:scale(0.97);}
+.ans-btn:hover{border-color:rgba(249,115,22,0.5);background:rgba(249,115,22,0.08);}
+.ans-letter{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#f97316;flex-shrink:0;line-height:1.2;}
+.ans-text{font-size:13px;line-height:1.4;color:#cbd5e1;font-weight:600;}
+.ans-btn.correct{border-color:#22c55e;background:rgba(34,197,94,0.15);}
+.ans-btn.wrong{border-color:#ef4444;background:rgba(239,68,68,0.15);}
+.ans-btn.disabled{pointer-events:none;}
+
+/* Flash overlay */
+#flash{position:fixed;inset:0;opacity:0;pointer-events:none;transition:opacity 0.1s;}
+#flash.green{background:rgba(34,197,94,0.18);opacity:1;}
+#flash.red{background:rgba(239,68,68,0.18);opacity:1;}
+
+/* Start screen */
+#start-screen{position:fixed;inset:0;background:#070c14;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:20;}
+#start-screen h1{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#f97316;letter-spacing:2px;text-align:center;line-height:1.1;margin-bottom:8px;}
+#start-screen .sub{color:#64748b;font-size:14px;text-align:center;margin-bottom:32px;line-height:1.6;}
+.tier-select{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;margin-bottom:28px;}
+.tier-btn{padding:16px 20px;border-radius:14px;border:2px solid;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent;}
+.tier-btn.rookie{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.5);color:#22c55e;}
+.tier-btn.varsity{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.5);color:#3b82f6;}
+.tier-btn.elite{background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.5);color:#eab308;}
+.tier-btn span{font-size:11px;font-family:'Inter',sans-serif;font-weight:600;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;}
+
+/* Game over */
+#overlay{position:fixed;inset:0;background:rgba(7,12,20,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30;padding:24px;text-align:center;}
+#overlay h2{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;color:#f97316;letter-spacing:2px;margin-bottom:4px;}
+.ov-score{font-family:'Barlow Condensed',sans-serif;font-size:80px;font-weight:900;color:#fff;line-height:1;}
+.ov-label{font-size:13px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;}
+.ov-stat{font-size:14px;color:#94a3b8;margin:4px 0;}
+.ov-stat b{color:#f97316;}
+#playAgainBtn{margin-top:24px;background:#f97316;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:2px;padding:16px 40px;border-radius:14px;cursor:pointer;touch-action:manipulation;}
+#playAgainBtn:active{transform:scale(0.97);}
+</style>
+</head>
+<body>
+
+<!-- Start screen -->
+<div id="start-screen">
+  <h1>SHOT CLOCK<br>SCRAMBLE</h1>
+  <p class="sub">Answer before the 24-second shot clock expires.<br>One wrong answer ends your run.</p>
+  <div class="tier-select">
+    <button class="tier-btn rookie" onclick="startGame('ROOKIE')">🟢 ROOKIE <span>Basic NBA knowledge</span></button>
+    <button class="tier-btn varsity" onclick="startGame('VARSITY')">🔵 VARSITY <span>Stats & records</span></button>
+    <button class="tier-btn elite" onclick="startGame('ELITE')">🟡 ELITE <span>Deep cut trivia</span></button>
+  </div>
+</div>
+
+<!-- Game UI -->
+<div id="wrap" style="display:none;">
+  <div id="hud">
+    <div class="hud-pill">SCORE <span id="scoreVal">0</span></div>
+    <div id="tier-label" class="tier-badge tier-ROOKIE">ROOKIE</div>
+    <div class="hud-pill">BEST <span id="bestVal">0</span></div>
+  </div>
+
+  <div id="ring-wrap">
+    <svg viewBox="0 0 100 100" width="100" height="100">
+      <circle class="ring-bg" id="ring-bg" cx="50" cy="50" r="42"/>
+      <circle id="ring-arc" cx="50" cy="50" r="42"/>
+    </svg>
+    <div id="timer-text">24</div>
+  </div>
+
+  <div id="question-wrap">
+    <div id="question-text">Loading…</div>
+  </div>
+
+  <div id="answers">
+    <button class="ans-btn" id="btn-A" onclick="answer(0)">
+      <span class="ans-letter">A</span><span class="ans-text" id="opt-A"></span>
+    </button>
+    <button class="ans-btn" id="btn-B" onclick="answer(1)">
+      <span class="ans-letter">B</span><span class="ans-text" id="opt-B"></span>
+    </button>
+    <button class="ans-btn" id="btn-C" onclick="answer(2)">
+      <span class="ans-letter">C</span><span class="ans-text" id="opt-C"></span>
+    </button>
+    <button class="ans-btn" id="btn-D" onclick="answer(3)">
+      <span class="ans-letter">D</span><span class="ans-text" id="opt-D"></span>
+    </button>
+  </div>
+</div>
+
+<div id="flash"></div>
+
+<!-- Game over -->
+<div id="overlay">
+  <h2>GAME OVER</h2>
+  <div class="ov-score" id="ov-score">0</div>
+  <div class="ov-label">CORRECT ANSWERS</div>
+  <div class="ov-stat">Best score: <b id="ov-best">0</b></div>
+  <div class="ov-stat">Tier reached: <b id="ov-tier">ROOKIE</b></div>
+  <button id="playAgainBtn" onclick="showStart()">PLAY AGAIN</button>
+</div>
+
+<script>
+const QUESTIONS = {
+  ROOKIE: [
+    {q:"How many points is a shot worth from behind the three point line?",opts:["1","2","3","4"],ans:2},
+    {q:"How many players are on the court per team at one time?",opts:["4","5","6","7"],ans:1},
+    {q:"How many championships did Michael Jordan win?",opts:["4","5","6","7"],ans:2},
+    {q:"Who is known as The Greek Freak?",opts:["Luka Doncic","Nikola Jokic","Giannis Antetokounmpo","Joel Embiid"],ans:2},
+    {q:"How many seconds is the shot clock in NBA basketball?",opts:["20","24","30","35"],ans:1},
+    {q:"Who holds the NBA record for most points scored in a single game?",opts:["Kobe Bryant","Michael Jordan","Wilt Chamberlain","LeBron James"],ans:2},
+    {q:"What number did Kobe Bryant wear for most of his career?",opts:["8","23","24","33"],ans:2},
+    {q:"How many fouls does a player need to foul out in the NBA?",opts:["4","5","6","7"],ans:2},
+    {q:"Who holds the record for most career points in NBA history as of 2024?",opts:["Kareem Abdul-Jabbar","Karl Malone","Kobe Bryant","LeBron James"],ans:3},
+    {q:"What country is Steve Nash from?",opts:["USA","Australia","Canada","UK"],ans:2},
+    {q:"How many timeouts does each team get per game in the NBA?",opts:["5","6","7","8"],ans:2},
+    {q:"What team did Kevin Durant win his first championship with?",opts:["Oklahoma City Thunder","Brooklyn Nets","Golden State Warriors","Phoenix Suns"],ans:2},
+    {q:"Who holds the record for most three pointers made in NBA history?",opts:["Ray Allen","Reggie Miller","Stephen Curry","Klay Thompson"],ans:2},
+    {q:"How many quarters are in an NBA game?",opts:["2","3","4","5"],ans:2},
+    {q:"How long is each quarter in the NBA?",opts:["10 minutes","12 minutes","15 minutes","20 minutes"],ans:1},
+    {q:"What number did Magic Johnson wear?",opts:["23","32","33","34"],ans:1},
+    {q:"Who is known as The Admiral?",opts:["Tim Duncan","David Robinson","Shaquille O'Neal","Patrick Ewing"],ans:1},
+    {q:"How many seconds does a player have to inbound the ball?",opts:["3","4","5","8"],ans:2},
+    {q:"What number did Larry Bird wear?",opts:["7","22","33","44"],ans:2},
+    {q:"How long is NBA overtime?",opts:["3 minutes","4 minutes","5 minutes","6 minutes"],ans:2},
+    {q:"Who is known as The Big Fundamental?",opts:["Shaquille O'Neal","Tim Duncan","David Robinson","Karl Malone"],ans:1},
+    {q:"What country is Luka Doncic from?",opts:["Croatia","Serbia","Slovenia","Greece"],ans:2},
+    {q:"Who is known as The Point God?",opts:["Magic Johnson","John Stockton","Chris Paul","Steve Nash"],ans:2},
+    {q:"What number did Allen Iverson wear?",opts:["1","3","11","21"],ans:1},
+    {q:"What city do the Raptors play in?",opts:["Vancouver","Montreal","Calgary","Toronto"],ans:3},
+    {q:"Who is known as Black Mamba?",opts:["Michael Jordan","LeBron James","Kobe Bryant","Allen Iverson"],ans:2},
+    {q:"What team did Dirk Nowitzki play his entire career with?",opts:["San Antonio Spurs","Houston Rockets","Dallas Mavericks","Phoenix Suns"],ans:2},
+    {q:"How many championship rings does Scottie Pippen have?",opts:["4","5","6","7"],ans:2},
+    {q:"What country is Shai Gilgeous-Alexander from?",opts:["USA","Jamaica","Canada","Bahamas"],ans:2},
+    {q:"Who won the 2021 NBA championship?",opts:["Brooklyn Nets","Phoenix Suns","Milwaukee Bucks","Los Angeles Lakers"],ans:2},
+  ],
+  VARSITY: [
+    {q:"What was Wilt Chamberlain's scoring average in the season he scored 100 points in a game?",opts:["44.8","48.5","50.4","53.1"],ans:2},
+    {q:"How many consecutive seasons did Michael Jordan lead the league in scoring?",opts:["7","8","9","10"],ans:3},
+    {q:"How many assists did Scott Skiles record in his record breaking single game?",opts:["25","27","29","30"],ans:3},
+    {q:"What was Kobe Bryant's scoring average in the 2005-06 season?",opts:["33.2","34.5","35.4","36.1"],ans:2},
+    {q:"How many three pointers did Stephen Curry make in the 2015-16 season?",opts:["324","365","386","402"],ans:3},
+    {q:"Who holds the record for most career blocked shots?",opts:["Dikembe Mutombo","David Robinson","Hakeem Olajuwon","Mark Eaton"],ans:2},
+    {q:"How many MVP awards did Kareem Abdul-Jabbar win?",opts:["4","5","6","7"],ans:2},
+    {q:"Who scored 81 points in a single game — the second highest ever?",opts:["Michael Jordan","Kobe Bryant","LeBron James","Allen Iverson"],ans:1},
+    {q:"What year did Michael Jordan retire for the first time?",opts:["1992","1993","1994","1995"],ans:1},
+    {q:"How many times did the Chicago Bulls win 60 or more games during the Jordan era?",opts:["2","3","4","5"],ans:2},
+    {q:"Who was the first player to win Finals MVP without winning the championship?",opts:["Elgin Baylor","Jerry West","Oscar Robertson","Bob Pettit"],ans:1},
+    {q:"How many rebounds did Dennis Rodman average during his best rebounding season?",opts:["16.4","17.3","18.7","19.2"],ans:2},
+    {q:"What was Allen Iverson's scoring average in 2001 when he won MVP?",opts:["28.4","29.6","30.4","31.1"],ans:3},
+    {q:"Who was the first player to win MVP unanimously?",opts:["Michael Jordan","LeBron James","Stephen Curry","Shaquille O'Neal"],ans:2},
+    {q:"How many points did Tracy McGrady score in 35 seconds to complete a comeback?",opts:["10","11","13","15"],ans:2},
+    {q:"What was Kevin Durant's scoring average in his 2013-14 MVP season?",opts:["30.1","31.0","32.0","33.2"],ans:2},
+    {q:"How many games did the 1995-96 Chicago Bulls win?",opts:["69","70","71","72"],ans:3},
+    {q:"Who holds the record for most points in a single quarter?",opts:["Kobe Bryant","Carmelo Anthony","Kevin Durant","Klay Thompson"],ans:3},
+    {q:"How many assists did John Stockton record per game in his record season?",opts:["13.3","14.5","15.2","16.1"],ans:1},
+    {q:"What was Dennis Rodman's rebounding average in the 1991-92 season?",opts:["16.2","17.5","18.7","19.1"],ans:2},
+    {q:"How many rebounds did Wilt Chamberlain average in the 1960-61 season?",opts:["24.3","25.7","27.2","28.4"],ans:2},
+    {q:"What was Hakeem Olajuwon's block average in his best defensive season?",opts:["3.7","4.0","4.6","5.0"],ans:2},
+    {q:"How many seasons did John Stockton lead the league in assists?",opts:["7","8","9","10"],ans:2},
+    {q:"Who holds the record for most career assists?",opts:["Magic Johnson","Oscar Robertson","John Stockton","Jason Kidd"],ans:2},
+    {q:"What was Larry Bird's scoring average in the 1987-88 season?",opts:["27.4","28.6","29.9","31.2"],ans:2},
+    {q:"How many championships did the Showtime Lakers win?",opts:["3","4","5","6"],ans:2},
+    {q:"What was Oscar Robertson's points average when he averaged a triple double?",opts:["28.3","29.4","30.8","32.1"],ans:2},
+    {q:"How many points did Michael Jordan score in his famous Flu Game in 1997?",opts:["32","35","38","41"],ans:2},
+    {q:"Who was the first player to win three consecutive Finals MVPs?",opts:["Michael Jordan","LeBron James","Shaquille O'Neal","Magic Johnson"],ans:2},
+    {q:"What was Stephen Curry's three point percentage in the 2015-16 season?",opts:["42.1","43.8","44.3","45.4"],ans:3},
+  ],
+  ELITE: [
+    {q:"What was Wilt Chamberlain's free throw percentage in the season he scored 100 points?",opts:["61.3","68.4","72.1","75.9"],ans:0},
+    {q:"How many rebounds did Wilt Chamberlain grab in a single game — an NBA record?",opts:["43","49","55","62"],ans:2},
+    {q:"What was Jerry West's scoring average in the 1965 playoffs — still a record?",opts:["38.4","39.7","40.6","42.1"],ans:2},
+    {q:"How many consecutive free throws did Michael Williams make — an NBA record?",opts:["84","91","97","103"],ans:2},
+    {q:"What was Pete Maravich's scoring average in college?",opts:["40.3","42.1","44.2","46.5"],ans:2},
+    {q:"How many games did the 1971-72 Los Angeles Lakers win — an NBA record at the time?",opts:["65","67","69","71"],ans:2},
+    {q:"What was Rick Barry's free throw percentage using his underhand technique in his best season?",opts:["89.4","90.7","92.4","94.1"],ans:2},
+    {q:"How many points did George Gervin score to win the scoring title on the final day of the 1977-78 season?",opts:["58","60","63","67"],ans:2},
+    {q:"How many rebounds did Bill Russell average in the 1963-64 season?",opts:["22.3","23.6","24.7","26.1"],ans:2},
+    {q:"What was Kareem Abdul-Jabbar's scoring average in his MVP year of 1971-72?",opts:["31.7","33.4","34.8","36.2"],ans:2},
+    {q:"How many consecutive games did Stephen Curry make at least one three pointer — an NBA record?",opts:["196","222","244","268"],ans:3},
+    {q:"How many points did Kobe Bryant score in his final NBA game?",opts:["50","55","60","65"],ans:2},
+    {q:"What was Michael Jordan's career playoff scoring average?",opts:["31.2","32.4","33.4","34.7"],ans:2},
+    {q:"How many seasons did Wilt Chamberlain lead the league in rebounding?",opts:["8","9","10","11"],ans:3},
+    {q:"What was Bob Cousy's assists average in the 1959-60 season?",opts:["8.1","8.8","9.5","10.2"],ans:2},
+    {q:"How many All Star games did John Havlicek play in?",opts:["10","11","12","13"],ans:3},
+    {q:"What was Dominique Wilkins scoring average in his best season?",opts:["28.1","29.4","30.3","31.7"],ans:2},
+    {q:"How many points did Michael Jordan score in his first ever playoff game?",opts:["42","45","49","52"],ans:2},
+    {q:"What was Patrick Ewing's scoring average in his best season?",opts:["26.4","27.5","28.6","29.8"],ans:2},
+    {q:"How many games did the 1985-86 Boston Celtics win?",opts:["63","65","67","69"],ans:2},
+  ]
+};
+
+const CIRCUMFERENCE = 2 * Math.PI * 42;
+const LETTERS = ['A','B','C','D'];
+
+let score = 0, bestScore = 0, currentTier = 'ROOKIE', timerVal = 24, timerInterval = null, currentQ = null, answering = false, gameActive = false;
+let shuffledQ = {ROOKIE:[], VARSITY:[], ELITE:[]}, qIdx = {ROOKIE:0, VARSITY:0, ELITE:0};
+
+const els = {
+  wrap: document.getElementById('wrap'),
+  startScreen: document.getElementById('start-screen'),
+  overlay: document.getElementById('overlay'),
+  scoreVal: document.getElementById('scoreVal'),
+  bestVal: document.getElementById('bestVal'),
+  tierLabel: document.getElementById('tier-label'),
+  questionText: document.getElementById('question-text'),
+  ringArc: document.getElementById('ring-arc'),
+  ringWrap: document.getElementById('ring-wrap'),
+  timerText: document.getElementById('timer-text'),
+  flash: document.getElementById('flash'),
+  ovScore: document.getElementById('ov-score'),
+  ovBest: document.getElementById('ov-best'),
+  ovTier: document.getElementById('ov-tier'),
+  buttons: ['btn-A','btn-B','btn-C','btn-D'].map(id => document.getElementById(id)),
+  opts: ['opt-A','opt-B','opt-C','opt-D'].map(id => document.getElementById(id)),
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showStart() {
+  els.overlay.style.display = 'none';
+  els.wrap.style.display = 'none';
+  els.startScreen.style.display = 'flex';
+}
+
+function startGame(tier) {
+  currentTier = tier;
+  score = 0;
+  answering = false;
+  gameActive = true;
+  shuffledQ = {
+    ROOKIE: shuffle(QUESTIONS.ROOKIE),
+    VARSITY: shuffle(QUESTIONS.VARSITY),
+    ELITE: shuffle(QUESTIONS.ELITE),
+  };
+  qIdx = {ROOKIE:0, VARSITY:0, ELITE:0};
+  els.startScreen.style.display = 'none';
+  els.overlay.style.display = 'none';
+  els.wrap.style.display = 'flex';
+  updateHUD();
+  nextQuestion();
+}
+
+function updateHUD() {
+  els.scoreVal.textContent = score;
+  els.bestVal.textContent = bestScore;
+  els.tierLabel.textContent = currentTier;
+  els.tierLabel.className = 'tier-badge tier-' + currentTier;
+}
+
+function setRing(sec) {
+  const frac = sec / 24;
+  const offset = CIRCUMFERENCE * (1 - frac);
+  els.ringArc.style.strokeDasharray = CIRCUMFERENCE;
+  els.ringArc.style.strokeDashoffset = offset;
+  els.timerText.textContent = Math.ceil(sec);
+  const urgent = sec <= 7;
+  els.ringWrap.classList.toggle('urgent', urgent);
+  els.ringArc.style.stroke = urgent ? '#ef4444' : '#f97316';
+}
+
+function nextQuestion() {
+  clearInterval(timerInterval);
+  answering = false;
+
+  // Pick question from current tier (cycle if exhausted)
+  const pool = shuffledQ[currentTier];
+  const idx = qIdx[currentTier] % pool.length;
+  currentQ = pool[idx];
+  qIdx[currentTier]++;
+
+  els.questionText.textContent = currentQ.q;
+  els.buttons.forEach((btn, i) => {
+    btn.classList.remove('correct','wrong','disabled');
+    els.opts[i].textContent = currentQ.opts[i];
+  });
+
+  timerVal = 24;
+  setRing(timerVal);
+
+  const start = Date.now();
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - start) / 1000;
+    timerVal = Math.max(0, 24 - elapsed);
+    setRing(timerVal);
+    if (timerVal <= 0) {
+      clearInterval(timerInterval);
+      if (!answering) timeout();
+    }
+  }, 50);
+}
+
+function answer(idx) {
+  if (answering || !gameActive) return;
+  answering = true;
+  clearInterval(timerInterval);
+
+  const correct = currentQ.ans;
+  const isRight = idx === correct;
+
+  els.buttons[correct].classList.add('correct');
+  if (!isRight) els.buttons[idx].classList.add('wrong');
+  els.buttons.forEach(b => b.classList.add('disabled'));
+
+  flash(isRight ? 'green' : 'red');
+
+  if (isRight) {
+    score++;
+    updateHUD();
+    // Advance tier after 10 correct (if started at ROOKIE or VARSITY)
+    if (currentTier === 'ROOKIE' && score >= 10) currentTier = 'VARSITY';
+    else if (currentTier === 'VARSITY' && score >= 20) currentTier = 'ELITE';
+    updateHUD();
+    setTimeout(nextQuestion, 1000);
+  } else {
+    setTimeout(endGame, 1200);
+  }
+}
+
+function timeout() {
+  if (!gameActive) return;
+  answering = true;
+  const correct = currentQ.ans;
+  els.buttons[correct].classList.add('correct');
+  els.buttons.forEach(b => b.classList.add('disabled'));
+  flash('red');
+  setTimeout(endGame, 1200);
+}
+
+function flash(color) {
+  els.flash.className = color;
+  setTimeout(() => { els.flash.className = ''; }, 400);
+}
+
+function endGame() {
+  gameActive = false;
+  clearInterval(timerInterval);
+  if (score > bestScore) bestScore = score;
+  els.ovScore.textContent = score;
+  els.ovBest.textContent = bestScore;
+  els.ovTier.textContent = currentTier;
+  els.overlay.style.display = 'flex';
+  try {
+    window.parent.postMessage({ type: 'GAME_OVER', score, bestStreak: score, roundsPlayed: score }, '*');
+  } catch(e) {}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Chain Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#070c14;color:#fff;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;overflow:hidden;}
+#wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;padding:12px 16px 20px;overflow-y:auto;}
+
+/* HUD */
+#hud{width:100%;max-width:480px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.hud-pill{background:rgba(249,115,22,0.12);border:1.5px solid rgba(249,115,22,0.3);border-radius:20px;padding:5px 12px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:#f97316;}
+
+/* Timer ring */
+#ring-wrap{position:relative;width:96px;height:96px;flex-shrink:0;margin:4px 0;}
+#ring-wrap svg{position:absolute;inset:0;transform:rotate(-90deg);}
+#ring-arc{stroke:#f97316;stroke-width:8;fill:none;stroke-linecap:round;}
+#ring-bg-circle{stroke:#1e293b;stroke-width:8;fill:none;}
+#timer-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:#f97316;}
+#ring-wrap.urgent #timer-text{color:#ef4444;}
+#ring-wrap.urgent #ring-arc{stroke:#ef4444;}
+
+/* Chain display */
+#chain-area{width:100%;max-width:480px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;margin:8px 0;min-height:80px;}
+#chain-header{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;font-weight:700;margin-bottom:8px;}
+#chain-list{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;}
+.chain-item{display:flex;align-items:center;gap-6px;font-size:13px;}
+.chain-num{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:#f97316;width:24px;flex-shrink:0;text-align:right;}
+.chain-name{font-weight:700;color:#e2e8f0;margin-left:6px;}
+.chain-arrow{color:#f97316;margin-left:4px;font-size:11px;opacity:0.7;}
+
+/* Prompt */
+#prompt-wrap{width:100%;max-width:480px;text-align:center;padding:8px 0 4px;}
+#prompt-letter{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:900;color:#f97316;line-height:1;}
+#prompt-sub{font-size:12px;color:#64748b;margin-top:2px;font-weight:600;}
+
+/* Input area */
+#input-wrap{width:100%;max-width:480px;margin-top:8px;}
+#player-input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.15);border-radius:14px;font-size:15px;color:#fff;font-weight:600;outline:none;font-family:'Inter',sans-serif;-webkit-user-select:text;user-select:text;}
+#player-input:focus{border-color:rgba(249,115,22,0.6);background:rgba(249,115,22,0.06);}
+#player-input.error{border-color:rgba(239,68,68,0.6);background:rgba(239,68,68,0.06);}
+#player-input.success{border-color:rgba(34,197,94,0.6);background:rgba(34,197,94,0.06);}
+#error-msg{font-size:12px;color:#ef4444;margin-top:6px;min-height:16px;font-weight:600;padding:0 4px;}
+#submit-btn{width:100%;margin-top:10px;padding:14px;background:#f97316;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:2px;border-radius:14px;cursor:pointer;touch-action:manipulation;}
+#submit-btn:active{transform:scale(0.98);}
+
+/* Flash */
+#flash{position:fixed;inset:0;opacity:0;pointer-events:none;transition:opacity 0.08s;}
+#flash.green{background:rgba(34,197,94,0.15);opacity:1;}
+#flash.red{background:rgba(239,68,68,0.15);opacity:1;}
+
+/* Multiplayer toggle */
+#mode-bar{width:100%;max-width:480px;display:flex;gap:8px;margin-bottom:4px;}
+.mode-tab{flex:1;padding:8px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;background:transparent;}
+.mode-tab.active{background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.4);color:#f97316;}
+
+/* Start screen */
+#start-screen{position:fixed;inset:0;background:#070c14;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:20;}
+#start-screen h1{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;color:#f97316;letter-spacing:2px;text-align:center;margin-bottom:8px;}
+#start-screen .sub{color:#64748b;font-size:14px;text-align:center;margin-bottom:8px;line-height:1.6;max-width:340px;}
+#start-screen .example{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;font-size:13px;color:#94a3b8;line-height:1.7;text-align:left;margin:12px 0 24px;max-width:340px;width:100%;}
+#start-screen .example b{color:#f97316;}
+.start-mode-btn{display:flex;gap:12px;margin-bottom:20px;width:100%;max-width:340px;}
+.mode-btn{flex:1;padding:14px 10px;border-radius:12px;border:2px solid rgba(249,115,22,0.3);background:rgba(249,115,22,0.08);color:#f97316;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;letter-spacing:1px;cursor:pointer;text-align:center;}
+.mode-btn span{display:block;font-size:10px;font-family:'Inter',sans-serif;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+.mode-btn:active{transform:scale(0.97);}
+
+/* Game over */
+#overlay{position:fixed;inset:0;background:rgba(7,12,20,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:30;padding:24px;text-align:center;}
+#overlay h2{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;color:#ef4444;letter-spacing:2px;margin-bottom:4px;}
+.ov-score{font-family:'Barlow Condensed',sans-serif;font-size:80px;font-weight:900;color:#fff;line-height:1;}
+.ov-label{font-size:13px;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}
+.ov-stat{font-size:14px;color:#94a3b8;margin:4px 0;}
+.ov-stat b{color:#f97316;}
+#ov-last-player{font-size:13px;color:#64748b;margin:8px 0;font-style:italic;}
+#mp-next{margin-top:16px;width:100%;max-width:300px;}
+#mp-next-btn{width:100%;padding:14px;background:#3b82f6;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;letter-spacing:1px;border-radius:14px;cursor:pointer;margin-bottom:10px;}
+#playAgainBtn{width:100%;max-width:300px;margin-top:10px;background:#f97316;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;letter-spacing:2px;padding:14px 40px;border-radius:14px;cursor:pointer;touch-action:manipulation;}
+#playAgainBtn:active{transform:scale(0.97);}
+
+/* Autocomplete */
+#autocomplete{position:absolute;width:100%;left:0;right:0;background:#0f1e30;border:1.5px solid rgba(249,115,22,0.3);border-radius:10px;margin-top:4px;overflow:hidden;z-index:10;max-height:160px;overflow-y:auto;}
+.ac-item{padding:10px 14px;font-size:14px;font-weight:600;color:#e2e8f0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);}
+.ac-item:hover,.ac-item:active{background:rgba(249,115,22,0.12);color:#f97316;}
+#input-container{position:relative;width:100%;}
+</style>
+</head>
+<body>
+
+<!-- Start screen -->
+<div id="start-screen">
+  <h1>CHAIN GAME</h1>
+  <p class="sub">Link NBA players together. Each new player's first name must start with the last letter of the previous player's last name.</p>
+  <div class="example">
+    <b>Michael Jordan</b> → last name ends in <b>N</b><br>
+    → <b>N</b>ikola Jokic → ends in <b>C</b><br>
+    → <b>C</b>armelo Anthony → ends in <b>Y</b><br>
+    → <b>Y</b>our next player…
+  </div>
+  <div class="start-mode-btn">
+    <button class="mode-btn" onclick="startGame('solo')">🏀 SOLO<span>Vs yourself</span></button>
+    <button class="mode-btn" onclick="startGame('multi')">🤝 MULTI<span>Pass & play</span></button>
+  </div>
+</div>
+
+<!-- Game UI -->
+<div id="wrap" style="display:none;">
+  <div id="hud">
+    <div class="hud-pill">CHAIN <span id="scoreVal">0</span></div>
+    <div class="hud-pill" id="mode-label">SOLO</div>
+    <div class="hud-pill">BEST <span id="bestVal">0</span></div>
+  </div>
+
+  <div id="ring-wrap">
+    <svg viewBox="0 0 100 100" width="96" height="96">
+      <circle id="ring-bg-circle" cx="50" cy="50" r="42"/>
+      <circle id="ring-arc" cx="50" cy="50" r="42"/>
+    </svg>
+    <div id="timer-text">30</div>
+  </div>
+
+  <div id="chain-area">
+    <div id="chain-header">CHAIN</div>
+    <div id="chain-list"></div>
+  </div>
+
+  <div id="prompt-wrap">
+    <div id="prompt-letter">N</div>
+    <div id="prompt-sub">Enter a player whose first name starts with <span id="prompt-letter-sub">N</span></div>
+  </div>
+
+  <div id="input-wrap">
+    <div id="input-container">
+      <input
+        type="text"
+        id="player-input"
+        placeholder="e.g. Nikola Jokic"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+      <div id="autocomplete" style="display:none;"></div>
+    </div>
+    <div id="error-msg"></div>
+    <button id="submit-btn" onclick="submitPlayer()">SUBMIT</button>
+  </div>
+</div>
+
+<div id="flash"></div>
+
+<!-- Game over -->
+<div id="overlay">
+  <h2 id="ov-title">CHAIN BROKEN!</h2>
+  <div class="ov-score" id="ov-score">0</div>
+  <div class="ov-label">PLAYERS LINKED</div>
+  <div class="ov-stat">Best chain: <b id="ov-best">0</b></div>
+  <div id="ov-last-player"></div>
+  <div id="mp-next" style="display:none;">
+    <button id="mp-next-btn" onclick="nextPlayer()">PASS TO NEXT PLAYER →</button>
+  </div>
+  <button id="playAgainBtn" onclick="showStart()">PLAY AGAIN</button>
+</div>
+
+<script>
+// ── NBA Player Database ────────────────────────────────────────────────────────
+// Format: "First Last" — indexed by lowercase for fast lookup
+const NBA_PLAYERS = [
+  "Kareem Abdul-Jabbar","Ray Allen","Carmelo Anthony","Giannis Antetokounmpo",
+  "Charles Barkley","Larry Bird","Kobe Bryant","Vince Carter","Stephen Curry",
+  "Tim Duncan","Kevin Durant","Kevin Garnett","Draymond Green","James Harden",
+  "Allen Iverson","LeBron James","Magic Johnson","Michael Jordan","Jason Kidd",
+  "Kawhi Leonard","Damian Lillard","Karl Malone","Shaquille O'Neal","Chris Paul",
+  "Scottie Pippen","Dennis Rodman","Bill Russell","Derrick Rose","Wilt Chamberlain",
+  "John Stockton","Isiah Thomas","Nikola Jokic","Luka Doncic","Joel Embiid",
+  "Jayson Tatum","Anthony Davis","Kyrie Irving","Paul George","Jimmy Butler",
+  "Devin Booker","Trae Young","Zion Williamson","Shai Gilgeous-Alexander",
+  "Cade Cunningham","Tyrese Haliburton","Donovan Mitchell","Bam Adebayo",
+  "Pascal Siakam","Rudy Gobert","Victor Wembanyama","Anthony Edwards",
+  "Ja Morant","Darius Garland","Evan Mobley","Paolo Banchero","Scottie Barnes",
+  "Franz Wagner","De'Aaron Fox","Alperen Sengun","Chet Holmgren",
+  "Oscar Robertson","Jerry West","Rick Barry","Pete Maravich","Walt Frazier",
+  "Julius Erving","Moses Malone","Bob Cousy","Hakeem Olajuwon","Patrick Ewing",
+  "Clyde Drexler","Gary Payton","Reggie Miller","John Havlicek","Elgin Baylor",
+  "Willis Reed","Dave Cowens","Bob Pettit","Billy Cunningham","Dave DeBusschere",
+  "George Gervin","Nate Archibald","Tiny Nate Archibald","Dominique Wilkins",
+  "Mark Eaton","David Robinson","Alonzo Mourning","Dikembe Mutombo",
+  "Tracy McGrady","Vlade Divac","Grant Hill","Paul Pierce","Dirk Nowitzki",
+  "Steve Nash","Jason Williams","Baron Davis","Gilbert Arenas","Amar'e Stoudemire",
+  "Dwyane Wade","Carmelo Anthony","Chris Bosh","Dwight Howard","Blake Griffin",
+  "Russell Westbrook","James Westbrook","Kevin Love","Brook Lopez",
+  "Nikola Vucevic","Kristaps Porzingis","Karl-Anthony Towns","Andrew Wiggins",
+  "Zach LaVine","Jaylen Brown","Marcus Smart","Kemba Walker","Bradley Beal",
+  "John Collins","De'Andre Hunter","Bogdan Bogdanovic","Tyler Herro",
+  "Duncan Robinson","Kyle Lowry","DeMar DeRozan","Anunoby OG","Fred VanVleet",
+  "Malcolm Brogdon","Khris Middleton","Jrue Holiday","Bobby Portis",
+  "Grayson Allen","Pat Connaughton","Brook Lopez","Brook Lopez","Jordan Clarkson",
+  "Mike Conley","Joe Ingles","Royce O'Neale","Lauri Markkanen","Jordan Nwora",
+  "Nickeil Alexander-Walker","Josh Richardson","Anfernee Simons","Matisse Thybulle",
+  "Tobias Harris","Joel Embiid","Tyrese Maxey","Georges Niang","De'Anthony Melton",
+  "James Harden","Nicolas Batum","P.J. Tucker","Kevin Porter","Jalen Green",
+  "Alperen Sengun","Garrison Mathews","Jae'Sean Tate","Eric Gordon",
+  "Kenyon Martin","Kelly Olynyk","Keegan Murray","Harrison Barnes","Domantas Sabonis",
+  "De'Aaron Fox","Kevin Huerter","Malik Monk","Alex Len","Richaun Holmes",
+  "Klay Thompson","Draymond Green","Jordan Poole","Moses Moody","Jonathan Kuminga",
+  "Patrick Williams","Lonzo Ball","DeMar DeRozan","Nikola Vucevic","Alex Caruso",
+  "Coby White","Ayo Dosunmu","Andre Drummond","Javonte Green",
+  "Evan Fournier","RJ Barrett","Mitchell Robinson","Julius Randle","Kemba Walker",
+  "Immanuel Quickley","Obi Toppin","Quentin Grimes","Miles McBride",
+  "Josh Giddey","Tre Mann","Isaiah Joe","Darius Bazley","Aleksej Pokusevski",
+  "Amen Thompson","Jabari Smith","Tari Eason","Jalen Williams","Isaiah Hartenstein",
+  "Precious Achiuwa","Gary Trent","Scottie Barnes","Pascal Siakam","OG Anunoby",
+  "Chris Boucher","Thaddeus Young","Goran Dragic","Terrence Ross",
+  "Norman Powell","Robert Covington","Eric Bledsoe","Jaxson Hayes",
+  "Herbert Jones","Jonas Valanciunas","Steven Adams","Brandon Ingram",
+  "Zion Williamson","Jose Alvarado","Larry Nance","Willy Hernangomez",
+  "Mike Muscala","Nassir Little","Josh Hart","Cam Reddish","Alec Burks",
+  "Derrick White","Al Horford","Grant Williams","Sam Hauser","Payton Pritchard",
+  "Luke Kornet","Justin Holiday","Max Strus","Caleb Martin","Haywood Highsmith",
+  "Udonis Haslem","Victor Oladipo","Gabe Vincent","Kyle Kuzma","Thomas Bryant",
+  "Kristaps Porzingis","Monte Morris","Deni Avdija","Rui Hachimura",
+  "Landry Shamet","Isaiah Stewart","Killian Hayes","Marvin Bagley",
+  "Bojan Bogdanovic","Alec Burks","Nerlens Noel","Taj Gibson","Udonis Haslem",
+  "Charlie Brown","Wayne Ellington","Lonnie Walker","Wenyen Gabriel",
+  "Naji Marshall","Tomas Satoransky","Javale McGee","Devonte Graham",
+  "Elfrid Payton","Frank Ntilikina","Theo Maledon","Aleksej Pokusevski",
+];
+
+// Build normalized lookup
+const PLAYER_SET = new Set(NBA_PLAYERS.map(p => p.toLowerCase().trim()));
+
+function getLastName(fullName) {
+  const parts = fullName.trim().split(' ');
+  if (parts.length < 2) return parts[0] || '';
+  // Last word is last name (handles hyphenated like Gilgeous-Alexander)
+  return parts[parts.length - 1];
+}
+
+function getFirstName(fullName) {
+  const parts = fullName.trim().split(' ');
+  return parts[0] || '';
+}
+
+function lastLetter(name) {
+  return name.replace(/[^a-zA-Z]/g, '').slice(-1).toUpperCase();
+}
+
+// ── Game State ─────────────────────────────────────────────────────────────────
+const CIRCUMFERENCE = 2 * Math.PI * 42;
+const START_PLAYER = "Michael Jordan";
+const TIMER_SECONDS = 30;
+
+let chain = [], score = 0, bestScore = 0, gameMode = 'solo', currentLetter = 'N';
+let timerVal = TIMER_SECONDS, timerInterval = null, gameActive = false;
+let mpPlayer = 1, usedInGame = new Set();
+
+const els = {
+  wrap: document.getElementById('wrap'),
+  startScreen: document.getElementById('start-screen'),
+  overlay: document.getElementById('overlay'),
+  scoreVal: document.getElementById('scoreVal'),
+  bestVal: document.getElementById('bestVal'),
+  modeLabel: document.getElementById('mode-label'),
+  ringArc: document.getElementById('ring-arc'),
+  ringWrap: document.getElementById('ring-wrap'),
+  timerText: document.getElementById('timer-text'),
+  chainList: document.getElementById('chain-list'),
+  promptLetter: document.getElementById('prompt-letter'),
+  promptLetterSub: document.getElementById('prompt-letter-sub'),
+  input: document.getElementById('player-input'),
+  errorMsg: document.getElementById('error-msg'),
+  flash: document.getElementById('flash'),
+  ovScore: document.getElementById('ov-score'),
+  ovBest: document.getElementById('ov-best'),
+  ovTitle: document.getElementById('ov-title'),
+  ovLast: document.getElementById('ov-last-player'),
+  mpNext: document.getElementById('mp-next'),
+  autocomplete: document.getElementById('autocomplete'),
+};
+
+els.ringArc.style.strokeDasharray = CIRCUMFERENCE;
+els.ringArc.style.strokeDashoffset = 0;
+
+function showStart() {
+  els.overlay.style.display = 'none';
+  els.wrap.style.display = 'none';
+  els.startScreen.style.display = 'flex';
+}
+
+function startGame(mode) {
+  gameMode = mode;
+  chain = [START_PLAYER];
+  score = 1;
+  mpPlayer = 1;
+  usedInGame = new Set([START_PLAYER.toLowerCase()]);
+  currentLetter = lastLetter(getLastName(START_PLAYER));
+  gameActive = true;
+
+  els.startScreen.style.display = 'none';
+  els.overlay.style.display = 'none';
+  els.wrap.style.display = 'flex';
+  els.modeLabel.textContent = mode === 'multi' ? 'P1 TURN' : 'SOLO';
+  els.input.value = '';
+  els.errorMsg.textContent = '';
+  els.input.className = '';
+  updateHUD();
+  renderChain();
+  setPromptLetter(currentLetter);
+  resetTimer();
+}
+
+function updateHUD() {
+  els.scoreVal.textContent = Math.max(0, score - 1);
+  els.bestVal.textContent = bestScore;
+}
+
+function renderChain() {
+  els.chainList.innerHTML = '';
+  const display = chain.slice(-4);
+  const startIdx = chain.length - display.length;
+  display.forEach((name, i) => {
+    const div = document.createElement('div');
+    div.className = 'chain-item';
+    const num = document.createElement('span');
+    num.className = 'chain-num';
+    num.textContent = '#' + (startIdx + i + 1);
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'chain-name';
+    nameSpan.textContent = name;
+    div.appendChild(num);
+    div.appendChild(nameSpan);
+    if (i < display.length - 1) {
+      const arrow = document.createElement('span');
+      arrow.className = 'chain-arrow';
+      arrow.textContent = ' →';
+      div.appendChild(arrow);
+    }
+    els.chainList.appendChild(div);
+  });
+  els.chainList.scrollTop = els.chainList.scrollHeight;
+}
+
+function setPromptLetter(letter) {
+  currentLetter = letter;
+  els.promptLetter.textContent = letter;
+  els.promptLetterSub.textContent = letter;
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerVal = TIMER_SECONDS;
+  const start = Date.now();
+  updateRing(timerVal);
+  timerInterval = setInterval(() => {
+    const elapsed = (Date.now() - start) / 1000;
+    timerVal = Math.max(0, TIMER_SECONDS - elapsed);
+    updateRing(timerVal);
+    if (timerVal <= 0) {
+      clearInterval(timerInterval);
+      if (gameActive) timeout();
+    }
+  }, 50);
+}
+
+function updateRing(sec) {
+  const frac = sec / TIMER_SECONDS;
+  const offset = CIRCUMFERENCE * (1 - frac);
+  els.ringArc.style.strokeDashoffset = offset;
+  els.timerText.textContent = Math.ceil(sec);
+  const urgent = sec <= 8;
+  els.ringWrap.classList.toggle('urgent', urgent);
+  els.ringArc.style.stroke = urgent ? '#ef4444' : '#f97316';
+}
+
+function normalizeInput(s) {
+  return s.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// Find best matching player from input
+function findPlayer(input) {
+  const norm = normalizeInput(input);
+  // Exact match first
+  for (const p of NBA_PLAYERS) {
+    if (p.toLowerCase() === norm) return p;
+  }
+  // Partial match (starts with)
+  for (const p of NBA_PLAYERS) {
+    if (p.toLowerCase().startsWith(norm) && norm.length >= 3) return p;
+  }
+  return null;
+}
+
+function submitPlayer() {
+  if (!gameActive) return;
+  const raw = els.input.value.trim();
+  if (!raw) { showError("Enter a player name"); return; }
+
+  const player = findPlayer(raw);
+
+  if (!player) {
+    showError("Not in our NBA database. Try another player.");
+    shakeInput();
+    flash('red');
+    return;
+  }
+
+  const firstName = getFirstName(player);
+  const firstChar = firstName.charAt(0).toUpperCase();
+
+  if (firstChar !== currentLetter) {
+    showError(`First name must start with "${currentLetter}" — ${firstName} starts with ${firstChar}`);
+    shakeInput();
+    flash('red');
+    return;
+  }
+
+  if (usedInGame.has(player.toLowerCase())) {
+    showError(`${player} was already used in this chain!`);
+    shakeInput();
+    flash('red');
+    return;
+  }
+
+  // Valid!
+  usedInGame.add(player.toLowerCase());
+  chain.push(player);
+  score++;
+  updateHUD();
+  renderChain();
+
+  const nextLetter = lastLetter(getLastName(player));
+  setPromptLetter(nextLetter);
+
+  els.input.value = '';
+  els.errorMsg.textContent = '';
+  els.input.className = 'success';
+  setTimeout(() => { els.input.className = ''; }, 600);
+  hideAutocomplete();
+  flash('green');
+  resetTimer();
+
+  if (gameMode === 'multi') {
+    els.modeLabel.textContent = 'P' + ((chain.length % 2 === 0) ? '2' : '1') + ' TURN';
+  }
+}
+
+function showError(msg) {
+  els.errorMsg.textContent = msg;
+  els.input.className = 'error';
+  setTimeout(() => {
+    els.input.className = '';
+    if (els.errorMsg.textContent === msg) els.errorMsg.textContent = '';
+  }, 2000);
+}
+
+function shakeInput() {
+  els.input.style.transform = 'translateX(-6px)';
+  setTimeout(() => { els.input.style.transform = 'translateX(6px)'; }, 100);
+  setTimeout(() => { els.input.style.transform = ''; }, 200);
+}
+
+function flash(color) {
+  els.flash.className = color;
+  setTimeout(() => { els.flash.className = ''; }, 350);
+}
+
+function timeout() {
+  endGame(true);
+}
+
+function endGame(isTimeout) {
+  gameActive = false;
+  clearInterval(timerInterval);
+  const chainLength = Math.max(0, score - 1);
+  if (chainLength > bestScore) bestScore = chainLength;
+
+  els.ovScore.textContent = chainLength;
+  els.ovBest.textContent = bestScore;
+  els.ovTitle.textContent = isTimeout ? '⏱ TIME\'S UP!' : 'CHAIN BROKEN!';
+  const lastPlayer = chain[chain.length - 1] || START_PLAYER;
+  els.ovLast.textContent = isTimeout ? `Ran out of time after: ${lastPlayer}` : '';
+  els.mpNext.style.display = gameMode === 'multi' ? 'block' : 'none';
+  els.overlay.style.display = 'flex';
+
+  try {
+    window.parent.postMessage({ type: 'GAME_OVER', score: chainLength, bestStreak: chainLength, roundsPlayed: chainLength }, '*');
+  } catch(e) {}
+}
+
+function nextPlayer() {
+  mpPlayer++;
+  els.overlay.style.display = 'none';
+  gameActive = true;
+  els.modeLabel.textContent = 'P' + ((mpPlayer % 2 === 0) ? '2' : '1') + ' TURN';
+  resetTimer();
+  els.input.value = '';
+  els.errorMsg.textContent = '';
+  els.input.focus();
+}
+
+// ── Autocomplete ───────────────────────────────────────────────────────────────
+els.input.addEventListener('input', () => {
+  const val = els.input.value.trim();
+  if (val.length < 2) { hideAutocomplete(); return; }
+  const norm = val.toLowerCase();
+  const matches = NBA_PLAYERS.filter(p =>
+    p.toLowerCase().includes(norm) &&
+    p.toUpperCase().charAt(0) === currentLetter ||
+    p.toLowerCase().startsWith(norm)
+  ).filter(p => p.charAt(0).toUpperCase() === currentLetter).slice(0, 6);
+  if (matches.length === 0) { hideAutocomplete(); return; }
+  showAutocomplete(matches);
+});
+
+els.input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { hideAutocomplete(); submitPlayer(); }
+  if (e.key === 'Escape') hideAutocomplete();
+});
+
+function showAutocomplete(matches) {
+  els.autocomplete.innerHTML = '';
+  matches.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'ac-item';
+    div.textContent = p;
+    div.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      els.input.value = p;
+      hideAutocomplete();
+      submitPlayer();
+    });
+    els.autocomplete.appendChild(div);
+  });
+  els.autocomplete.style.display = 'block';
+}
+
+function hideAutocomplete() {
+  els.autocomplete.style.display = 'none';
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!els.autocomplete.contains(e.target) && e.target !== els.input) {
+    hideAutocomplete();
+  }
+});
+</script>
+</body>
+</html>

@@ -2171,6 +2171,26 @@ export const GetMyArcadeStatsResponse = zod.object({
     totalTpa: zod.number().optional(),
     totalDunks: zod.number().optional(),
   }),
+  shotClockScramble: zod.object({
+    bestScore: zod.number().optional(),
+    bestStreak: zod.number().optional(),
+    gamesPlayed: zod.number().optional(),
+    totalFgm: zod.number().optional(),
+    totalFga: zod.number().optional(),
+    totalTpm: zod.number().optional(),
+    totalTpa: zod.number().optional(),
+    totalDunks: zod.number().optional(),
+  }),
+  chainGame: zod.object({
+    bestScore: zod.number().optional(),
+    bestStreak: zod.number().optional(),
+    gamesPlayed: zod.number().optional(),
+    totalFgm: zod.number().optional(),
+    totalFga: zod.number().optional(),
+    totalTpm: zod.number().optional(),
+    totalTpa: zod.number().optional(),
+    totalDunks: zod.number().optional(),
+  }),
 });
 
 /**
