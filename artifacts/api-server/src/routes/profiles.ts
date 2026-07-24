@@ -701,6 +701,155 @@ router.get("/profiles/:clerkUserId/aggregate-stats", async (req, res): Promise<v
   });
 });
 
+// GET /profiles/:clerkUserId/per-team-stats — career stats broken down by team
+router.get("/profiles/:clerkUserId/per-team-stats", async (req, res): Promise<void> => {
+  const { clerkUserId } = req.params;
+
+  const [profile] = await db
+    .select({
+      firstName: userProfilesTable.firstName,
+      lastName: userProfilesTable.lastName,
+      teamId: userProfilesTable.teamId,
+      teamIds: userProfilesTable.teamIds,
+    })
+    .from(userProfilesTable)
+    .where(eq(userProfilesTable.clerkUserId, clerkUserId));
+
+  if (!profile) { res.status(404).json({ error: "Profile not found" }); return; }
+
+  const rawTeamIds = (profile.teamIds as number[] | null) ?? [];
+  const effectiveTeamIds = rawTeamIds.length > 0
+    ? rawTeamIds
+    : profile.teamId ? [profile.teamId] : [];
+
+  if (!profile.firstName || !profile.lastName || effectiveTeamIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  // Player rows (one per team)
+  const playerRows = await db
+    .select({ id: playersTable.id, teamId: playersTable.teamId })
+    .from(playersTable)
+    .where(
+      and(
+        eq(playersTable.firstName, profile.firstName),
+        eq(playersTable.lastName, profile.lastName),
+        inArray(playersTable.teamId, effectiveTeamIds)
+      )
+    );
+
+  if (playerRows.length === 0) { res.json([]); return; }
+
+  // Team info
+  const teamInfoRows = await db
+    .select({
+      id: teamsTable.id,
+      name: teamsTable.name,
+      city: teamsTable.city,
+      primaryColor: teamsTable.primaryColor,
+      secondaryColor: teamsTable.secondaryColor,
+    })
+    .from(teamsTable)
+    .where(inArray(teamsTable.id, effectiveTeamIds));
+
+  const teamMap = new Map(teamInfoRows.map((t) => [t.id, t]));
+
+  // All game stats for all player rows
+  const playerIds = playerRows.map((p) => p.id);
+  const gameRows = await db
+    .select({
+      playerId:            gamePlayerStatsTable.playerId,
+      points:              gamePlayerStatsTable.points,
+      rebounds:            gamePlayerStatsTable.rebounds,
+      assists:             gamePlayerStatsTable.assists,
+      steals:              gamePlayerStatsTable.steals,
+      blocks:              gamePlayerStatsTable.blocks,
+      turnovers:           gamePlayerStatsTable.turnovers,
+      threesMade:          gamePlayerStatsTable.threesMade,
+      threesAttempted:     gamePlayerStatsTable.threesAttempted,
+      homeTeamId:          gamesTable.homeTeamId,
+      awayTeamId:          gamesTable.awayTeamId,
+      homeScore:           gamesTable.homeScore,
+      awayScore:           gamesTable.awayScore,
+    })
+    .from(gamePlayerStatsTable)
+    .innerJoin(gamesTable, eq(gamePlayerStatsTable.gameId, gamesTable.id))
+    .where(inArray(gamePlayerStatsTable.playerId, playerIds));
+
+  // playerId → teamId map
+  const playerTeamMap = new Map(playerRows.map((p) => [p.id, p.teamId]));
+
+  // Per-team accumulators — initialise for every team in effectiveTeamIds
+  const acc = new Map(
+    effectiveTeamIds.map((tid) => [tid, {
+      gamesPlayed: 0, wins: 0,
+      totalPoints: 0, totalRebounds: 0, totalAssists: 0,
+      totalSteals: 0, totalBlocks: 0, totalTurnovers: 0,
+      totalThreesMade: 0, totalThreesAttempted: 0,
+    }])
+  );
+
+  for (const row of gameRows) {
+    const tid = playerTeamMap.get(row.playerId);
+    if (tid == null) continue;
+    const s = acc.get(tid);
+    if (!s) continue;
+    s.gamesPlayed++;
+    s.totalPoints    += row.points    ?? 0;
+    s.totalRebounds  += row.rebounds  ?? 0;
+    s.totalAssists   += row.assists   ?? 0;
+    s.totalSteals    += row.steals    ?? 0;
+    s.totalBlocks    += row.blocks    ?? 0;
+    s.totalTurnovers += row.turnovers ?? 0;
+    s.totalThreesMade      += row.threesMade      ?? 0;
+    s.totalThreesAttempted += row.threesAttempted ?? 0;
+    if (row.homeScore != null && row.awayScore != null) {
+      if (row.homeTeamId === tid && row.homeScore > row.awayScore) s.wins++;
+      else if (row.awayTeamId === tid && row.awayScore > row.homeScore) s.wins++;
+    }
+  }
+
+  // Build response in effectiveTeamIds order (primary team first)
+  const result = effectiveTeamIds.map((tid) => {
+    const t = teamMap.get(tid);
+    const s = acc.get(tid)!;
+    const gp = s.gamesPlayed;
+    const gameLP =  gp           * 25;
+    const winLP  =  s.wins       * 50;
+    const ptLP   =  s.totalPoints    * 10;
+    const rebLP  =  s.totalRebounds  * 15;
+    const astLP  =  s.totalAssists   * 20;
+    const stlLP  =  s.totalSteals    * 35;
+    const blkLP  =  s.totalBlocks    * 35;
+    const tovLP  =  s.totalTurnovers * -10;
+    const statLP = gameLP + winLP + ptLP + rebLP + astLP + stlLP + blkLP + tovLP;
+    return {
+      teamId:         tid,
+      teamName:       t?.name          ?? "Unknown",
+      teamCity:       t?.city          ?? "",
+      primaryColor:   t?.primaryColor  ?? "#FF6B00",
+      secondaryColor: t?.secondaryColor ?? "#132237",
+      gamesPlayed: gp,
+      wins: s.wins,
+      totalPoints:    s.totalPoints,
+      totalRebounds:  s.totalRebounds,
+      totalAssists:   s.totalAssists,
+      totalSteals:    s.totalSteals,
+      totalBlocks:    s.totalBlocks,
+      totalTurnovers: s.totalTurnovers,
+      totalThreesMade:      s.totalThreesMade,
+      totalThreesAttempted: s.totalThreesAttempted,
+      avgPoints:   gp > 0 ? s.totalPoints   / gp : 0,
+      avgRebounds: gp > 0 ? s.totalRebounds / gp : 0,
+      avgAssists:  gp > 0 ? s.totalAssists  / gp : 0,
+      gameLP, winLP, ptLP, rebLP, astLP, stlLP, blkLP, tovLP, statLP,
+    };
+  });
+
+  res.json(result);
+});
+
 // PUT /profiles/me/ballers — replace the current user's My Ballers list
 router.put("/profiles/me/ballers", async (req, res): Promise<void> => {
   const userId = requireAuth(req, res);

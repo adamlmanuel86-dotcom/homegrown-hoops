@@ -137,6 +137,13 @@ export function MyProfilePage() {
     }));
   }
 
+  function handleSetPrimary(teamId: string) {
+    setForm((f) => ({
+      ...f,
+      teamIds: [teamId, ...f.teamIds.filter((id) => id !== teamId)],
+    }));
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -571,6 +578,47 @@ export function MyProfilePage() {
               Select all teams you play for. Stats from every team count toward your Legacy Score.
             </p>
           </div>
+
+          {/* Primary team — only shown when ≥2 teams selected */}
+          {form.teamIds.length > 1 && (
+            <div>
+              <label className="label-upper block mb-0.5">Primary Team</label>
+              <p className="text-xs text-muted-foreground mb-2">Sets the colours on your player card.</p>
+              <div className="space-y-1.5">
+                {form.teamIds.map((id) => {
+                  const t = teams?.find((team) => team.id.toString() === id);
+                  if (!t) return null;
+                  const isPrimary = id === form.teamIds[0];
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleSetPrimary(id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                        isPrimary
+                          ? "border-amber-500 bg-amber-500/10 text-foreground"
+                          : "border-border bg-card text-muted-foreground hover:border-amber-500/40"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          isPrimary ? "border-amber-500 bg-amber-500" : "border-border"
+                        }`}
+                      >
+                        {isPrimary && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <span className="text-sm font-semibold">{t.name} — {t.city}</span>
+                      {isPrimary && (
+                        <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-amber-500">
+                          Primary
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="label-upper block mb-1.5">Bio</label>

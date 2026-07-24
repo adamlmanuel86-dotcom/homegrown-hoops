@@ -43,6 +43,27 @@ export function PublicProfilePage() {
     query: { enabled: !!playerId, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   });
 
+  // Per-team stats for the "My Teams" section
+  const { data: perTeamStats } = useQuery({
+    queryKey: ["profile-per-team-stats", clerkUserId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/per-team-stats`);
+      if (!res.ok) return null;
+      return res.json() as Promise<Array<{
+        teamId: number; teamName: string; teamCity: string;
+        primaryColor: string; secondaryColor: string;
+        gamesPlayed: number; wins: number;
+        totalPoints: number; totalRebounds: number; totalAssists: number;
+        avgPoints: number; avgRebounds: number; avgAssists: number;
+        gameLP: number; winLP: number; statLP: number;
+      }>>;
+    },
+    enabled: !!clerkUserId,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
   // Aggregate stats across ALL teams this profile belongs to — used for Legacy Score
   const { data: aggregateStats } = useQuery({
     queryKey: ["profile-aggregate-stats", clerkUserId],
@@ -488,6 +509,58 @@ export function PublicProfilePage() {
                   <p style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: 22, fontWeight: 900, color: "hsl(22, 78%, 60%)", lineHeight: 1, margin: 0 }}>{value}</p>
                   <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(215, 16%, 45%)", marginTop: 4 }}>{label}</p>
                   <p style={{ fontSize: 9, color: "hsl(215, 16%, 35%)", marginTop: 2 }}>{sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* My Teams */}
+        {perTeamStats && perTeamStats.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(215, 16%, 45%)", marginBottom: 10 }}>
+              My Teams
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {perTeamStats.map((ts, i) => (
+                <div key={ts.teamId} style={{ border: "2px solid #000", boxShadow: "4px 4px 0 0 rgba(0,0,0,1)", overflow: "hidden" }}>
+                  {/* header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "2px solid #000", background: `${ts.primaryColor}22` }}>
+                    <div style={{ width: 6, height: 36, borderRadius: 3, background: ts.primaryColor, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1, margin: 0, textTransform: "uppercase" }}>
+                        {ts.teamName}
+                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: "hsl(215,16%,55%)", margin: 0 }}>{ts.teamCity}</p>
+                        {i === 0 && (
+                          <span style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", padding: "2px 6px", border: "1px solid rgba(245,158,11,0.4)", borderRadius: 4, color: "#F59E0B", background: "rgba(245,158,11,0.1)" }}>
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <p style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: 24, fontWeight: 900, color: ts.primaryColor, lineHeight: 1, margin: 0 }}>
+                        {ts.statLP.toLocaleString()}
+                      </p>
+                      <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(215,16%,45%)", margin: "2px 0 0" }}>LP earned</p>
+                    </div>
+                  </div>
+                  {/* stats row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", background: "hsl(220,36%,8%)" }}>
+                    {[
+                      { label: "GP",  value: ts.gamesPlayed.toString() },
+                      { label: "PPG", value: ts.gamesPlayed > 0 ? ts.avgPoints.toFixed(1)   : "—" },
+                      { label: "RPG", value: ts.gamesPlayed > 0 ? ts.avgRebounds.toFixed(1) : "—" },
+                      { label: "APG", value: ts.gamesPlayed > 0 ? ts.avgAssists.toFixed(1)  : "—" },
+                    ].map(({ label, value }, j) => (
+                      <div key={label} style={{ padding: "12px 8px", textAlign: "center", borderLeft: j > 0 ? "1px solid hsl(220,28%,14%)" : undefined }}>
+                        <p style={{ fontFamily: "'Anton','Barlow Condensed',Impact,sans-serif", fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1, margin: 0 }}>{value}</p>
+                        <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(215,16%,45%)", marginTop: 4 }}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

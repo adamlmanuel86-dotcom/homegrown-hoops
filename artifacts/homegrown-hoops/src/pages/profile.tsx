@@ -88,6 +88,27 @@ export function ProfilePage() {
     query: { enabled: !!playerId, staleTime: 0, refetchOnMount: true, refetchOnWindowFocus: true },
   });
 
+  // Per-team stats for the "My Teams" section
+  const { data: perTeamStats } = useQuery({
+    queryKey: ["profile-per-team-stats", clerkUserId],
+    queryFn: async () => {
+      const res = await fetch(`${apiBase}/api/profiles/${clerkUserId}/per-team-stats`);
+      if (!res.ok) return null;
+      return res.json() as Promise<Array<{
+        teamId: number; teamName: string; teamCity: string;
+        primaryColor: string; secondaryColor: string;
+        gamesPlayed: number; wins: number;
+        totalPoints: number; totalRebounds: number; totalAssists: number;
+        avgPoints: number; avgRebounds: number; avgAssists: number;
+        gameLP: number; winLP: number; statLP: number;
+      }>>;
+    },
+    enabled: !!clerkUserId,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
   // Aggregate stats across ALL teams this profile belongs to — used for Legacy Score
   const { data: aggregateStats } = useQuery({
     queryKey: ["profile-aggregate-stats", clerkUserId],
@@ -883,6 +904,62 @@ export function ProfilePage() {
                   className="h-full rounded-full"
                   style={{ width: `${Math.min(100, pct)}%`, background: color }}
                 />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── My Teams ─────────────────────────────────────────────────────────── */}
+      {!isParent && perTeamStats && perTeamStats.length > 0 && (
+        <div className="space-y-3">
+          <p className="label-upper px-1">My Teams</p>
+          {perTeamStats.map((ts, i) => (
+            <div
+              key={ts.teamId}
+              className="border-2 border-black overflow-hidden"
+              style={{ boxShadow: "4px 4px 0 0 rgba(0,0,0,1)" }}
+            >
+              {/* Team header */}
+              <div
+                className="flex items-center gap-3 px-4 py-3 border-b-2 border-black"
+                style={{ background: `${ts.primaryColor}22` }}
+              >
+                <div className="w-1.5 h-9 rounded-sm flex-shrink-0" style={{ background: ts.primaryColor }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-lg font-black leading-none truncate">
+                    {ts.teamName.toUpperCase()}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-muted-foreground font-semibold">{ts.teamCity}</p>
+                    {i === 0 && (
+                      <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm border"
+                        style={{ color: "#F59E0B", borderColor: "#F59E0B44", background: "#F59E0B11" }}>
+                        Primary
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-display text-2xl font-black leading-none" style={{ color: ts.primaryColor }}>
+                    {ts.statLP.toLocaleString()}
+                  </p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">LP earned</p>
+                </div>
+              </div>
+              {/* Stats row */}
+              <div className="grid grid-cols-4 divide-x divide-border">
+                {[
+                  { label: "GP",  value: ts.gamesPlayed.toString() },
+                  { label: "PPG", value: ts.gamesPlayed > 0 ? ts.avgPoints.toFixed(1)   : "—" },
+                  { label: "RPG", value: ts.gamesPlayed > 0 ? ts.avgRebounds.toFixed(1) : "—" },
+                  { label: "APG", value: ts.gamesPlayed > 0 ? ts.avgAssists.toFixed(1)  : "—" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="py-3 text-center">
+                    <p className="font-display text-xl font-black leading-none">{value}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mt-1">{label}</p>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
