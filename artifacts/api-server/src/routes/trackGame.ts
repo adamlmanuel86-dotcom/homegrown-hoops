@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, gamesTable, gamePlayerStatsTable, playersTable, userProfilesTable, jerseyStubsTable } from "@workspace/db";
+import { db, gamesTable, gamePlayerStatsTable, playersTable, userProfilesTable, jerseyStubsTable, gameTrackingDelegationsTable } from "@workspace/db";
 import { serializeRow } from "../lib/serialize";
 import { runFullRecognition } from "../recognition";
 
@@ -19,7 +19,7 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     .from(userProfilesTable)
     .where(eq(userProfilesTable.clerkUserId, userId));
 
-  if (!profile || !["admin", "manager", "coach"].includes(profile.role)) {
+  if (!profile || !["admin", "manager", "coach"].includes(profile.role) || profile.isPending) {
     res.status(403).json({ error: "Coach, manager, or admin access required" });
     return;
   }
@@ -61,7 +61,6 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
   const awayTeamId = body.awayTeamId ?? null;
   const opponentName = body.opponentName ?? null;
 
-  // Require at least one registered team; and an opponentName when either slot is unnamed
   if (!homeTeamId && !awayTeamId) {
     res.status(400).json({ error: "At least one of homeTeamId or awayTeamId is required" });
     return;
@@ -71,7 +70,67 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     return;
   }
 
-  const status = "final";
+  // ── Duplicate detection ───────────────────────────────────────────────────
+  const registeredTeamIds = [homeTeamId, awayTeamId].filter((id): id is number => id != null);
+  for (const tid of registeredTeamIds) {
+    const [dup] = await db
+      .select({ id: gamesTable.id })
+      .from(gamesTable)
+      .where(
+        and(
+          eq(gamesTable.gameDate, body.gameDate),
+          or(eq(gamesTable.homeTeamId, tid), eq(gamesTable.awayTeamId, tid))
+        )
+      );
+    if (dup) {
+      res.status(409).json({
+        error: `A game for this team on ${body.gameDate} has already been submitted. Duplicate games are not allowed.`,
+      });
+      return;
+    }
+  }
+
+  // ── Authorization for non-admin roles ────────────────────────────────────
+  if (profile.role !== "admin") {
+    const managerTeamIds = (profile.teamIds as number[] | null) ?? [];
+
+    const touchedTeams = registeredTeamIds;
+    const managedTeamTouched = touchedTeams.some((tid) => managerTeamIds.includes(tid));
+
+    if (!managedTeamTouched) {
+      // Check delegations
+      const delegationChecks = touchedTeams.map((tid) =>
+        and(
+          eq(gameTrackingDelegationsTable.delegateeClerkUserId, userId),
+          eq(gameTrackingDelegationsTable.teamId, tid),
+          eq(gameTrackingDelegationsTable.used, false)
+        )
+      );
+
+      const activeDelegation = delegationChecks.length > 0
+        ? await db.select().from(gameTrackingDelegationsTable).where(
+            delegationChecks.length === 1 ? delegationChecks[0]! : or(...delegationChecks)
+          ).then((rows) => rows[0] ?? null)
+        : null;
+
+      if (!activeDelegation) {
+        res.status(403).json({
+          error: "You are not authorized to submit games for this team. Contact your manager.",
+        });
+        return;
+      }
+
+      // Mark delegation used
+      await db
+        .update(gameTrackingDelegationsTable)
+        .set({ used: true })
+        .where(eq(gameTrackingDelegationsTable.id, activeDelegation.id));
+    }
+  }
+
+  // ── Game status: admins go straight to final; others go to pending ────────
+  const isAdmin = profile.role === "admin";
+  const status = isAdmin ? "final" : "pending";
 
   const [game] = await db
     .insert(gamesTable)
@@ -90,7 +149,6 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     })
     .returning();
 
-  // Insert player stats — resolve or create player rows as needed
   const resolvedPlayerIds: number[] = [];
 
   for (const stat of body.playerStats ?? []) {
@@ -99,7 +157,6 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     if (!resolvedPlayerId && stat.playerName && stat.teamId) {
       const jerseyMatch = stat.playerName.trim().match(/^#(\d+)$/);
       if (jerseyMatch) {
-        // ── Jersey stub flow ─────────────────────────────────────────────────
         const jerseyNumber = parseInt(jerseyMatch[1], 10);
         const [existingStub] = await db
           .select({ playerId: jerseyStubsTable.playerId })
@@ -134,7 +191,6 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
           resolvedPlayerId = stubPlayer.id;
         }
       } else {
-        // ── Name-based player resolution ─────────────────────────────────────
         const nameParts = stat.playerName.trim().split(/\s+/);
         const firstName = nameParts[0] ?? "";
         const lastName = nameParts.slice(1).join(" ") || "";
@@ -186,7 +242,8 @@ router.post("/track-game/submit", async (req, res): Promise<void> => {
     resolvedPlayerIds.push(resolvedPlayerId);
   }
 
-  if (resolvedPlayerIds.length > 0) {
+  // Only run recognition immediately for admin submissions (final status)
+  if (isAdmin && resolvedPlayerIds.length > 0) {
     try {
       await runFullRecognition(game.id, resolvedPlayerIds);
     } catch (err) {

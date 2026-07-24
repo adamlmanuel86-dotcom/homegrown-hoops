@@ -17,5 +17,9 @@ export interface Team {
   logoUrl?: string | null;
   primaryColor: string;
   secondaryColor: string;
+  /** @nullable */
+  league?: string | null;
+  /** @nullable */
+  managerClerkUserId?: string | null;
   createdAt: string;
 }

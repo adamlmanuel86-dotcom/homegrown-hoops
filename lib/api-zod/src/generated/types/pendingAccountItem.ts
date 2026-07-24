@@ -5,6 +5,7 @@
  * Homegrown Hoops Basketball Stats Tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { PendingAccountItemRequestedTeamInfo } from "./pendingAccountItemRequestedTeamInfo";
 
 export interface PendingAccountItem {
   id: number;
@@ -13,5 +14,10 @@ export interface PendingAccountItem {
   lastName: string;
   /** @nullable */
   requestedRole?: string | null;
+  /**
+   * Team details submitted during manager signup
+   * @nullable
+   */
+  requestedTeamInfo?: PendingAccountItemRequestedTeamInfo;
   createdAt: string;
 }

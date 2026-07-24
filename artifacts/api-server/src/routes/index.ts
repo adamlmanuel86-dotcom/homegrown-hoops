@@ -14,6 +14,7 @@ import arcadeRouter from "./arcade";
 import trackGameRouter from "./trackGame";
 import jerseyStubsRouter from "./jerseyStubs";
 import pendingAccountsRouter from "./pendingAccounts";
+import managerRouter from "./manager";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(arcadeRouter);
 router.use(trackGameRouter);
 router.use(jerseyStubsRouter);
 router.use(pendingAccountsRouter);
+router.use(managerRouter);
 
 export default router;

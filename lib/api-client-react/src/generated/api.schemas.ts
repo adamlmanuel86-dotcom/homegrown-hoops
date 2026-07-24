@@ -20,6 +20,10 @@ export interface Team {
   logoUrl?: string | null;
   primaryColor: string;
   secondaryColor: string;
+  /** @nullable */
+  league?: string | null;
+  /** @nullable */
+  managerClerkUserId?: string | null;
   createdAt: string;
 }
 
@@ -496,6 +500,22 @@ export interface AdminUserListItem {
   createdAt: string;
 }
 
+/**
+ * Team details submitted during manager signup
+ * @nullable
+ */
+export type PendingAccountItemRequestedTeamInfo = {
+  teamName?: string;
+  /** @nullable */
+  league?: string | null;
+  /** @nullable */
+  city?: string | null;
+  roster?: {
+    jerseyNumber?: string;
+    playerName?: string;
+  }[];
+} | null;
+
 export interface PendingAccountItem {
   id: number;
   clerkUserId: string;
@@ -503,8 +523,29 @@ export interface PendingAccountItem {
   lastName: string;
   /** @nullable */
   requestedRole?: string | null;
+  /**
+   * Team details submitted during manager signup
+   * @nullable
+   */
+  requestedTeamInfo?: PendingAccountItemRequestedTeamInfo;
   createdAt: string;
 }
+
+/**
+ * Team details submitted during manager signup
+ * @nullable
+ */
+export type CreateUserProfileBodyRequestedTeamInfo = {
+  teamName?: string;
+  /** @nullable */
+  league?: string | null;
+  /** @nullable */
+  city?: string | null;
+  roster?: {
+    jerseyNumber?: string;
+    playerName?: string;
+  }[];
+} | null;
 
 export interface CreateUserProfileBody {
   firstName: string;
@@ -533,6 +574,11 @@ export interface CreateUserProfileBody {
    * @nullable
    */
   requestedRole?: string | null;
+  /**
+   * Team details submitted during manager signup
+   * @nullable
+   */
+  requestedTeamInfo?: CreateUserProfileBodyRequestedTeamInfo;
   /** Initial My Ballers player IDs (parent accounts only) */
   myBallers?: number[];
 }
@@ -798,6 +844,28 @@ export interface ClaimJerseyBody {
   jerseyNumber: number;
   teamId: number;
   season: string;
+}
+
+export interface ManagerCreateTeamBody {
+  name: string;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  league?: string | null;
+}
+
+export interface ManagerDelegation {
+  id: number;
+  managerClerkUserId: string;
+  delegateeClerkUserId: string;
+  teamId: number;
+  used: boolean;
+  createdAt: string;
+}
+
+export interface CreateDelegationBody {
+  delegateeClerkUserId: string;
+  teamId: number;
 }
 
 export type ListPlayersParams = {

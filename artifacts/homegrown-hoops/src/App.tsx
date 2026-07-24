@@ -26,6 +26,7 @@ import { IsoBallPage } from "@/pages/iso-ball";
 import { ArcadePage } from "@/pages/arcade";
 import { TrackGamePage } from "@/pages/track-game";
 import { AdminPendingGamesPage } from "@/pages/admin-pending-games";
+import { ManagerPage } from "@/pages/manager";
 import { WhoYaGotPage } from "@/pages/who-ya-got";
 import { FastBreakPage } from "@/pages/fast-break";
 import { ShotClockPage } from "@/pages/shot-clock";
@@ -202,6 +203,7 @@ function Router() {
             <Route path="/my-profile" component={MyProfilePage} />
             <Route path="/profiles/:clerkUserId" component={ProfilePage} />
             <Route path="/admin" component={AdminPage} />
+            <Route path="/manager" component={ManagerPage} />
             <Route path="/track-game" component={TrackGamePage} />
             <Route path="/admin/pending-games" component={AdminPendingGamesPage} />
             <Route path="/our-story" component={OurStoryPage} />

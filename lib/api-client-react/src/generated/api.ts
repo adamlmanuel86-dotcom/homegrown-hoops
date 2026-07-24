@@ -25,6 +25,7 @@ import type {
   ArcadeSession,
   BallerPlayer,
   ClaimJerseyBody,
+  CreateDelegationBody,
   CreateGameBody,
   CreatePlayerBody,
   CreateTeamBody,
@@ -41,6 +42,8 @@ import type {
   JerseyStub,
   ListGamesParams,
   ListPlayersParams,
+  ManagerCreateTeamBody,
+  ManagerDelegation,
   MyArcadeStats,
   PendingAccountItem,
   PendingGameReview,
@@ -2403,6 +2406,414 @@ export const useSubmitTrackGame = <
   TContext
 > => {
   return useMutation(getSubmitTrackGameMutationOptions(options));
+};
+
+/**
+ * @summary List teams managed by the current user (admin sees all)
+ */
+export const getGetManagerMyTeamsUrl = () => {
+  return `/api/manager/my-teams`;
+};
+
+export const getManagerMyTeams = async (
+  options?: RequestInit,
+): Promise<Team[]> => {
+  return customFetch<Team[]>(getGetManagerMyTeamsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetManagerMyTeamsQueryKey = () => {
+  return [`/api/manager/my-teams`] as const;
+};
+
+export const getGetManagerMyTeamsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getManagerMyTeams>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getManagerMyTeams>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetManagerMyTeamsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getManagerMyTeams>>
+  > = ({ signal }) => getManagerMyTeams({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getManagerMyTeams>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetManagerMyTeamsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getManagerMyTeams>>
+>;
+export type GetManagerMyTeamsQueryError = ErrorType<void>;
+
+/**
+ * @summary List teams managed by the current user (admin sees all)
+ */
+
+export function useGetManagerMyTeams<
+  TData = Awaited<ReturnType<typeof getManagerMyTeams>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getManagerMyTeams>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetManagerMyTeamsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new team as manager (auto-approved, no admin review needed)
+ */
+export const getCreateManagerTeamUrl = () => {
+  return `/api/manager/teams`;
+};
+
+export const createManagerTeam = async (
+  managerCreateTeamBody: ManagerCreateTeamBody,
+  options?: RequestInit,
+): Promise<Team> => {
+  return customFetch<Team>(getCreateManagerTeamUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(managerCreateTeamBody),
+  });
+};
+
+export const getCreateManagerTeamMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createManagerTeam>>,
+    TError,
+    { data: BodyType<ManagerCreateTeamBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createManagerTeam>>,
+  TError,
+  { data: BodyType<ManagerCreateTeamBody> },
+  TContext
+> => {
+  const mutationKey = ["createManagerTeam"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createManagerTeam>>,
+    { data: BodyType<ManagerCreateTeamBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createManagerTeam(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateManagerTeamMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createManagerTeam>>
+>;
+export type CreateManagerTeamMutationBody = BodyType<ManagerCreateTeamBody>;
+export type CreateManagerTeamMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a new team as manager (auto-approved, no admin review needed)
+ */
+export const useCreateManagerTeam = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createManagerTeam>>,
+    TError,
+    { data: BodyType<ManagerCreateTeamBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createManagerTeam>>,
+  TError,
+  { data: BodyType<ManagerCreateTeamBody> },
+  TContext
+> => {
+  return useMutation(getCreateManagerTeamMutationOptions(options));
+};
+
+/**
+ * @summary List active (unused) delegations for the current manager
+ */
+export const getListManagerDelegationsUrl = () => {
+  return `/api/manager/delegations`;
+};
+
+export const listManagerDelegations = async (
+  options?: RequestInit,
+): Promise<ManagerDelegation[]> => {
+  return customFetch<ManagerDelegation[]>(getListManagerDelegationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListManagerDelegationsQueryKey = () => {
+  return [`/api/manager/delegations`] as const;
+};
+
+export const getListManagerDelegationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listManagerDelegations>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listManagerDelegations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListManagerDelegationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listManagerDelegations>>
+  > = ({ signal }) => listManagerDelegations({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listManagerDelegations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListManagerDelegationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listManagerDelegations>>
+>;
+export type ListManagerDelegationsQueryError = ErrorType<void>;
+
+/**
+ * @summary List active (unused) delegations for the current manager
+ */
+
+export function useListManagerDelegations<
+  TData = Awaited<ReturnType<typeof listManagerDelegations>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listManagerDelegations>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListManagerDelegationsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Grant one-game tracking access for a team to another user
+ */
+export const getCreateManagerDelegationUrl = () => {
+  return `/api/manager/delegations`;
+};
+
+export const createManagerDelegation = async (
+  createDelegationBody: CreateDelegationBody,
+  options?: RequestInit,
+): Promise<ManagerDelegation> => {
+  return customFetch<ManagerDelegation>(getCreateManagerDelegationUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createDelegationBody),
+  });
+};
+
+export const getCreateManagerDelegationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createManagerDelegation>>,
+    TError,
+    { data: BodyType<CreateDelegationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createManagerDelegation>>,
+  TError,
+  { data: BodyType<CreateDelegationBody> },
+  TContext
+> => {
+  const mutationKey = ["createManagerDelegation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createManagerDelegation>>,
+    { data: BodyType<CreateDelegationBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createManagerDelegation(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateManagerDelegationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createManagerDelegation>>
+>;
+export type CreateManagerDelegationMutationBody =
+  BodyType<CreateDelegationBody>;
+export type CreateManagerDelegationMutationError = ErrorType<void>;
+
+/**
+ * @summary Grant one-game tracking access for a team to another user
+ */
+export const useCreateManagerDelegation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createManagerDelegation>>,
+    TError,
+    { data: BodyType<CreateDelegationBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createManagerDelegation>>,
+  TError,
+  { data: BodyType<CreateDelegationBody> },
+  TContext
+> => {
+  return useMutation(getCreateManagerDelegationMutationOptions(options));
+};
+
+/**
+ * @summary Remove a delegation
+ */
+export const getDeleteManagerDelegationUrl = (id: number) => {
+  return `/api/manager/delegations/${id}`;
+};
+
+export const deleteManagerDelegation = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteManagerDelegationUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteManagerDelegationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteManagerDelegation>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteManagerDelegation>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteManagerDelegation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteManagerDelegation>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteManagerDelegation(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteManagerDelegationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteManagerDelegation>>
+>;
+
+export type DeleteManagerDelegationMutationError = ErrorType<void>;
+
+/**
+ * @summary Remove a delegation
+ */
+export const useDeleteManagerDelegation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteManagerDelegation>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteManagerDelegation>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteManagerDelegationMutationOptions(options));
 };
 
 /**

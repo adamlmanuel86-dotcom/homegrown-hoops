@@ -28,6 +28,8 @@ tags:
     description: Game video attachment operations
   - name: arcade
     description: Arcade mini-game operations
+  - name: manager
+    description: Manager dashboard and delegation operations
 paths:
   /healthz:
     get:
@@ -607,6 +609,115 @@ paths:
               schema:
                 $ref: "#/components/schemas/Game"
 
+  /manager/my-teams:
+    get:
+      operationId: getManagerMyTeams
+      tags: [manager]
+      summary: List teams managed by the current user (admin sees all)
+      responses:
+        "200":
+          description: List of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Manager access required
+
+  /manager/teams:
+    post:
+      operationId: createManagerTeam
+      tags: [manager]
+      summary: Create a new team as manager (auto-approved, no admin review needed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagerCreateTeamBody"
+      responses:
+        "201":
+          description: Created team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Manager access required
+
+  /manager/delegations:
+    get:
+      operationId: listManagerDelegations
+      tags: [manager]
+      summary: List active (unused) delegations for the current manager
+      responses:
+        "200":
+          description: List of delegations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ManagerDelegation"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Manager access required
+    post:
+      operationId: createManagerDelegation
+      tags: [manager]
+      summary: Grant one-game tracking access for a team to another user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDelegationBody"
+      responses:
+        "201":
+          description: Delegation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagerDelegation"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Manager access required or team not managed
+        "404":
+          description: Delegatee not found
+
+  /manager/delegations/{id}:
+    delete:
+      operationId: deleteManagerDelegation
+      tags: [manager]
+      summary: Remove a delegation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Manager access required
+        "404":
+          description: Delegation not found
+
   /admin/pending-games:
     get:
       operationId: listPendingGames
@@ -1140,6 +1251,10 @@ components:
           type: string
         secondaryColor:
           type: string
+        league:
+          type: ["string", "null"]
+        managerClerkUserId:
+          type: ["string", "null"]
         createdAt:
           type: string
       required:
@@ -1888,6 +2003,25 @@ components:
           type: string
         requestedRole:
           type: ["string", "null"]
+        requestedTeamInfo:
+          type: ["object", "null"]
+          description: "Team details submitted during manager signup"
+          properties:
+            teamName:
+              type: string
+            league:
+              type: ["string", "null"]
+            city:
+              type: ["string", "null"]
+            roster:
+              type: array
+              items:
+                type: object
+                properties:
+                  jerseyNumber:
+                    type: string
+                  playerName:
+                    type: string
         createdAt:
           type: string
       required:
@@ -1927,6 +2061,25 @@ components:
         requestedRole:
           type: ["string", "null"]
           description: "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true."
+        requestedTeamInfo:
+          type: ["object", "null"]
+          description: "Team details submitted during manager signup"
+          properties:
+            teamName:
+              type: string
+            league:
+              type: ["string", "null"]
+            city:
+              type: ["string", "null"]
+            roster:
+              type: array
+              items:
+                type: object
+                properties:
+                  jerseyNumber:
+                    type: string
+                  playerName:
+                    type: string
         myBallers:
           type: array
           items:
@@ -2431,3 +2584,49 @@ components:
         - jerseyNumber
         - teamId
         - season
+
+    ManagerCreateTeamBody:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: ["string", "null"]
+        league:
+          type: ["string", "null"]
+      required:
+        - name
+
+    ManagerDelegation:
+      type: object
+      properties:
+        id:
+          type: integer
+        managerClerkUserId:
+          type: string
+        delegateeClerkUserId:
+          type: string
+        teamId:
+          type: integer
+        used:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - managerClerkUserId
+        - delegateeClerkUserId
+        - teamId
+        - used
+        - createdAt
+
+    CreateDelegationBody:
+      type: object
+      properties:
+        delegateeClerkUserId:
+          type: string
+        teamId:
+          type: integer
+      required:
+        - delegateeClerkUserId
+        - teamId

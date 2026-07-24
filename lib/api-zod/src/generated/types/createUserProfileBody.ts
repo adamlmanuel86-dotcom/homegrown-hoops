@@ -5,6 +5,7 @@
  * Homegrown Hoops Basketball Stats Tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateUserProfileBodyRequestedTeamInfo } from "./createUserProfileBodyRequestedTeamInfo";
 
 export interface CreateUserProfileBody {
   firstName: string;
@@ -33,6 +34,11 @@ export interface CreateUserProfileBody {
    * @nullable
    */
   requestedRole?: string | null;
+  /**
+   * Team details submitted during manager signup
+   * @nullable
+   */
+  requestedTeamInfo?: CreateUserProfileBodyRequestedTeamInfo;
   /** Initial My Ballers player IDs (parent accounts only) */
   myBallers?: number[];
 }

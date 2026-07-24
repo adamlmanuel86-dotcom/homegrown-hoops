@@ -22,6 +22,7 @@ type Step =
   | "welcome"
   | "accountType"
   | "name"
+  | "managerTeam"
   | "school"
   | "position"
   | "number"
@@ -97,6 +98,14 @@ export function OnboardingPage() {
   const [showAvatarCreator, setShowAvatarCreator] = useState(false);
   const [pendingBallers, setPendingBallers] = useState<number[]>([]);
   const [ballerSearch, setBallerSearch] = useState("");
+  const [managerTeamForm, setManagerTeamForm] = useState({
+    teamName: "",
+    league: "",
+    city: "",
+  });
+  const [managerRoster, setManagerRoster] = useState<Array<{ jerseyNumber: string; playerName: string }>>([
+    { jerseyNumber: "", playerName: "" },
+  ]);
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
@@ -275,6 +284,14 @@ export function OnboardingPage() {
           firstName: form.firstName,
           lastName: form.lastName,
           requestedRole: "manager" as const,
+          requestedTeamInfo: managerTeamForm.teamName
+            ? {
+                teamName: managerTeamForm.teamName,
+                league: managerTeamForm.league || null,
+                city: managerTeamForm.city || null,
+                roster: managerRoster.filter((r) => r.jerseyNumber || r.playerName),
+              }
+            : null,
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -1522,7 +1539,7 @@ export function OnboardingPage() {
                   if (form.accountType === "parent") {
                     setStep("ballers");
                   } else if (form.accountType === "manager") {
-                    void handlePendingSubmit();
+                    setStep("managerTeam");
                   } else {
                     setStep("school");
                   }
@@ -1530,13 +1547,103 @@ export function OnboardingPage() {
                 disabled={!form.firstName || !form.lastName || isSubmitting}
                 className="btn-primary w-full justify-center py-3.5 text-base"
               >
-                {isSubmitting ? "Submitting…" : form.accountType === "manager" ? "Request Access" : "Next →"}
-                {!isSubmitting && form.accountType !== "manager" && <ChevronRight className="h-5 w-5" />}
+                Next → <ChevronRight className="h-5 w-5" />
               </button>
             </div>
           )}
 
           {/* ── SCHOOL / TEAM ── */}
+          {step === "managerTeam" && (
+            <div className="space-y-6">
+              <div>
+                <p className="label-upper text-xs text-primary mb-2">Team Info</p>
+                <h2 className="font-display text-4xl text-white leading-tight">
+                  TELL US ABOUT YOUR TEAM
+                </h2>
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 8 }}>
+                  We'll create your team once your account is approved.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  value={managerTeamForm.teamName}
+                  onChange={(e) => setManagerTeamForm((f) => ({ ...f, teamName: e.target.value }))}
+                  autoFocus
+                  placeholder="Team name (required)"
+                  className="onboarding-input"
+                />
+                <input
+                  value={managerTeamForm.league}
+                  onChange={(e) => setManagerTeamForm((f) => ({ ...f, league: e.target.value }))}
+                  placeholder="League name (optional)"
+                  className="onboarding-input"
+                />
+                <input
+                  value={managerTeamForm.city}
+                  onChange={(e) => setManagerTeamForm((f) => ({ ...f, city: e.target.value }))}
+                  placeholder="City (optional)"
+                  className="onboarding-input"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <p className="label-upper text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  Roster (optional) — add key players
+                </p>
+                {managerRoster.map((entry, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      value={entry.jerseyNumber}
+                      onChange={(e) => setManagerRoster((r) => r.map((x, i) => i === idx ? { ...x, jerseyNumber: e.target.value } : x))}
+                      placeholder="#"
+                      className="onboarding-input"
+                      style={{ width: 64, flex: "0 0 64px" }}
+                    />
+                    <input
+                      value={entry.playerName}
+                      onChange={(e) => setManagerRoster((r) => r.map((x, i) => i === idx ? { ...x, playerName: e.target.value } : x))}
+                      placeholder="Player name"
+                      className="onboarding-input"
+                      style={{ flex: 1 }}
+                    />
+                    {managerRoster.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setManagerRoster((r) => r.filter((_, i) => i !== idx))}
+                        style={{ color: "rgba(255,255,255,0.3)", fontSize: 20, lineHeight: 1, padding: "0 4px" }}
+                      >×</button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setManagerRoster((r) => [...r, { jerseyNumber: "", playerName: "" }])}
+                  style={{ color: "rgba(249,115,22,0.7)", fontSize: 13, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  + Add player
+                </button>
+              </div>
+
+              {submitError && (
+                <p className="text-red-400 text-sm text-center">{submitError}</p>
+              )}
+              <button
+                onClick={() => { if (!managerTeamForm.teamName) return; void handlePendingSubmit(); }}
+                disabled={!managerTeamForm.teamName || isSubmitting}
+                className="btn-primary w-full justify-center py-3.5 text-base"
+              >
+                {isSubmitting ? "Submitting…" : "Request Access →"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep("name")}
+                style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "center" }}
+              >
+                ← Back
+              </button>
+            </div>
+          )}
+
           {step === "school" && (
             <div className="space-y-6">
               <div>

@@ -31,6 +31,13 @@ export type CareerStats = {
   threesMade: number;
 };
 export type ArchetypeHistoryEntry = { season: string; archetype: string };
+export type RequestedTeamRosterEntry = { jerseyNumber: string; playerName: string };
+export type RequestedTeamInfo = {
+  teamName: string;
+  league?: string;
+  city?: string;
+  roster: RequestedTeamRosterEntry[];
+};
 
 export const userProfilesTable = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
@@ -58,6 +65,7 @@ export const userProfilesTable = pgTable("user_profiles", {
   archetypeHistory: json("archetype_history").$type<ArchetypeHistoryEntry[] | null>().default(null),
   myBallers: json("my_ballers").$type<number[]>().notNull().default([]),
   teamIds: json("team_ids").$type<number[]>().notNull().default([]),
+  requestedTeamInfo: json("requested_team_info").$type<RequestedTeamInfo | null>().default(null),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

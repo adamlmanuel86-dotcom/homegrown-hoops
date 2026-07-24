@@ -1,15 +1,13 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
-import { db, userProfilesTable } from "@workspace/db";
+import { db, userProfilesTable, teamsTable } from "@workspace/db";
+import type { RequestedTeamInfo } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
 
 const router: IRouter = Router();
 
-async function requireAdmin(
-  req: Parameters<Parameters<typeof router.use>[0]>[0],
-  res: Parameters<Parameters<typeof router.use>[0]>[1],
-): Promise<boolean> {
+async function requireAdmin(req: Request, res: Response): Promise<boolean> {
   const { userId } = getAuth(req);
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
@@ -36,6 +34,7 @@ router.get("/admin/pending-accounts", async (req, res): Promise<void> => {
       firstName: userProfilesTable.firstName,
       lastName: userProfilesTable.lastName,
       requestedRole: userProfilesTable.requestedRole,
+      requestedTeamInfo: userProfilesTable.requestedTeamInfo,
       createdAt: userProfilesTable.createdAt,
     })
     .from(userProfilesTable)
@@ -67,9 +66,45 @@ router.post("/admin/pending-accounts/:clerkUserId/approve", async (req, res): Pr
         ? "manager"
         : "player";
 
+  let newTeamId: number | null = profile.teamId ?? null;
+  let newTeamIds: number[] = (profile.teamIds as number[] | null) ?? [];
+
+  if (profile.requestedRole === "manager" && profile.requestedTeamInfo) {
+    const teamInfo = profile.requestedTeamInfo as RequestedTeamInfo;
+
+    const abbreviation = teamInfo.teamName
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("")
+      .slice(0, 3) || teamInfo.teamName.slice(0, 3).toUpperCase();
+
+    const [newTeam] = await db
+      .insert(teamsTable)
+      .values({
+        name: teamInfo.teamName.trim(),
+        city: (teamInfo.city ?? "").trim(),
+        abbreviation,
+        league: teamInfo.league?.trim() ?? null,
+        managerClerkUserId: clerkUserId,
+      })
+      .returning();
+
+    newTeamId = newTeam.id;
+    newTeamIds = [newTeam.id, ...newTeamIds.filter((id) => id !== newTeam.id)];
+  }
+
   const [updated] = await db
     .update(userProfilesTable)
-    .set({ isPending: false, role: newRole, requestedRole: null, updatedAt: new Date() })
+    .set({
+      isPending: false,
+      role: newRole,
+      requestedRole: null,
+      requestedTeamInfo: null,
+      teamId: newTeamId,
+      teamIds: newTeamIds,
+      updatedAt: new Date(),
+    })
     .where(eq(userProfilesTable.clerkUserId, clerkUserId))
     .returning({
       id: userProfilesTable.id,
@@ -77,6 +112,7 @@ router.post("/admin/pending-accounts/:clerkUserId/approve", async (req, res): Pr
       firstName: userProfilesTable.firstName,
       lastName: userProfilesTable.lastName,
       requestedRole: userProfilesTable.requestedRole,
+      requestedTeamInfo: userProfilesTable.requestedTeamInfo,
       createdAt: userProfilesTable.createdAt,
     });
 
@@ -95,7 +131,13 @@ router.post("/admin/pending-accounts/:clerkUserId/reject", async (req, res): Pro
 
   const [updated] = await db
     .update(userProfilesTable)
-    .set({ isPending: false, role: "player", requestedRole: null, updatedAt: new Date() })
+    .set({
+      isPending: false,
+      role: "player",
+      requestedRole: null,
+      requestedTeamInfo: null,
+      updatedAt: new Date(),
+    })
     .where(eq(userProfilesTable.clerkUserId, clerkUserId))
     .returning({
       id: userProfilesTable.id,
@@ -103,6 +145,7 @@ router.post("/admin/pending-accounts/:clerkUserId/reject", async (req, res): Pro
       firstName: userProfilesTable.firstName,
       lastName: userProfilesTable.lastName,
       requestedRole: userProfilesTable.requestedRole,
+      requestedTeamInfo: userProfilesTable.requestedTeamInfo,
       createdAt: userProfilesTable.createdAt,
     });
 

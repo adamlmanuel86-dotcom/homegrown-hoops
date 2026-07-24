@@ -8,3 +8,4 @@ export * from "./isoBallSessions";
 export * from "./isoBallDailyQuestions";
 export * from "./arcadeSessions";
 export * from "./jerseyStubs";
+export * from "./delegations";

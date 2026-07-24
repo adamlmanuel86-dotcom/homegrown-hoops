@@ -590,6 +590,27 @@ export function AdminPage() {
                     {" · "}
                     {new Date(account.createdAt).toLocaleDateString()}
                   </p>
+                  {account.requestedRole === "manager" && account.requestedTeamInfo && (() => {
+                    const info = account.requestedTeamInfo as { teamName?: string; league?: string; city?: string; roster?: Array<{ jerseyNumber: string; playerName: string }> };
+                    return (
+                      <div className="mt-1.5 text-xs text-muted-foreground space-y-0.5">
+                        {info.teamName && (
+                          <p>
+                            <span className="font-semibold text-white/70">Team:</span>{" "}
+                            {info.teamName}
+                            {info.league ? ` · ${info.league}` : ""}
+                            {info.city ? ` · ${info.city}` : ""}
+                          </p>
+                        )}
+                        {info.roster && info.roster.length > 0 && (
+                          <p>
+                            <span className="font-semibold text-white/70">Roster:</span>{" "}
+                            {info.roster.map((r) => r.playerName || `#${r.jerseyNumber}`).filter(Boolean).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button

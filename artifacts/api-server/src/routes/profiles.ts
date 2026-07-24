@@ -231,11 +231,14 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
   const isFirstUser = Number(total) === 0;
   const shouldBeAdmin = protected_ || isFirstUser;
 
-  // Extract requestedRole before spreading into DB insert
-  const { requestedRole: reqRole, ...profileData } = parsed.data as typeof parsed.data & { requestedRole?: string | null };
+  // Extract requestedRole + requestedTeamInfo before spreading into DB insert
+  const { requestedRole: reqRole, requestedTeamInfo: rawTeamInfo, ...profileData } = parsed.data as typeof parsed.data & { requestedRole?: string | null; requestedTeamInfo?: Record<string, unknown> | null };
   // Only managers need admin approval; parents get immediate access
   const isPending = !shouldBeAdmin && reqRole === "manager";
   const role = shouldBeAdmin ? "admin" : (reqRole === "parent" ? "parent" : "player");
+  // Cast requestedTeamInfo to DB type — validated client-side; teamName required
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const requestedTeamInfo = (rawTeamInfo as any) ?? null;
 
   const [profile] = await db
     .insert(userProfilesTable)
@@ -246,6 +249,7 @@ router.post("/profiles/me", async (req, res): Promise<void> => {
       role,
       isPending,
       requestedRole: isPending ? (reqRole ?? null) : null,
+      requestedTeamInfo: isPending ? requestedTeamInfo : null,
     })
     .returning();
 

@@ -235,10 +235,26 @@ export async function runMigrations(): Promise<void> {
     await addCol("arcade_sessions",  "tpm",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "tpa",               "integer NOT NULL DEFAULT 0");
     await addCol("arcade_sessions",  "dunks",             "integer NOT NULL DEFAULT 0");
-    await addCol("user_profiles",    "is_pending",        "boolean NOT NULL DEFAULT FALSE");
-    await addCol("user_profiles",    "requested_role",    "text DEFAULT NULL");
-    await addCol("user_profiles",    "my_ballers",        "json NOT NULL DEFAULT '[]'");
-    await addCol("user_profiles",    "team_ids",          "json NOT NULL DEFAULT '[]'");
+    await addCol("user_profiles",    "is_pending",            "boolean NOT NULL DEFAULT FALSE");
+    await addCol("user_profiles",    "requested_role",        "text DEFAULT NULL");
+    await addCol("user_profiles",    "my_ballers",            "json NOT NULL DEFAULT '[]'");
+    await addCol("user_profiles",    "team_ids",              "json NOT NULL DEFAULT '[]'");
+    await addCol("user_profiles",    "requested_team_info",   "json DEFAULT NULL");
+    await addCol("teams",            "league",                "text DEFAULT NULL");
+    await addCol("teams",            "manager_clerk_user_id", "text DEFAULT NULL");
+
+    // ── game_tracking_delegations ─────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS game_tracking_delegations (
+        id                       serial    PRIMARY KEY,
+        manager_clerk_user_id    text      NOT NULL,
+        delegatee_clerk_user_id  text      NOT NULL,
+        team_id                  integer   NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        used                     boolean   NOT NULL DEFAULT FALSE,
+        created_at               timestamp NOT NULL DEFAULT NOW()
+      );
+    `);
+    console.log("[migrate] game_tracking_delegations OK");
 
     // ── Jersey stubs (unregistered player tracking) ───────────────────────────
     await addCol("players", "is_jersey_stub", "boolean NOT NULL DEFAULT FALSE");

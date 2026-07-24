@@ -154,6 +154,15 @@ export function TrackGamePage() {
       myProfile?.role === "coach") &&
     !myProfile?.isPending;
 
+  // For managers, only show their managed teams in "My Team" selectors.
+  // Admins see all teams.
+  const myManagedTeamIds: number[] = (myProfile?.role === "manager")
+    ? ((myProfile?.teamIds as number[] | null) ?? [])
+    : [];
+  const myTeamsForPicker = (myProfile?.role === "manager" && myManagedTeamIds.length > 0)
+    ? (teams ?? []).filter((t) => myManagedTeamIds.includes(t.id))
+    : (teams ?? []);
+
   // ── Pre-populate rosters from DB when team changes
   useEffect(() => {
     if (!homeTeamId || !allPlayers) { setHomeSetupPlayers([]); return; }
@@ -509,7 +518,7 @@ export function TrackGamePage() {
                     onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
                   >
                     <option value="">Select team…</option>
-                    {(teams ?? []).map((t) => (
+                    {myTeamsForPicker.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
@@ -554,7 +563,7 @@ export function TrackGamePage() {
                     onChange={(e) => setHomeTeamId(Number(e.target.value) || null)}
                   >
                     <option value="">Select team…</option>
-                    {(teams ?? []).map((t) => (
+                    {myTeamsForPicker.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>

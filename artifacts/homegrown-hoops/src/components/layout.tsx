@@ -110,6 +110,15 @@ export function Layout({ children }: { children: ReactNode }) {
                             📋 Track Game
                           </Link>
                         </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/manager"
+                            className="flex items-center gap-2 cursor-pointer text-primary font-bold focus:bg-primary/10 focus:text-primary"
+                          >
+                            <Shield className="h-4 w-4" />
+                            Manager
+                          </Link>
+                        </DropdownMenuItem>
                         {isAdmin && (
                           <DropdownMenuItem asChild>
                             <Link
@@ -219,6 +228,16 @@ export function Layout({ children }: { children: ReactNode }) {
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-orange-400 bg-orange-400/10 border border-orange-400/20 hover:bg-orange-400/20 transition-colors"
                   >
                     📋 Track Game
+                  </Link>
+                )}
+                {isManager && (
+                  <Link
+                    href="/manager"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Manager
                   </Link>
                 )}
                 {isAdmin && (

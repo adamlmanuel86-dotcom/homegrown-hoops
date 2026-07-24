@@ -28,6 +28,8 @@ export const ListTeamsResponseItem = zod.object({
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
   secondaryColor: zod.string(),
+  league: zod.string().nullish(),
+  managerClerkUserId: zod.string().nullish(),
   createdAt: zod.string(),
 });
 export const ListTeamsResponse = zod.array(ListTeamsResponseItem);
@@ -61,6 +63,8 @@ export const GetTeamResponse = zod.object({
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
   secondaryColor: zod.string(),
+  league: zod.string().nullish(),
+  managerClerkUserId: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -90,6 +94,8 @@ export const UpdateTeamResponse = zod.object({
   logoUrl: zod.string().nullish(),
   primaryColor: zod.string(),
   secondaryColor: zod.string(),
+  league: zod.string().nullish(),
+  managerClerkUserId: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -786,6 +792,22 @@ export const ListPendingAccountsResponseItem = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   requestedRole: zod.string().nullish(),
+  requestedTeamInfo: zod
+    .object({
+      teamName: zod.string().optional(),
+      league: zod.string().nullish(),
+      city: zod.string().nullish(),
+      roster: zod
+        .array(
+          zod.object({
+            jerseyNumber: zod.string().optional(),
+            playerName: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .nullish()
+    .describe("Team details submitted during manager signup"),
   createdAt: zod.string(),
 });
 export const ListPendingAccountsResponse = zod.array(
@@ -805,6 +827,22 @@ export const ApprovePendingAccountResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   requestedRole: zod.string().nullish(),
+  requestedTeamInfo: zod
+    .object({
+      teamName: zod.string().optional(),
+      league: zod.string().nullish(),
+      city: zod.string().nullish(),
+      roster: zod
+        .array(
+          zod.object({
+            jerseyNumber: zod.string().optional(),
+            playerName: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .nullish()
+    .describe("Team details submitted during manager signup"),
   createdAt: zod.string(),
 });
 
@@ -821,6 +859,22 @@ export const RejectPendingAccountResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   requestedRole: zod.string().nullish(),
+  requestedTeamInfo: zod
+    .object({
+      teamName: zod.string().optional(),
+      league: zod.string().nullish(),
+      city: zod.string().nullish(),
+      roster: zod
+        .array(
+          zod.object({
+            jerseyNumber: zod.string().optional(),
+            playerName: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .nullish()
+    .describe("Team details submitted during manager signup"),
   createdAt: zod.string(),
 });
 
@@ -855,6 +909,66 @@ export const SubmitTrackGameBody = zod.object({
       freeThrowsAttempted: zod.number().optional(),
     }),
   ),
+});
+
+/**
+ * @summary List teams managed by the current user (admin sees all)
+ */
+export const GetManagerMyTeamsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  city: zod.string(),
+  abbreviation: zod.string(),
+  wins: zod.number(),
+  losses: zod.number(),
+  logoUrl: zod.string().nullish(),
+  primaryColor: zod.string(),
+  secondaryColor: zod.string(),
+  league: zod.string().nullish(),
+  managerClerkUserId: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const GetManagerMyTeamsResponse = zod.array(
+  GetManagerMyTeamsResponseItem,
+);
+
+/**
+ * @summary Create a new team as manager (auto-approved, no admin review needed)
+ */
+export const CreateManagerTeamBody = zod.object({
+  name: zod.string(),
+  city: zod.string().nullish(),
+  league: zod.string().nullish(),
+});
+
+/**
+ * @summary List active (unused) delegations for the current manager
+ */
+export const ListManagerDelegationsResponseItem = zod.object({
+  id: zod.number(),
+  managerClerkUserId: zod.string(),
+  delegateeClerkUserId: zod.string(),
+  teamId: zod.number(),
+  used: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListManagerDelegationsResponse = zod.array(
+  ListManagerDelegationsResponseItem,
+);
+
+/**
+ * @summary Grant one-game tracking access for a team to another user
+ */
+export const CreateManagerDelegationBody = zod.object({
+  delegateeClerkUserId: zod.string(),
+  teamId: zod.number(),
+});
+
+/**
+ * @summary Remove a delegation
+ */
+export const DeleteManagerDelegationParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 /**
@@ -1235,6 +1349,22 @@ export const CreateMyProfileBody = zod.object({
     .describe(
       "Account type selected at signup: 'parent' or 'manager'. Server sets isPending=true.",
     ),
+  requestedTeamInfo: zod
+    .object({
+      teamName: zod.string().optional(),
+      league: zod.string().nullish(),
+      city: zod.string().nullish(),
+      roster: zod
+        .array(
+          zod.object({
+            jerseyNumber: zod.string().optional(),
+            playerName: zod.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .nullish()
+    .describe("Team details submitted during manager signup"),
   myBallers: zod
     .array(zod.number())
     .optional()

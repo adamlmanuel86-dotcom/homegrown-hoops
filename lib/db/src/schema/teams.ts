@@ -13,6 +13,8 @@ export const teamsTable = pgTable("teams", {
   primaryColor: text("primary_color").notNull().default("#FF6B00"),
   secondaryColor: text("secondary_color").notNull().default("#132237"),
   currentSeason: text("current_season"),
+  league: text("league"),
+  managerClerkUserId: text("manager_clerk_user_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
