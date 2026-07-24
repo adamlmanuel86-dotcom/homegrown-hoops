@@ -254,10 +254,7 @@ export function OnboardingPage() {
         data: {
           firstName: form.firstName,
           lastName: form.lastName,
-          requestedRole: form.accountType as "parent" | "manager",
-          ...(form.accountType === "parent" && pendingBallers.length > 0
-            ? { myBallers: pendingBallers }
-            : {}),
+          requestedRole: "manager" as const,
         },
       });
       await qc.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -990,7 +987,6 @@ export function OnboardingPage() {
   // PENDING APPROVAL SCREEN
   // ──────────────────────────────────────────────────
   if (step === "pendingReveal") {
-    const isPendingManager = form.accountType === "manager";
     return (
       <div
         className="min-h-[100dvh] flex flex-col items-center justify-center px-6"
@@ -1011,25 +1007,23 @@ export function OnboardingPage() {
               YOU'RE ON<br />DECK
             </h2>
             <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 15, lineHeight: 1.6 }}>
-              Your {isPendingManager ? "Manager / Coach" : "Parent"} account is pending approval.
+              Your Manager / Coach account is pending approval.
               An admin will review your application and activate your access.
             </p>
           </div>
 
-          {isPendingManager && (
-            <div style={{
-              width: "100%",
-              padding: "14px 18px",
-              borderRadius: 12,
-              background: "rgba(249,115,22,0.06)",
-              border: "1px solid rgba(249,115,22,0.2)",
-              textAlign: "left",
-            }}>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
-                Once approved, you'll be able to track games and submit stats for any team.
-              </p>
-            </div>
-          )}
+          <div style={{
+            width: "100%",
+            padding: "14px 18px",
+            borderRadius: 12,
+            background: "rgba(249,115,22,0.06)",
+            border: "1px solid rgba(249,115,22,0.2)",
+            textAlign: "left",
+          }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+              Once approved, you'll be able to track games and submit stats for any team.
+            </p>
+          </div>
 
           <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13 }}>
             You can sign back in at any time to check your status.
@@ -1376,8 +1370,8 @@ export function OnboardingPage() {
                 disabled={!form.firstName || !form.lastName || isSubmitting}
                 className="btn-primary w-full justify-center py-3.5 text-base"
               >
-                {isSubmitting ? "Submitting…" : form.accountType === "manager" ? "Request Access" : "Next"}
-                {!isSubmitting && <ChevronRight className="h-5 w-5" />}
+                {isSubmitting ? "Submitting…" : form.accountType === "manager" ? "Request Access" : "Next →"}
+                {!isSubmitting && form.accountType !== "manager" && <ChevronRight className="h-5 w-5" />}
               </button>
             </div>
           )}
