@@ -1,11 +1,13 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiBase } from "@/lib/api";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
 export function FastBreakPage() {
   const { getToken, isSignedIn } = useAuth();
+  const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const sendAvatarToGame = useCallback(async () => {
@@ -51,6 +53,8 @@ export function FastBreakPage() {
               dunks: typeof e.data.dunks === "number" ? e.data.dunks : 0,
             }),
           });
+          qc.invalidateQueries({ queryKey: ["/api/arcade/leaderboard", { game: "fast-break" }] });
+          qc.invalidateQueries({ queryKey: ["/api/arcade/my-stats"] });
         } catch {
           // ignore
         }
@@ -58,7 +62,7 @@ export function FastBreakPage() {
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [getToken, isSignedIn]);
+  }, [getToken, isSignedIn, qc]);
 
   function handleIframeLoad() {
     setTimeout(sendAvatarToGame, 900);

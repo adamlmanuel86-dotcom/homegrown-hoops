@@ -474,7 +474,7 @@ export function IsoBallPage() {
         const data = await res.json() as SessionResponse;
 
         // Always invalidate cache — safe to call even if component has unmounted
-        qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
+        qc.invalidateQueries({ queryKey: ["/api/iso-ball/leaderboard"] });
         qc.invalidateQueries({ queryKey: ["isoBallProfile", user?.id] });
 
         if (cancelled) return; // Only skip state updates on unmounted component

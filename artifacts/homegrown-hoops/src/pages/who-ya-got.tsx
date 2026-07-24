@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiBase } from "@/lib/api";
 
 const PLAYERS = [
@@ -155,6 +156,7 @@ function PlayerCard({ player, state, onClick }: { player: Player; state: "idle" 
 
 export function WhoYaGotPage() {
   const { getToken, isSignedIn } = useAuth();
+  const qc = useQueryClient();
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [roundsPlayed, setRoundsPlayed] = useState(0);
@@ -174,11 +176,13 @@ export function WhoYaGotPage() {
     if (!isSignedIn) return;
     try {
       const token = await getToken();
-      await fetch(`${apiBase}/arcade/sessions`, {
+      await fetch(`${apiBase}/api/arcade/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ game: "who-ya-got", score: finalBest, bestStreak: finalBest, roundsPlayed: rounds }),
       });
+      qc.invalidateQueries({ queryKey: ["/api/arcade/leaderboard", { game: "who-ya-got" }] });
+      qc.invalidateQueries({ queryKey: ["/api/arcade/my-stats"] });
       setSaved(true);
     } catch {
       // ignore

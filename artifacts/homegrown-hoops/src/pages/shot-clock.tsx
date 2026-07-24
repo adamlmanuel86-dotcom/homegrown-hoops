@@ -1,23 +1,24 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiBase } from "@/lib/api";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
 export function ShotClockPage() {
   const { getToken, isSignedIn } = useAuth();
+  const qc = useQueryClient();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const expectedOrigin = window.location.origin;
     async function handleMessage(e: MessageEvent) {
-      // Only accept messages from the same origin (our own iframe)
       if (e.origin !== expectedOrigin) return;
       if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return;
       if (e.data?.type === "GAME_OVER" && isSignedIn) {
         try {
           const token = await getToken();
-          await fetch(`${apiBase}/arcade/sessions`, {
+          await fetch(`${apiBase}/api/arcade/sessions`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
@@ -27,6 +28,8 @@ export function ShotClockPage() {
               roundsPlayed: typeof e.data.roundsPlayed === "number" ? e.data.roundsPlayed : 0,
             }),
           });
+          qc.invalidateQueries({ queryKey: ["/api/arcade/leaderboard", { game: "shot-clock" }] });
+          qc.invalidateQueries({ queryKey: ["/api/arcade/my-stats"] });
         } catch {
           // ignore
         }
@@ -34,7 +37,7 @@ export function ShotClockPage() {
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [getToken, isSignedIn]);
+  }, [getToken, isSignedIn, qc]);
 
   return (
     <div className="fixed inset-0 bg-[#0f1b2d] flex flex-col" style={{ top: 64 }}>

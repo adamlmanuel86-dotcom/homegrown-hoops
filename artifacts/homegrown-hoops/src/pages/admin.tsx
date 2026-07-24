@@ -318,7 +318,7 @@ export function AdminPage() {
     onSuccess: (_data, clerkUserId) => {
       setConfirmingResetIsoBallId(null);
       qc.invalidateQueries({ queryKey: ["isoBallProfile", clerkUserId] });
-      qc.invalidateQueries({ queryKey: ["isoBallLeaderboard"] });
+      qc.invalidateQueries({ queryKey: ["/api/iso-ball/leaderboard"] });
       qc.invalidateQueries({ queryKey: ["/api/profiles"] });
     },
   });
