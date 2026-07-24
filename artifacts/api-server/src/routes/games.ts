@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, or } from "drizzle-orm";
+import { eq, and, desc, or, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, gamesTable, gamePlayerStatsTable, teamsTable, userProfilesTable, playersTable } from "@workspace/db";
 import { serializeRow, serializeRows } from "../lib/serialize";
-import { runFullRecognition } from "../recognition";
+import { runFullRecognition, recalculateStampsForPlayer, recalculateArchetypesForTeam } from "../recognition";
 import {
   CreateGameBody,
   UpdateGameBody,
@@ -145,11 +145,39 @@ router.delete("/games/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  // game_player_stats and game_videos cascade on delete
-  const [deleted] = await db.delete(gamesTable).where(eq(gamesTable.id, id)).returning();
-  if (!deleted) {
+  // Collect data needed for recognition recalc BEFORE deleting
+  const [game] = await db.select().from(gamesTable).where(eq(gamesTable.id, id));
+  if (!game) {
     res.status(404).json({ error: "Game not found" });
     return;
+  }
+
+  const statsRows = await db
+    .select({ playerId: gamePlayerStatsTable.playerId })
+    .from(gamePlayerStatsTable)
+    .where(eq(gamePlayerStatsTable.gameId, id));
+
+  const affectedPlayerIds = [...new Set(statsRows.map((r) => r.playerId))];
+  const { season } = game;
+
+  // Delete game — cascades to game_player_stats and game_videos
+  await db.delete(gamesTable).where(eq(gamesTable.id, id));
+
+  // Recompute stamps + archetypes for every player who had stats in this game
+  if (affectedPlayerIds.length > 0) {
+    await Promise.all(affectedPlayerIds.map((pid) => recalculateStampsForPlayer(pid)));
+
+    const playerRows = await db
+      .select({ teamId: playersTable.teamId })
+      .from(playersTable)
+      .where(inArray(playersTable.id, affectedPlayerIds));
+
+    const teamIds = [
+      ...new Set(playerRows.map((r) => r.teamId).filter((t): t is number => t != null)),
+    ];
+    if (teamIds.length > 0 && season) {
+      await Promise.all(teamIds.map((tid) => recalculateArchetypesForTeam(tid, season)));
+    }
   }
 
   res.status(204).send();
